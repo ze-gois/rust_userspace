@@ -15,7 +15,8 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
     let argc = stack_pointer.0 as *const usize;
     userspace::info!("argc={:?}\n", unsafe { *argc });
     let stack = userspace::memory::Stack::from_pointer(stack_pointer);
-    stack.print();
+    // stack.print();
+    stack.arguments.print();
 
     panic!();
 }
