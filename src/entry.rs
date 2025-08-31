@@ -4,21 +4,21 @@
 #![allow(unused_imports)]
 
 use userspace;
+use userspace::info;
 use userspace::target;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
     let stack_pointer = crate::target::arch::Pointer(stack_pointer);
 
-    userspace::info!("eXecuting Executable and Linkable Format\n\n");
+    info!("eXecuting Executable and Linkable Format\n\n");
 
     let argc = stack_pointer.0 as *const usize;
-    userspace::info!("argc={:?}\n", unsafe { *argc });
+    info!("argc={:?}\n", unsafe { *argc });
     let stack = userspace::memory::Stack::from_pointer(stack_pointer);
-    // stack.print();
-    stack.arguments.print();
+    stack.print();
 
-    // let uchar32 = userspace::file::format::elf::dtype::class_32::UChar(3);
+    let uchar32 = userspace::file::format::elf::dtype::class_32::UChar(3);
 
     panic!();
 }

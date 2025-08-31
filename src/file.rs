@@ -13,7 +13,7 @@ pub use open::open;
 pub mod seek;
 pub use seek::seek;
 
-// pub mod format;
+pub mod format;
 
 // impl traits::Bytes<Origin, Origin> for &str {
 //     const BYTES_SIZE: usize = core::mem::size_of::<&str>();
