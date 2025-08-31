@@ -7,6 +7,9 @@ pub mod macros;
 pub mod traits;
 pub use traits::Trait;
 
+pub mod result;
+pub use result::{Error, Ok, Result};
+
 // pub mod endianness;
 // pub use endianness::Endianness;
 

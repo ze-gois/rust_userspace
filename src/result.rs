@@ -5,14 +5,17 @@ result!(
     [
         [1; USERSPACE_DEFAULT_OK; Default; usize; "ZE"; "Entry to ze"],
         [2; USERSPACE_TARGET_OK; Target; crate::target::Ok; "ZE"; "Entry to ze"],
-        [3; STDOUT; StdoutOk; usize; "ZE"; "Entry to ze"],
+        [3; USERSPACE_FILE_OK; File; crate::file::Ok; "ZE"; "Entry to ze"],
+        [99; STDOUT; StdoutOk; usize; "ZE"; "Entry to ze"],
     ];
     Error;
     "Human error";
     usize;
     [
         [1; ERROR; Error; usize; "ZE"; "Entry to ze"],
-        [2; USERSPACE_TARGET_ERR; Target; crate::target::Error; "ZE"; "Entry to ze"],
+        [2; USERSPACE_TARGET_ERROR; Target; crate::target::Error; "ZE"; "Entry to ze"],
+        [3; USERSPACE_FILE_ERROR; File; crate::file::Error; "ZE"; "Entry to ze"],
+        [99; STDOUT_ERRPR; Stdout; usize; "ZE"; "Entry to ze"],
     ]
 );
 
