@@ -1,0 +1,47 @@
+[workspace]
+members = []
+
+[package]
+version = "0.1.0"
+publish = false
+license-file = "LICENSE"
+authors = ["José Gois <ze.gois.00@gmail.com>"]
+homepage = "https://userspace.builders"
+repository = "https://github.com/ze-gois/rust_userspace"
+description = "Standard library for userspace applications"
+documentation = "https://docs.rs/bitflags"
+name = "userspace"
+readme = "README.md"
+edition = "2024"
+keywords = ["architecture", "operating_system"]
+categories = ["no-std", "os"]
+
+[lib]
+name = "userspace"
+path = "src/library.rs"
+test = false
+
+[[bin]]
+name = "userspace"
+path = "src/entry.rs"
+test = false
+
+[dependencies]
+
+[workspace.dependencies]
+userspace = { path = "." }
+
+[build-dependencies]
+cc = "1.0"
+userspace_build = { version = "0.1.123", features = ["with_std"] }
+
+[features]
+default = ["no_std"]
+no_std = []
+with_std = []
+
+[profile.dev]
+# panic = "abort"
+
+[profile.release]
+# panic = "abort"
