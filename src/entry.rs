@@ -18,5 +18,7 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
     // stack.print();
     stack.arguments.print();
 
+    let uchar32 = userspace::file::format::elf::dtype::class_32::UChar(3);
+
     panic!();
 }

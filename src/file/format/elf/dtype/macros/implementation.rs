@@ -1,8 +1,8 @@
 #[macro_export]
 macro_rules! file_format_elf_dtype_impl {
     ($($dtype:ident),*) => {
-        trait_implement_primitive!(false, $($dtype),*);
-        trait_implement_bytes!($($dtype),*);
+        $crate::trait_implement_primitive!(false, $($dtype),*);
+        $crate::trait_implement_bytes!($($dtype),*);
         $(
             impl $dtype {
                 // pub fn to_bytes(

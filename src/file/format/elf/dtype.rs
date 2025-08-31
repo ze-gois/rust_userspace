@@ -2,16 +2,13 @@ pub mod class_32;
 pub mod class_64;
 pub use class_64::UChar;
 
-// #[macro_use]
-// pub mod macros;
+#[macro_use]
+pub mod macros;
+pub mod traits;
+pub use traits::Trait;
+
 // pub mod endianness;
 // pub use endianness::Endianness;
-
-// pub trait ELFType {
-//     type Inner;
-//     const SIZE_BITS: usize;
-//     const SIZE_BYTES: usize;
-// }
 
 // pub mod ok {
 //     r#struct!(pub OurStruct {

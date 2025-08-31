@@ -13,18 +13,10 @@ SECTIONS {
     .rodata : ALIGN(0x1000) {
         PROVIDE(_rodata_start = .);
         *(.rodata*)
-        *(.rodata.*)
         PROVIDE(_rodata_end = .);
     } :rodata
 
-    .eh_frame : {
-        PROVIDE(_eh_frame_start = .);
-        *(.eh_frame)
-        *(.eh_frame.*)
-        PROVIDE(_eh_frame_end = .);
-    } :rodata
-
-    .got : {
+    .got : ALIGN(8) {
         PROVIDE(_got_start = .);
         *(.got)
         *(.got.*)
@@ -39,7 +31,6 @@ SECTIONS {
         PROVIDE(_data_end = .);
     } :data
 
-    /* Make sure the .got is initialized to zero when loaded into memory */
     .dynamic : {
         PROVIDE(_dynamic_start = .);
         *(.dynamic)
@@ -47,7 +38,7 @@ SECTIONS {
     } :data
 
     .bss : ALIGN(0x1000) {
-        PROVIDE(_bss_start = .); /* . stands for "here" */
+        PROVIDE(_bss_start = .);
         *(.bss*)
         *(.bss.*)
         *(.sbss*)
@@ -56,21 +47,20 @@ SECTIONS {
         PROVIDE(_bss_end = .);
     } :data
 
-    /* Discard debug sections */
     /DISCARD/ : {
         *(.comment)
         *(.debug_*)
         *(.note.*)
         *(.gcc_except_table)
+        *(.symtab)
+        *(.strtab)
     }
 }
 
-/* We need to initialize BSS to zero */
 PROVIDE(__bss_size = _bss_end - _bss_start);
 
-PHDRS
-{
-    text    PT_LOAD FLAGS(5);      /* 5 = rx */
-    rodata  PT_LOAD FLAGS(4);      /* 4 = r */
-    data    PT_LOAD FLAGS(6);      /* 6 = rw */
+PHDRS {
+    text    PT_LOAD FLAGS(5);
+    rodata  PT_LOAD FLAGS(4);
+    data    PT_LOAD FLAGS(6);
 }
