@@ -11,7 +11,6 @@ pub mod os_abi;
 pub use os_abi::OsABI;
 
 use crate::file::format::elf::dtype;
-use dtype::Endianness;
 
 use dtype::UChar as T;
 
@@ -113,8 +112,6 @@ impl Identifier {
     /// println!("{}",identifier);
     /// ```
     pub fn from_file_descriptor(file_descriptor: isize) -> crate::Result {
-        let endianness = Endianness::LSB;
-
         crate::file::seek(file_descriptor, 0);
 
         core::result::Result::Ok(crate::Ok::File(crate::file::Ok::Format(
