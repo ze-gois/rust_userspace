@@ -1,0 +1,19 @@
+\frametitle{ELF File Format Handling}
+\begin{itemize}
+    \item Implemented ELF header parsing:
+      \begin{lstlisting}[language=Rust]
+// Example from project
+if !arg0.pointer.0.is_null() {
+  unsafe {
+    let cstr = core::ffi::CStr::from_ptr(
+      arg0.pointer.0 as *mut i8);
+    let self_path = cstr.to_str().unwrap();
+    let identifier =
+      userspace::file::format::elf::header::Identifier::from_path(
+        self_path);
+  }
+}
+      \end{lstlisting}
+    \item Created type-safe representations of ELF structures
+    \item Ensured proper endianness handling
+  \end{itemize}

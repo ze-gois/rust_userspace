@@ -1,0 +1,295 @@
+\documentclass{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{minted}
+\usepackage{amsmath}
+\usepackage{booktabs}
+
+% Beamer theme settings
+\usetheme{Madrid}
+\usecolortheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{caption}[numbered]
+\setbeamercolor{structure}{fg=blue!70!black}
+\setbeamertemplate{itemize item}[circle]
+\setbeamertemplate{itemize subitem}[triangle]
+
+% Title page info
+\title{Userspace: A Standard Library for Userspace Applications}
+\subtitle{Rust Implementation for Operating System Interfaces}
+\author{José Gois \\ \small{ze.gois.00@gmail.com}}
+\institute{Federal University of Rio Grande do Norte (UFRN)}
+\date{\today}
+
+% Code style settings
+\definecolor{codebg}{rgb}{0.95,0.95,0.95}
+\definecolor{codeframe}{rgb}{0.8,0.8,0.8}
+\definecolor{codenumber}{rgb}{0.5,0.5,0.5}
+\definecolor{codestring}{rgb}{0.58,0,0.82}
+\definecolor{codekeyword}{rgb}{0,0,0.8}
+\definecolor{codecomment}{rgb}{0,0.6,0}
+
+\lstset{
+  basicstyle=\footnotesize\ttfamily,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  framesep=2pt,
+  framerule=0.4pt,
+  rulecolor=\color{codeframe},
+  numbers=left,
+  numberstyle=\tiny\color{codenumber},
+  numbersep=5pt,
+  breaklines=true,
+  showspaces=false,
+  showstringspaces=false,
+  stringstyle=\color{codestring},
+  keywordstyle=\color{codekeyword}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  captionpos=b,
+  tabsize=2,
+}
+
+\lstdefinelanguage{Rust}{
+  sensitive=true,
+  keywords={
+    self, fn, pub, struct, enum, const, static, mut, let, if, else, for, while,
+    match, mod, use, extern, trait, impl, where, unsafe, type, move, as, in, ref, return, true, false,
+    u8, u16, u32, u64, usize, i8, i16, i32, i64, isize, f32, f64, bool, str, char
+  },
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]',
+}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+  \tableofcontents
+\end{frame}
+
+\section{Introduction}
+
+\begin{frame}{Introduction}
+  \begin{itemize}
+    \item \textbf{Userspace} is a Rust-based standard library for userspace applications
+    \item Provides a cross-platform abstraction layer for operating system interfaces
+    \item Built with a \texttt{no\_std} environment in mind
+    \item Focused on memory safety, portability, and performance
+    \item Aims to provide a consistent API across different architectures and operating systems
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Project Objectives}
+  \begin{itemize}
+    \item Create a modern alternative to libc for systems programming
+    \item Ensure memory safety through Rust's ownership model
+    \item Abstract architecture-specific details (currently targeting x86\_64)
+    \item Implement ELF format parsing and handling
+    \item Provide low-level memory management utilities
+    \item Enable cross-platform development of userspace applications
+  \end{itemize}
+\end{frame}
+
+\section{Methods}
+
+\begin{frame}{Project Architecture}
+  The library is structured in a modular way:
+  \begin{itemize}
+    \item \textbf{Core Library}: Basic types, traits, and utilities
+    \item \textbf{Target Layer}: Architecture and OS-specific implementations
+    \item \textbf{Memory Management}: Stack handling, page allocation
+    \item \textbf{File Formats}: ELF parsing and interpretation
+    \item \textbf{Error Handling}: Custom result types
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Technology Stack}
+  \begin{itemize}
+    \item \textbf{Rust}: Memory-safe systems programming language
+    \item \textbf{No Standard Library}: Using \texttt{\#![no\_std]} for bare-metal compatibility
+    \item \textbf{Rust Features}:
+      \begin{itemize}
+        \item Generic const expressions
+        \item Trait implementations
+        \item Unsafe code blocks for low-level operations
+      \end{itemize}
+    \item \textbf{Build System}: Cargo with custom build scripts
+    \item \textbf{Linker Configuration}: Custom linking via linker.ld
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Key Implementation Concepts}
+  \begin{lstlisting}[language=Rust]
+// No standard library dependency
+#![no_std]
+#![allow(incomplete_features)]
+#![feature(generic_const_exprs)]
+
+// Core library structure
+pub mod macros;
+pub mod target;
+pub mod file;
+pub mod memory;
+pub mod traits;
+pub mod types;
+pub mod result;
+  \end{lstlisting}
+\end{frame}
+
+\section{Results and Discussion}
+
+\begin{frame}{Memory Management Implementation}
+  \begin{itemize}
+    \item Implemented a stack parsing system that can:
+      \begin{itemize}
+        \item Read command-line arguments from stack memory
+        \item Safely navigate the stack structure
+        \item Extract environment variables
+      \end{itemize}
+    \item Developed page allocation mechanisms
+    \item Created safe wrappers around raw pointers
+    \item Implemented trait-based memory operations
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{ELF File Format Handling}
+  \begin{itemize}
+    \item Implemented ELF header parsing:
+      \begin{lstlisting}[language=Rust]
+// Example from project
+if !arg0.pointer.0.is_null() {
+  unsafe {
+    let cstr = core::ffi::CStr::from_ptr(
+      arg0.pointer.0 as *mut i8);
+    let self_path = cstr.to_str().unwrap();
+    let identifier =
+      userspace::file::format::elf::header::Identifier::from_path(
+        self_path);
+  }
+}
+      \end{lstlisting}
+    \item Created type-safe representations of ELF structures
+    \item Ensured proper endianness handling
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Architecture Abstraction}
+  \begin{itemize}
+    \item Implemented architecture-specific traits:
+      \begin{itemize}
+        \item Pointer types and operations
+        \item Register access
+        \item Memory layout definitions
+      \end{itemize}
+    \item Current focus on x86\_64 architecture
+    \item Design allows for easy extension to other architectures
+    \item Architecture-specific code isolated in dedicated modules
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Cross-Platform Considerations}
+  \begin{itemize}
+    \item Operating system abstractions:
+      \begin{itemize}
+        \item System calls
+        \item File operations
+        \item Process management
+      \end{itemize}
+    \item Platform detection macros
+    \item Feature flags for enabling/disabling functionality
+    \item Consistent error handling across platforms
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Challenges Encountered}
+  \begin{itemize}
+    \item Working without the standard library required reimplementation of basic functionality
+    \item Handling architecture-specific details while maintaining a clean API
+    \item Balancing safety and performance in low-level operations
+    \item Creating robust error handling without exceptions
+    \item Managing compile-time features and conditional compilation
+  \end{itemize}
+\end{frame}
+
+\section{Conclusions}
+
+\begin{frame}{Achievements}
+  \begin{itemize}
+    \item Successfully implemented a foundational userspace library in Rust
+    \item Created safe abstractions for low-level system operations
+    \item Developed modular architecture for extensibility
+    \item Implemented ELF parsing capabilities
+    \item Established memory management primitives
+    \item Created cross-platform architecture and OS abstractions
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Future Work}
+  \begin{itemize}
+    \item Extend support to additional architectures (ARM, RISC-V)
+    \item Implement more comprehensive file system operations
+    \item Add networking capabilities
+    \item Develop threading and concurrency primitives
+    \item Create higher-level abstractions for common operations
+    \item Improve documentation and examples
+    \item Add comprehensive testing framework
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Sustainability Connections (ODS)}
+  This project contributes to the following UN Sustainable Development Goals:
+  \begin{itemize}
+    \item \textbf{Goal 9: Industry, Innovation and Infrastructure}
+      \begin{itemize}
+        \item Contributing to technological innovation in systems software
+        \item Building resilient infrastructure for modern applications
+      \end{itemize}
+    \item \textbf{Goal 4: Quality Education}
+      \begin{itemize}
+        \item Open source nature promotes learning and collaboration
+        \item Provides educational resources for systems programming
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{References}
+  \begin{thebibliography}{9}
+    \bibitem{rustlang} The Rust Programming Language. \url{https://www.rust-lang.org/}
+
+    \bibitem{nostd} The Rust Embedded Book: A \texttt{no\_std} Rust Environment. \url{https://docs.rust-embedded.org/book/intro/no-std.html}
+
+    \bibitem{elf} Tool Interface Standard (TIS) Executable and Linking Format (ELF) Specification.
+
+    \bibitem{userspace} Userspace Project Repository. \url{https://github.com/ze-gois/rust_userspace}
+
+    \bibitem{rustonomicon} The Rustonomicon: The Dark Arts of Advanced and Unsafe Rust Programming. \url{https://doc.rust-lang.org/nomicon/}
+  \end{thebibliography}
+\end{frame}
+
+\begin{frame}{Acknowledgments}
+  \begin{itemize}
+    \item Federal University of Rio Grande do Norte (UFRN)
+    \item Research advisor and mentors
+    \item Rust community for their extensive documentation and support
+    \item Open source contributors who inspired this work
+  \end{itemize}
+
+  \vspace{1cm}
+  \centering
+  \large{Thank you!}
+
+  \vspace{0.5cm}
+  \small{Contact: ze.gois.00@gmail.com}
+\end{frame}
+
+\end{document}

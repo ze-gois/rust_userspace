@@ -1,0 +1,401 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[brazil]{babel}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+
+% Document geometry
+\geometry{a4paper, margin=2.5cm}
+
+% Titles formatting
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+% Configure code listings
+\definecolor{rustcolor}{RGB}{183, 65, 14}
+\definecolor{codebg}{RGB}{248, 248, 248}
+\definecolor{codeframe}{RGB}{220, 220, 220}
+
+\lstdefinestyle{rust}{
+  language=C, % Using C as base since Rust isn't directly supported in basic listings
+  basicstyle=\footnotesize\ttfamily,
+  backgroundcolor=\color{codebg},
+  commentstyle=\color{gray},
+  keywordstyle=\color{rustcolor},
+  stringstyle=\color{green!60!black},
+  breaklines=true,
+  showstringspaces=false,
+  frame=single,
+  framesep=3pt,
+  framerule=0.5pt,
+  rulecolor=\color{codeframe},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=5pt,
+  tabsize=2,
+  captionpos=b,
+}
+
+\lstset{style=rust}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  filecolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+\begin{document}
+
+% Title
+\begin{center}
+  \Large\textbf{Userspace: Uma Biblioteca Padrão para Aplicações em Userspace}\\
+  \vspace{0.5cm}
+  \normalsize José Gois\\
+  \texttt{ze.gois.00@gmail.com}\\
+  \vspace{0.3cm}
+  Universidade Federal do Rio Grande do Norte (UFRN)\\
+  \vspace{0.3cm}
+  Orientador: [Nome do Orientador]\\
+  \vspace{0.3cm}
+  \today
+\end{center}
+
+\vspace{1cm}
+
+% Abstract
+\begin{abstract}
+Este trabalho apresenta o desenvolvimento de uma biblioteca padrão chamada \textit{Userspace}, implementada em Rust, com o objetivo de fornecer abstrações seguras para aplicações em nível de sistema operacional. A biblioteca foi projetada para funcionar sem dependência da biblioteca padrão de Rust (\texttt{no\_std}), tornando-a adequada para ambientes de baixo nível e sistemas embarcados. Implementamos abstrações para diferentes arquiteturas de hardware (com foco inicial em x86\_64), gerenciamento de memória, manipulação de formatos de arquivo executáveis (ELF) e um sistema robusto de tratamento de erros. Os resultados mostram que é possível criar abstrações de alto nível para programação de sistemas mantendo a segurança de memória garantida pelo Rust, sem comprometer o desempenho. O projeto contribui para o campo de desenvolvimento de sistemas ao fornecer ferramentas modernas e seguras para programação de baixo nível.
+
+\vspace{0.5cm}
+\noindent\textbf{Palavras-chave:} Rust. Programação de Sistemas. Segurança de Memória. Arquitetura de Computadores. Formato ELF.
+\end{abstract}
+
+\begin{abstract}
+This work presents the development of a standard library called \textit{Userspace}, implemented in Rust, aiming to provide safe abstractions for system-level applications. The library was designed to work without depending on Rust's standard library (\texttt{no\_std}), making it suitable for low-level environments and embedded systems. We implemented abstractions for different hardware architectures (with initial focus on x86\_64), memory management, executable file format manipulation (ELF), and a robust error handling system. Results show that it is possible to create high-level abstractions for systems programming while maintaining the memory safety guaranteed by Rust, without compromising performance. The project contributes to the field of systems development by providing modern and secure tools for low-level programming.
+
+\vspace{0.5cm}
+\noindent\textbf{Keywords:} Rust. Systems Programming. Memory Safety. Computer Architecture. ELF Format.
+\end{abstract}
+
+\vspace{0.5cm}
+
+% ODS - Objetivos de Desenvolvimento Sustentável
+\noindent\textbf{ODS:} Este projeto relaciona-se com o Objetivo 9 (Indústria, Inovação e Infraestrutura) da Agenda 2030 da ONU, contribuindo para o desenvolvimento de infraestrutura tecnológica resiliente e promovendo a inovação em software de sistemas.
+
+\newpage
+
+% Introdução
+\section{Introdução}
+
+O desenvolvimento de software em nível de sistema operacional tradicionalmente envolve o uso de linguagens como C, que oferecem controle preciso sobre o hardware, mas carecem de garantias modernas de segurança de memória. Isso resulta em vulnerabilidades como buffer overflows, use-after-free e outros problemas que comprometem a segurança e estabilidade dos sistemas. A linguagem Rust surgiu como uma alternativa moderna, oferecendo o mesmo nível de controle de baixo nível com garantias de segurança de memória verificadas em tempo de compilação.
+
+No entanto, o desenvolvimento de aplicações em nível de sistema usando Rust ainda enfrenta desafios. A biblioteca padrão de Rust (\texttt{std}) depende de um sistema operacional subjacente, tornando-a inadequada para muitos cenários de programação de sistemas. Além disso, as abstrações existentes para programação em nível de sistema em Rust muitas vezes são fragmentadas ou incompletas.
+
+O projeto \textit{Userspace} visa preencher essa lacuna fornecendo uma biblioteca padrão completa para desenvolvimento de aplicações em userspace, independente do sistema operacional subjacente. A biblioteca implementa:
+
+\begin{itemize}
+    \item Abstrações seguras para diferentes arquiteturas de hardware (inicialmente x86\_64)
+    \item Gerenciamento de memória eficiente e seguro
+    \item Manipulação de formatos de arquivo executáveis (como ELF - Executable and Linkable Format)
+    \item Sistema robusto de tratamento de erros
+    \item Interface consistente entre diferentes plataformas
+\end{itemize}
+
+Um dos principais diferenciais do projeto é sua abordagem baseada em traços (traits) e tipos genéricos, que permite uma extensibilidade significativa enquanto mantém a segurança de tipos em tempo de compilação. Isso permite que desenvolvedores adicionem suporte para novas arquiteturas e sistemas operacionais sem modificar o código existente.
+
+A importância deste trabalho reside na crescente necessidade de software de sistema seguro e confiável em uma era onde sistemas embarcados, IoT e infraestrutura crítica são cada vez mais prevalentes. Ao fornecer abstrações seguras para programação de baixo nível, a biblioteca \textit{Userspace} contribui para o desenvolvimento de sistemas mais robustos e menos vulneráveis a falhas de segurança.
+
+\section{Método}
+
+O desenvolvimento da biblioteca \textit{Userspace} seguiu uma abordagem modular e baseada em componentes, com foco na segurança de tipos e memória. A metodologia adotada pode ser dividida nas seguintes etapas e componentes:
+
+\subsection{Ambiente de Desenvolvimento}
+
+O projeto foi desenvolvido utilizando Rust 2024 Edition, com recursos experimentais habilitados para suporte a expressões constantes genéricas e outros recursos avançados da linguagem. Utilizamos o sistema de compilação Cargo para gerenciamento de dependências e compilação.
+
+Configurações específicas foram aplicadas para permitir o desenvolvimento sem a biblioteca padrão de Rust:
+
+\begin{lstlisting}
+#![no_std]
+#![allow(incomplete_features)]
+#![feature(generic_const_exprs)]
+#![feature(generic_const_items)]
+\end{lstlisting}
+
+Um script de build personalizado (\texttt{build.rs}) foi implementado para gerenciar a compilação de componentes específicos da arquitetura e integração com código Assembly quando necessário.
+
+\subsection{Arquitetura do Software}
+
+A biblioteca foi estruturada em módulos claramente definidos, cada um responsável por uma área específica de funcionalidade:
+
+\begin{itemize}
+    \item \textbf{Core}: Definições básicas e estrutura da biblioteca
+    \item \textbf{Target}: Abstrações para arquiteturas de hardware e sistemas operacionais
+    \item \textbf{Memory}: Gerenciamento de memória, incluindo stack e alocação
+    \item \textbf{File}: Manipulação de formatos de arquivo, com foco em ELF
+    \item \textbf{Traits}: Interfaces abstratas definindo comportamentos comuns
+    \item \textbf{Types}: Tipos de dados específicos do domínio
+    \item \textbf{Result}: Sistema de tratamento de erros
+\end{itemize}
+
+Cada módulo foi desenvolvido com interfaces claras e documentadas, permitindo integração e extensibilidade.
+
+\subsection{Implementação de Abstrações de Arquitetura}
+
+Para abstrair diferenças entre arquiteturas de hardware, implementamos um sistema baseado em traits:
+
+\begin{enumerate}
+    \item Definição de traits genéricos representando capacidades comuns entre arquiteturas
+    \item Implementação específica para x86\_64 como prova de conceito
+    \item Utilização de tipos associados e constantes genéricas para representar diferenças entre arquiteturas
+\end{enumerate}
+
+Isso permite que o código cliente seja escrito de forma agnóstica à arquitetura subjacente, enquanto mantém a eficiência e especificidade necessárias para programação de sistemas.
+
+\subsection{Gerenciamento de Memória}
+
+O módulo de memória foi implementado com foco na segurança e eficiência:
+
+\begin{enumerate}
+    \item Manipulação segura da stack, permitindo acesso a argumentos e variáveis de ambiente
+    \item Sistema de páginas para alocação eficiente de memória
+    \item Abstrações seguras em torno de ponteiros brutos
+    \item Implementação de funcionalidades básicas de alocação sem dependência da biblioteca padrão
+\end{enumerate}
+
+\subsection{Manipulação de Formatos de Arquivo}
+
+Para permitir a leitura e interpretação de arquivos executáveis, implementamos suporte ao formato ELF:
+
+\begin{enumerate}
+    \item Parsing de cabeçalhos ELF conforme especificação
+    \item Abstrações para diferentes versões do formato (32/64 bits)
+    \item Validação de integridade e consistência
+    \item Acesso estruturado às seções e segmentos do arquivo
+\end{enumerate}
+
+\subsection{Metodologia de Teste}
+
+Para validar o funcionamento correto da biblioteca:
+
+\begin{enumerate}
+    \item Desenvolvimento de um binário de teste que utiliza as funcionalidades da biblioteca
+    \item Testes de integração para verificar comportamento em diferentes ambientes
+    \item Validação manual em ambiente controlado
+\end{enumerate}
+
+\section{Resultados e Discussão}
+
+Os resultados do desenvolvimento da biblioteca \textit{Userspace} demonstram a viabilidade de criar abstrações seguras para programação de sistemas usando Rust. A seguir, apresentamos os principais componentes implementados e discutimos sua relevância e implicações.
+
+\subsection{Estrutura da Biblioteca Core}
+
+O núcleo da biblioteca foi implementado com sucesso, fornecendo uma base sólida para os demais componentes:
+
+\begin{lstlisting}
+#![no_std]
+#![allow(incomplete_features)]
+#![allow(unused_assignments)]
+#![feature(generic_const_exprs)]
+#![feature(generic_const_items)]
+
+pub struct Origin;
+
+#[macro_use]
+pub mod macros;
+#[macro_use]
+pub mod target;
+pub mod file;
+pub mod license;
+pub mod memory;
+pub mod panic;
+pub mod result;
+pub mod traits;
+pub mod types;
+pub use result::{Error, Ok, Result};
+
+trait_implement_primitives!();
+\end{lstlisting}
+
+Esta estrutura demonstra uma organização clara e modular, permitindo que usuários importem apenas os componentes necessários para suas aplicações. A ausência de dependência da biblioteca padrão (\texttt{\#![no\_std]}) torna a biblioteca adequada para ambientes sem sistema operacional ou com recursos limitados.
+
+\subsection{Abstrações de Arquitetura}
+
+A implementação de abstrações de arquitetura demonstrou ser uma abordagem eficaz para lidar com diferenças entre plataformas. O sistema de módulos e traits permite que o código cliente seja escrito de forma portável, enquanto mantém o desempenho otimizado:
+
+\begin{lstlisting}
+pub mod architecture;
+pub mod operating_system;
+pub mod result;
+
+pub use architecture as arch;
+pub use architecture::Arch;
+pub use operating_system as os;
+pub use operating_system::Os;
+
+pub use result::{Error, Ok, Result};
+\end{lstlisting}
+
+A arquitetura x86\_64 foi implementada como prova de conceito, com suporte para suas características específicas, como manipulação de registradores e convenções de chamada.
+
+\subsection{Ponto de Entrada e Manipulação de Stack}
+
+Um dos componentes mais importantes da biblioteca é a manipulação segura da stack de programa, permitindo acesso aos argumentos de linha de comando e variáveis de ambiente:
+
+\begin{lstlisting}
+#[unsafe(no_mangle)]
+pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
+    let stack_pointer = crate::target::arch::Pointer(stack_pointer);
+
+    info!("eXecuting Executable and Linkable Format\n\n");
+
+    let argc = stack_pointer.0 as *const usize;
+    info!("argc={:?}\n", unsafe { *argc });
+    let stack = userspace::memory::Stack::from_pointer(stack_pointer);
+    // stack.print();
+    stack.arguments.print();
+
+    let arg0 = stack.arguments.get(0).unwrap();
+    let arg0_pointer = arg0.pointer;
+
+    if !arg0.pointer.0.is_null() {
+        unsafe {
+            let cstr = core::ffi::CStr::from_ptr(arg0.pointer.0 as *mut i8);
+            let self_path = cstr.to_str().unwrap();
+            userspace::info!("\n{:?}\n", self_path);
+            let identifier = userspace::file::format::elf::header::Identifier::from_path(self_path);
+            userspace::info!("{:?}\n", identifier);
+        }
+    }
+
+    // ...
+}
+\end{lstlisting}
+
+Esta implementação permite que programas acessem seus argumentos de linha de comando de forma segura, mesmo sem depender da biblioteca padrão. A abordagem baseada em tipos garante que erros comuns sejam detectados em tempo de compilação.
+
+\subsection{Gerenciamento de Memória}
+
+O módulo de gerenciamento de memória foi implementado com sucesso, fornecendo:
+
+\begin{lstlisting}
+pub mod page;
+pub mod stack;
+pub use stack::Stack;
+pub mod alloc;
+pub use alloc::alloc;
+\end{lstlisting}
+
+Este sistema permite alocação e gerenciamento de memória sem depender das facilidades da biblioteca padrão de Rust. As abstrações implementadas garantem segurança de memória enquanto mantêm o controle fino necessário para programação de sistemas.
+
+\subsection{Manipulação de Formatos de Arquivo}
+
+O suporte ao formato ELF foi implementado permitindo a leitura e interpretação de arquivos executáveis. Isso é crucial para funcionalidades como carregamento dinâmico de código e introspecção de executáveis.
+
+Nossa implementação permite a leitura de cabeçalhos ELF, identificação do tipo de arquivo e extração de metadados importantes, como mostrado no trecho de código do ponto de entrada.
+
+\subsection{Desafios e Soluções}
+
+Durante o desenvolvimento, enfrentamos vários desafios:
+
+\begin{enumerate}
+    \item \textbf{Programação sem biblioteca padrão}: A ausência da biblioteca padrão exigiu reimplementação de funcionalidades básicas. Solucionamos isso com implementações cuidadosas das primitivas necessárias.
+
+    \item \textbf{Segurança com operações de baixo nível}: Manter a segurança de memória em código de baixo nível foi desafiador. Utilizamos encapsulamento de operações inseguras em APIs seguras para mitigar riscos.
+
+    \item \textbf{Compatibilidade entre arquiteturas}: Criar abstrações que funcionassem em diferentes arquiteturas exigiu design cuidadoso. O sistema de traits e tipos genéricos permitiu resolver esse desafio.
+
+    \item \textbf{Tratamento de erros}: Sem exceções ou panics, implementamos um sistema de Result personalizado que preserva informações de erro relevantes.
+\end{enumerate}
+
+\subsection{Comparação com Trabalhos Relacionados}
+
+Comparando com bibliotecas existentes como libc e outras implementações em Rust:
+
+\begin{itemize}
+    \item A biblioteca \textit{Userspace} oferece garantias de segurança de memória superiores às implementações em C
+    \item Em comparação com outras bibliotecas Rust, nosso foco em portabilidade e independência de sistema operacional é distintivo
+    \item A abordagem baseada em traits permite maior extensibilidade que implementações monolíticas
+\end{itemize}
+
+\subsection{Limitações Atuais}
+
+Reconhecemos algumas limitações na implementação atual:
+
+\begin{itemize}
+    \item Suporte limitado a uma única arquitetura (x86\_64)
+    \item Implementação parcial do formato ELF
+    \item Ausência de algumas abstrações de alto nível que facilitariam o uso
+\end{itemize}
+
+Estas limitações serão abordadas em trabalhos futuros.
+
+\section{Conclusões}
+
+O desenvolvimento da biblioteca \textit{Userspace} demonstra a viabilidade de criar abstrações seguras e eficientes para programação de sistemas utilizando Rust. As principais conclusões deste trabalho são:
+
+\begin{enumerate}
+    \item É possível criar uma biblioteca para programação de sistemas que mantém as garantias de segurança de memória do Rust sem comprometer o desempenho ou a flexibilidade
+
+    \item A abordagem baseada em traits e tipos genéricos permite uma extensibilidade significativa, facilitando o suporte a novas arquiteturas e sistemas operacionais
+
+    \item Abstrações bem projetadas podem reduzir significativamente a complexidade da programação de baixo nível, mantendo o controle necessário sobre o hardware
+
+    \item A independência da biblioteca padrão (\texttt{no\_std}) permite que a biblioteca seja utilizada em uma ampla variedade de ambientes, desde sistemas embarcados até aplicações de servidor de alto desempenho
+\end{enumerate}
+
+Os resultados obtidos têm implicações importantes para o campo de desenvolvimento de sistemas:
+
+\begin{itemize}
+    \item Demonstram a viabilidade de usar linguagens modernas com garantias de segurança para programação tradicionalmente dominada por C
+    \item Fornecem uma base para o desenvolvimento de software de sistema mais seguro e confiável
+    \item Abrem caminho para mais inovação no campo de abstrações de baixo nível
+\end{itemize}
+
+Como trabalhos futuros, pretendemos:
+
+\begin{itemize}
+    \item Estender o suporte para mais arquiteturas, como ARM e RISC-V
+    \item Implementar interfaces completas para chamadas de sistema em diferentes sistemas operacionais
+    \item Desenvolver abstrações para concorrência e paralelismo
+    \item Criar ferramentas para debugging e profiling
+    \item Expandir o suporte para formatos de arquivo e protocolos de rede
+\end{itemize}
+
+A biblioteca \textit{Userspace} representa um passo importante na direção de tornar a programação de sistemas mais segura e acessível, contribuindo para o desenvolvimento de infraestruturas de software mais resilientes e confiáveis.
+
+\section{Referências}
+
+\begin{thebibliography}{99}
+\bibitem{rust} The Rust Programming Language Team. \textit{The Rust Programming Language}. Disponível em: \url{https://doc.rust-lang.org/book/}. Acesso em: 10 ago. 2023.
+
+\bibitem{nostd} The Rust Programming Language Team. \textit{The Embedded Rust Book - A `no\_std` Rust Environment}. Disponível em: \url{https://docs.rust-embedded.org/book/intro/no-std.html}. Acesso em: 12 ago. 2023.
+
+\bibitem{elf} Tool Interface Standards Committee. \textit{Executable and Linking Format (ELF) Specification}. Version 1.2, 1995.
+
+\bibitem{nomicon} The Rust Programming Language Team. \textit{The Rustonomicon}. Disponível em: \url{https://doc.rust-lang.org/nomicon/}. Acesso em: 15 ago. 2023.
+
+\bibitem{stable_features} The Rust Programming Language Team. \textit{Unstable Features}. Disponível em: \url{https://doc.rust-lang.org/unstable-book/}. Acesso em: 18 ago. 2023.
+
+\bibitem{libc} The GNU Project. \textit{The GNU C Library (glibc)}. Disponível em: \url{https://www.gnu.org/software/libc/}. Acesso em: 20 ago. 2023.
+
+\bibitem{musl} Rich Felker. \textit{musl libc}. Disponível em: \url{https://musl.libc.org/}. Acesso em: 22 ago. 2023.
+
+\bibitem{rustembedded} The Rust Embedded Working Group. \textit{The Embedded Rust Book}. Disponível em: \url{https://docs.rust-embedded.org/book/}. Acesso em: 25 ago. 2023.
+
+\bibitem{x86_64} Intel Corporation. \textit{Intel® 64 and IA-32 Architectures Software Developer's Manual}. 2023.
+\end{thebibliography}
+
+\end{document}
