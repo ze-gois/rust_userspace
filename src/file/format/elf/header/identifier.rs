@@ -99,7 +99,7 @@ impl Identifier {
     /// println!("{}",identifier);
     /// ```
     pub fn from_filepath(filepath: &str) -> crate::Result {
-        let file_descriptor = common::file::open_path(filepath);
+        let file_descriptor = crate::file::open(filepath);
         Self::from_file_descriptor(file_descriptor)
     }
 
@@ -112,35 +112,33 @@ impl Identifier {
     /// let identifier = lib::header::elf::Identifier::from_memmap(&map);
     /// println!("{}",identifier);
     /// ```
-    pub fn from_file_descriptor(
-        file_descriptor: isize,
-    ) -> core::result::Result<crate::dtype::EnumTyped, crate::dtype::Error> {
+    pub fn from_file_descriptor(file_descriptor: isize) -> crate::Result {
         let endianness = Endianness::LSB;
 
         crate::file::seek(file_descriptor, 0);
 
-        core::result::Result::Ok(Self {
-            magic: [
-                T::read(file_descriptor, endianness)?,
-                T::read(file_descriptor, endianness)?,
-                T::read(file_descriptor, endianness)?,
-                T::read(file_descriptor, endianness)?,
-            ],
-            class: T::read(file_descriptor, endianness)?,
-            endianness: T::read(file_descriptor, endianness)?,
-            version: T::read(file_descriptor, endianness)?,
-            osabi: T::read(file_descriptor, endianness)?,
-            abiversion: T::read(file_descriptor, endianness)?,
-            padding: T::read(file_descriptor, endianness)?,
-            unassigned: [
-                T::read(file_descriptor, endianness)?,
-                T::read(file_descriptor, endianness)?,
-                T::read(file_descriptor, endianness)?,
-                T::read(file_descriptor, endianness)?,
-                T::read(file_descriptor, endianness)?,
-            ],
-            nident: T::read(file_descriptor, endianness)?,
-        })
+        core::result::Result::Ok(crate::Ok::File(crate::file::Ok::Format(
+            crate::file::format::Ok::Elf(crate::file::format::elf::Ok::Header(
+                crate::file::format::elf::header::Ok::Identifier(Identifier {
+                    magic0: T::read(file_descriptor, true).unwrap(),
+                    magic1: T::read(file_descriptor, true).unwrap(),
+                    magic2: T::read(file_descriptor, true).unwrap(),
+                    magic3: T::read(file_descriptor, true).unwrap(),
+                    class: T::read(file_descriptor, true).unwrap(),
+                    endianness: T::read(file_descriptor, true).unwrap(),
+                    version: T::read(file_descriptor, true).unwrap(),
+                    osabi: T::read(file_descriptor, true).unwrap(),
+                    abiversion: T::read(file_descriptor, true).unwrap(),
+                    padding: T::read(file_descriptor, true).unwrap(),
+                    unassigned0: T::read(file_descriptor, true).unwrap(),
+                    unassigned1: T::read(file_descriptor, true).unwrap(),
+                    unassigned2: T::read(file_descriptor, true).unwrap(),
+                    unassigned3: T::read(file_descriptor, true).unwrap(),
+                    unassigned4: T::read(file_descriptor, true).unwrap(),
+                    nident: T::read(file_descriptor, true).unwrap(),
+                }),
+            )),
+        )))
     }
 
     /// Each byte of the array is indexed symbolically using the names in the Table
