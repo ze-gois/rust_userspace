@@ -1,47 +1,45 @@
 // use super::ELFType;
 
-crate::file_format_elf_dtype_define!(pub Null, usize); //Unsigned file offset
-crate::file_format_elf_dtype_define!(pub UChar, u8); //Unsigned file offset
-crate::file_format_elf_dtype_define!(pub SXWord, i64); //Unsigned program address
-crate::file_format_elf_dtype_define!(pub Half, u16); //Unsigned medium integer
-crate::file_format_elf_dtype_define!(pub SWord, i32); //Unsigned integer
-crate::file_format_elf_dtype_define!(pub XWord, u64); //Signed integer
-crate::file_format_elf_dtype_define!(pub Word, u32); //Unsigned long integer
-crate::file_format_elf_dtype_define!(pub Off, u64); //Signed long integer
-crate::file_format_elf_dtype_define!(pub Addr, u64); //Unsigned small integer
-
-crate::file_format_elf_dtype_impl!(
-    class_32, Class32, Null, UChar, SXWord, Half, SWord, XWord, Word, Off, Addr
-);
+crate::publish_types!(class_32, Class32,[
+    [pub Null, usize],
+    [pub UChar, u8],
+    [pub SXWord, i32],
+    [pub Half, u16],
+    [pub SWord, i32],
+    [pub XWord, u32],
+    [pub Word, u32],
+    [pub Off, u32],
+    [pub Addr, u32],
+]);
 
 result!(
     Ok;
     "Human Ok";
     usize;
     [
-        [0; NULL_OK;       Null;    Null;  "UChar_64";  "UChar_64"],
-        [1; UCHAR_64_OK;   UChar;   UChar;     "UChar_64";  "UChar_64"],
-        [2; SXWORD_64_OK;  SXWord;  SXWord;   "SXWord_64"; "SXWord_64"],
-        [3; HALF_64_OK;    Half;    Half;     "Half_64";   "Half_64"],
-        [4; SWORD_64_OK;   SWord;   SWord;    "SWord_64";  "SWord_64"],
-        [5; XWORD_64_OK;   XWord;   XWord;    "XWord_64";  "XWord_64"],
-        [6; WORD_64_OK;    Word;    Word;     "Word_64";   "Word_64"],
-        [7; OFF_64_OK;     Off;     Off;      "Off_64";    "Off_64"],
-        [8; ADDR_64_OK;    Addr;    Addr;     "Addr_64";   "Addr_64"]
+        [0; NULL_OK;       Null;    Null;  "UChar_32";  "UChar_32"],
+        [1; UCHAR_32_OK;   UChar;   UChar;     "UChar_32";  "UChar_32"],
+        [2; SXWORD_32_OK;  SXWord;  SXWord;   "SXWord_32"; "SXWord_32"],
+        [3; HALF_32_OK;    Half;    Half;     "Half_32";   "Half_32"],
+        [4; SWORD_32_OK;   SWord;   SWord;    "SWord_32";  "SWord_32"],
+        [5; XWORD_32_OK;   XWord;   XWord;    "XWord_32";  "XWord_32"],
+        [6; WORD_32_OK;    Word;    Word;     "Word_32";   "Word_32"],
+        [7; OFF_32_OK;     Off;     Off;      "Off_32";    "Off_32"],
+        [8; ADDR_32_OK;    Addr;    Addr;     "Addr_32";   "Addr_32"]
     ];
     Error;
     "Human error";
     usize;
     [
-        [0; NULL_ERROR;       Null;    Null;     "UChar_64";  "UChar_64"],
-        [1; UCHAR_64_ERROR;   UChar;   UChar;     "UChar_64";  "UChar_64"],
-        [2; SXWORD_64_ERROR;  SXWord;  SXWord;   "SXWord_64"; "SXWord_64"],
-        [3; HALF_64_ERROR;    Half;    Half;     "Half_64";   "Half_64"],
-        [4; SWORD_64_ERROR;   SWord;   SWord;    "SWord_64";  "SWord_64"],
-        [5; XWORD_64_ERROR;   XWord;   XWord;    "XWord_64";  "XWord_64"],
-        [6; WORD_64_ERROR;    Word;    Word;     "Word_64";   "Word_64"],
-        [7; OFF_64_ERROR;     Off;     Off;      "Off_64";    "Off_64"],
-        [8; ADDR_64_ERROR;    Addr;    Addr;     "Addr_64";   "Addr_64"]
+        [0; NULL_ERROR;       Null;    Null;     "UChar_32";  "UChar_32"],
+        [1; UCHAR_32_ERROR;   UChar;   UChar;     "UChar_32";  "UChar_32"],
+        [2; SXWORD_32_ERROR;  SXWord;  SXWord;   "SXWord_32"; "SXWord_32"],
+        [3; HALF_32_ERROR;    Half;    Half;     "Half_32";   "Half_32"],
+        [4; SWORD_32_ERROR;   SWord;   SWord;    "SWord_32";  "SWord_32"],
+        [5; XWORD_32_ERROR;   XWord;   XWord;    "XWord_32";  "XWord_32"],
+        [6; WORD_32_ERROR;    Word;    Word;     "Word_32";   "Word_32"],
+        [7; OFF_32_ERROR;     Off;     Off;      "Off_32";    "Off_32"],
+        [8; ADDR_32_ERROR;    Addr;    Addr;     "Addr_32";   "Addr_32"]
     ]
 );
 

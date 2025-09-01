@@ -1,10 +1,11 @@
 #[macro_export]
 macro_rules! r#struct {
-    ($vis:vis $struct_identifier:ident {$($field_visibility:vis $field_identifier:ident: $field_type:ty),*$(,)?}) => {
+    ($vis:vis $struct_identifier:ident { $($(#[$doc:meta])* $field_visibility:vis $field_identifier:ident: $field_type:ty),*$(,)?}) => {
 
         // #[repr(C,packed)]
         #[derive(Debug, Clone, Copy)]
         $vis struct $struct_identifier {
+            $($(#[$doc])*)*
             $($field_visibility $field_identifier: $field_type),*
         }
 

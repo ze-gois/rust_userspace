@@ -5,6 +5,7 @@ result!(
     [
         [1; USERSPACE_FILE_FORMAT_ELF_DEFAULT_OK; Default; usize; "ZE"; "Entry to ze"],
         [2; USERSPACE_FILE_FORMAT_ELF_DTYPE_OK; DType; crate::file::format::elf::dtype::Ok; "ZE"; "Entry to ze"],
+        [3; USERSPACE_FILE_FORMAT_ELF_HEADER_OK; Header; crate::file::format::elf::header::Ok; "ZE"; "Entry to ze"],
     ];
     Error;
     "Human error";
@@ -12,6 +13,7 @@ result!(
     [
         [1; USERSPACE_FILE_FORMAT_ELF_DEFAULT_ERROR; Default; usize; "ZE"; "Entry to ze"],
         [2; USERSPACE_FILE_FORMAT_ELF_DTYPE_ERROR; DType; crate::file::format::elf::dtype::Error; "ZE"; "Entry to ze"],
+        [3; USERSPACE_FILE_FORMAT_ELF_HEADER_ERROR; Header; crate::file::format::elf::header::Error; "ZE"; "Entry to ze"],
     ]
 );
 

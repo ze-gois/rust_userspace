@@ -1,2 +1,2 @@
 pub mod identifier;
-// pub use identifier::Identifier;
+pub use identifier::Identifier;

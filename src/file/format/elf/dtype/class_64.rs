@@ -1,18 +1,16 @@
 // use super::ELFType;
 
-crate::file_format_elf_dtype_define!(pub Null, usize); //Unsigned file offset
-crate::file_format_elf_dtype_define!(pub UChar, u8); //Unsigned file offset
-crate::file_format_elf_dtype_define!(pub SXWord, i64); //Unsigned program address
-crate::file_format_elf_dtype_define!(pub Half, u16); //Unsigned medium integer
-crate::file_format_elf_dtype_define!(pub SWord, i32); //Unsigned integer
-crate::file_format_elf_dtype_define!(pub XWord, u64); //Signed integer
-crate::file_format_elf_dtype_define!(pub Word, u32); //Unsigned long integer
-crate::file_format_elf_dtype_define!(pub Off, u64); //Signed long integer
-crate::file_format_elf_dtype_define!(pub Addr, u64); //Unsigned small integer
-
-crate::file_format_elf_dtype_impl!(
-    class_64, Class64, Null, UChar, SXWord, Half, SWord, XWord, Word, Off, Addr
-);
+crate::publish_types!(class_64, Class64,[
+    [pub Null, usize],
+    [pub UChar, u8],
+    [pub SXWord, i64],
+    [pub Half, u16],
+    [pub SWord, i32],
+    [pub XWord, u64],
+    [pub Word, u32],
+    [pub Off, u64],
+    [pub Addr, u64],
+]);
 
 result!(
     Ok;
