@@ -1,4 +1,4 @@
-result!(
+ample::result!(
     Ok;
     "Human Ok";
     usize;

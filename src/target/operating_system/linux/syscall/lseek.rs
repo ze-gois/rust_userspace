@@ -13,9 +13,9 @@ pub fn lseek(fd: i32, offset: i64, whence: i32) -> crate::Result {
 }
 
 pub mod ok {
-    r#struct!(OkSyscallMUnMap { value: usize });
+    ample::r#struct!(OkSyscallMUnMap { value: usize });
 
-    result!( Ok; "MUnMap Ok"; usize; [
+    ample::result!( Ok; "MUnMap Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
     ]);
 
@@ -27,7 +27,7 @@ pub mod ok {
 }
 
 pub mod error {
-    result!(Error; "MUnMap error"; usize; [
+    ample::result!(Error; "MUnMap error"; usize; [
         [1; ERROR; Default; usize; "Error"; "Something wicked this way comes"],
     ]);
 

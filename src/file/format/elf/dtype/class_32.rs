@@ -12,7 +12,7 @@ crate::publish_types!(class_32, Class32,[
     [pub Addr, u32],
 ]);
 
-result!(
+ample::result!(
     Ok;
     "Human Ok";
     usize;

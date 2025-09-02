@@ -24,7 +24,7 @@ pub fn syscall6(n: usize, a1: usize, a2: usize, a3: usize, a4: usize, a5: usize,
 }
 
 pub mod ok {
-    result!(
+    ample::result!(
         Ok;
         "Human Ok";
         usize;
@@ -41,7 +41,7 @@ pub mod ok {
 }
 
 pub mod error {
-    result!(
+    ample::result!(
         Error;
         "Human error";
         usize;

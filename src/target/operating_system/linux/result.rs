@@ -1,5 +1,5 @@
 pub mod ok {
-    result!(
+    ample::result!(
         Ok;
         "Human Ok";
         usize;
@@ -17,7 +17,7 @@ pub mod ok {
 }
 
 pub mod error {
-    result!(
+    ample::result!(
         Error;
         "Human error";
         usize;

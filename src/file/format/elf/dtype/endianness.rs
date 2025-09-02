@@ -1,5 +1,5 @@
 pub mod endianness {
-    enum_labeled!(
+    ample::enum_labeled!(
         pub Endianness,
         u8,
         "endianness",

@@ -21,7 +21,7 @@ use dtype::UChar as T;
 // /// The remaining bytes are reserved for future use, and should be set to zero.
 // #[repr(C)]
 // #[derive(Copy, Debug)]
-crate::r#struct!(pub Identifier {
+ample::r#struct!(pub Identifier {
     /// # Array with “magic numbers” identifying the file as an ELF object file.
     ///
     /// They contain the characters ‘\x7f’, ‘E’, ‘L’, and ‘F’, respectively.

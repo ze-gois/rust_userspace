@@ -1,5 +1,5 @@
 #[rustfmt::skip]
-enum_flag!(Flag, usize, "Map Flags",[
+ample::enum_flag!(Flag, usize, "Map Flags",[
     [0x01;      Shared;         SHARED;          "Shared";         "Shared"],
     [0x02;      Private;        PRIVATE;         "Private";        "Private"],
     [0x03;      SharedValidate; SHAREDVALIDATE;  "SharedValidate"; "SharedValidate"],

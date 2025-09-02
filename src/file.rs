@@ -27,13 +27,13 @@ pub use result::{Error, Ok, Result};
 // }
 
 pub mod a {
-    r#struct!(pub Information {
+    ample::r#struct!(pub Information {
        size : usize,
     });
 }
 pub use a::Information;
 
-r#struct!(pub File {
+ample::r#struct!(pub File {
     pub descriptor : isize,
     pub information : Information
     // pub memory : Option<*const u8>

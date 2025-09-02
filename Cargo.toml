@@ -27,6 +27,7 @@ path = "src/entry.rs"
 test = false
 
 [dependencies]
+ample = { path = "../ample" }
 
 [workspace.dependencies]
 userspace = { path = "." }

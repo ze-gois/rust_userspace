@@ -1,5 +1,5 @@
 pub mod ok {
-    result!( Ok; "Human Ok"; usize; [
+    ample::result!( Ok; "Human Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
         [1; X86_64SYSCALL_OK; X86_64Syscall; super::super::syscall::Ok; "Ok"; "All good"],
     ]);
@@ -13,7 +13,7 @@ pub mod ok {
 
 // diferente
 pub mod error {
-    result!(Error; "Human error"; usize; [
+    ample::result!(Error; "Human error"; usize; [
         [1; ERROR; Default; usize; "Error"; "Something wicked this way comes"],
         [0; OK; X86_64Syscall; super::super::syscall::Error; "Ok"; "All good"],
     ]);

@@ -14,7 +14,7 @@ pub fn read(file_descriptor: isize, byte_buffer: *const u8, byte_length: usize) 
 }
 
 pub mod ok {
-    result!( Ok; "MUnMap Ok"; usize; [
+    ample::result!( Ok; "MUnMap Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
     ]);
 
@@ -26,7 +26,7 @@ pub mod ok {
 }
 
 pub mod error {
-    result!(Error; "MUnMap error"; usize; [
+    ample::result!(Error; "MUnMap error"; usize; [
         [1; ERROR;          Default;            usize; "Error"; "Something wicked this way comes"],
         [4;   EINTR;        Interrupted;      usize;            "EINTR";     "System call was interrupted"],
         [5;   EIO;          IOError;          usize;              "EIO";       "Input/output error"],

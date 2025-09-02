@@ -18,7 +18,7 @@ pub fn syscall2(n: usize, a1: usize, a2: usize) -> crate::Result {
 }
 
 pub mod ok {
-    result!(
+    ample::result!(
         Ok;
         "Human Ok";
         usize;
@@ -35,7 +35,7 @@ pub mod ok {
 }
 
 pub mod error {
-    result!(
+    ample::result!(
         Error;
         "Human error";
         usize;

@@ -1,7 +1,7 @@
 pub type Pci8 = *const i8;
 pub type Pcu = *const usize;
 
-r#struct!(pub Pair{
+ample::r#struct!(pub Pair{
     key: Pcu,
     value: Pci8
 });
@@ -29,7 +29,7 @@ macro_rules! bring_atype {
             ),* $(,)?
         ]
     ) => {
-        enum_labeled!(
+        ample::enum_labeled!(
             $enum_vis $enum_identifier,
             $enum_discriminant_type,
             $enum_label,
@@ -48,7 +48,7 @@ macro_rules! bring_atype {
         );
 
         pub mod unit {
-            enum_labeled!(
+            ample::enum_labeled!(
                 pub TypeUnit,
                 $enum_discriminant_type,
                 $enum_label,

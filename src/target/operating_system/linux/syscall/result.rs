@@ -1,5 +1,5 @@
 pub mod ok {
-    result!( Ok; "MMap Ok"; usize; [
+    ample::result!( Ok; "MMap Ok"; usize; [
         [0; OK;         Default; usize; "Ok"; "All good"],
         [2; ERR_CLOSE;  Close;    super::super::close::Ok;        "close";     "E_CLOSE" ],
         [3; ERR_LSEEK;  LSeek;    super::super::lseek::Ok;        "lseek";     "E_LSEEK"],
@@ -20,7 +20,7 @@ pub mod ok {
 }
 
 pub mod error {
-    result!(Error; "MMap error"; usize; [
+    ample::result!(Error; "MMap error"; usize; [
         [1; ERROR;      Default; usize; "Error"; "Something wicked this way comes"],
         [2; ERR_CLOSE;  Close;    super::super::close::Error;        "close";     "E_CLOSE" ],
         [3; ERR_LSEEK;  LSeek;    super::super::lseek::Error;        "lseek";     "E_LSEEK"],

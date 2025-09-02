@@ -29,8 +29,9 @@ macro_rules! file_format_elf_dtype_define {
             }
         }
 
-        $crate::trait_implement_partial_eq!($name, $inner, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, usize, isize);
-        $crate::trait_implement_from!($name, $inner, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, usize, isize);
+        ample::trait_implement_partial_eq!($name, $inner, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, usize, isize);
+        ample::trait_implement_from!($name, $inner, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, usize, isize);
+
     }
 }
 pub use file_format_elf_dtype_define;

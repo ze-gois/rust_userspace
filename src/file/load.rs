@@ -1,7 +1,7 @@
 use crate::target::os::syscall;
 
 pub fn load(filepath: &str) -> Option<(isize, syscall::fstat::Stat, *const u8)> {
-    let filepath = crate::types::string::terminate(filepath);
+    let filepath = ample::types::string::terminate(filepath);
     let license_mapping;
     'opening: loop {
         #[allow(unused_assignments)]

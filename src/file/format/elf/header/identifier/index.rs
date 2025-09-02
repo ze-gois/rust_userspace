@@ -1,4 +1,4 @@
-enum_labeled!(
+ample::enum_labeled!(
     pub Index,
     u8,
     "Identifier byte-byte identification",

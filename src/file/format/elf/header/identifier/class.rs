@@ -1,4 +1,4 @@
-enum_labeled!(
+ample::enum_labeled!(
     pub Class,
     u8,
     "Class of pointer power",

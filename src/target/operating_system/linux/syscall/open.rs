@@ -17,9 +17,9 @@ pub fn open(file_pathname: *const u8, flags: i32, mode: i32) -> crate::Result {
 }
 
 pub mod ok {
-    r#struct!(OkSyscallMUnMap { value: usize });
+    ample::r#struct!(OkSyscallMUnMap { value: usize });
 
-    result!( Ok; "MUnMap Ok"; usize; [
+    ample::result!( Ok; "MUnMap Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
         [98; OPENAT;  OPENAT; usize; "OPENAT"; "WAITING"],
         [99; OPENAT4;  OPENAT4; usize; "OPENAT"; "WAITING"],
@@ -33,7 +33,7 @@ pub mod ok {
 }
 
 pub mod error {
-    result!(Error; "MUnMap error"; usize; [
+    ample::result!(Error; "MUnMap error"; usize; [
         [1;  ERROR;         Default;              usize;  "Error"; "Something wicked this way comes"],
         [2;  ENOENT;        FileNotFound;       usize;  "ENOENT";       "File not found"],
         [13; EACCES;        PermissionDenied;   usize;  "EACCES";       "Permission denied"],
