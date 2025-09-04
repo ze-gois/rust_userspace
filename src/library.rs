@@ -16,6 +16,7 @@ pub mod memory;
 pub mod panic;
 pub mod result;
 pub use result::{Error, Ok, Result};
+pub mod traits;
 
 ample::trait_implement_primitives!();
 // impl<F: traits::Bytes<crate::target::Origin, crate::target::Origin>>

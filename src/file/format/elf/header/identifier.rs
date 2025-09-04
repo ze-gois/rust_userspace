@@ -20,74 +20,77 @@ use dtype::UChar as T;
 // /// The bytes of this array that have defined meanings are detailed below.
 // /// The remaining bytes are reserved for future use, and should be set to zero.
 // #[repr(C)]
-// #[derive(Copy, Debug)]
-ample::r#struct!(pub Identifier {
-    /// # Array with “magic numbers” identifying the file as an ELF object file.
-    ///
-    /// They contain the characters ‘\x7f’, ‘E’, ‘L’, and ‘F’, respectively.
-    /// pub magic: [T; 4],
-    pub magic0: T,
-    pub magic1: T,
-    pub magic2: T,
-    pub magic3: T,
-    /// # Identifies the class of the object file, or its capacity.
-    ///
-    /// |Name|Value|Meaning|
-    /// |:-:|:-:|:-:|
-    /// |C32|1|32-bit objects|
-    /// |C64|2|64-bit objects|
-    ///
-    /// The class of the ELF file is independent of the data model assumed by the
-    /// object code. The EI_CLASS field identifies the file format; a processor-
-    /// specific flag in the e_flags field, described below, may be used to identify
-    /// the application’s data model if the processory supports multiple models.
-    pub class: T,
-    /// # Data encoding of the object file data structures
-    ///
-    /// *endianness was originaly identified with "data"*
-    ///
-    /// |Name|Value|Meaning|
-    /// |:-:|:-:|:-:|
-    /// |None|0|Invalid endianness|
-    /// |LSB|1|Little-endian|
-    /// |MSB|2|Big-endian|
-    ///
-    /// For the convenience of code that examines ELF object files at run time
-    /// (e.g., the dynamic loader), it is intended that the data encoding of the
-    /// object file will match that of the running program. For environments that
-    /// support both byte orders, a processor-specific flag in the e_flags field,
-    /// described below, may be used to identify the application’s operating mode.
-    pub endianness: T,
-    /// # Version of the object file format.
-    ///
-    /// Currently, this field has the value
-    /// CURRENT, which is defined with the value 1.
-    pub version: T,
-    /// # Operating system and ABI for which the object is prepared.
-    ///
-    /// Some fields in other ELF structures have flags and values
-    /// that have environment-specific meanings; the interpretation of
-    /// those fields is determined by the value of this field.
-    pub osabi: T,
-    /// # ABI version for which the object is prepared.
-    ///
-    /// Used to distinguish incompatible versions of an ABI.
-    /// Interpretation of this version number is dependent on the ABI identified
-    /// by the EI_OSABI field.
-    /// For applications conforming to the System V ABI, third edition, this field
-    /// should contain 0.
-    pub abiversion: T,
-    /// # Padding bytes
-    pub padding: T,
-    /// # Five unsassigned bytes
-    pub unassigned0: T,
-    pub unassigned1: T,
-    pub unassigned2: T,
-    pub unassigned3: T,
-    pub unassigned4: T,
-    /// # Number of bytes of identifier
-    pub nident: T,
-});
+
+ample::r#struct!(
+    #[derive(Debug)]
+    pub Identifier {
+        /// # Array with “magic numbers” identifying the file as an ELF object file.
+        ///
+        /// They contain the characters ‘\x7f’, ‘E’, ‘L’, and ‘F’, respectively.
+        /// pub magic: [T; 4],
+        pub magic0: T,
+        pub magic1: T,
+        pub magic2: T,
+        pub magic3: T,
+        /// # Identifies the class of the object file, or its capacity.
+        ///
+        /// |Name|Value|Meaning|
+        /// |:-:|:-:|:-:|
+        /// |C32|1|32-bit objects|
+        /// |C64|2|64-bit objects|
+        ///
+        /// The class of the ELF file is independent of the data model assumed by the
+        /// object code. The EI_CLASS field identifies the file format; a processor-
+        /// specific flag in the e_flags field, described below, may be used to identify
+        /// the application’s data model if the processory supports multiple models.
+        pub class: T,
+        /// # Data encoding of the object file data structures
+        ///
+        /// *endianness was originaly identified with "data"*
+        ///
+        /// |Name|Value|Meaning|
+        /// |:-:|:-:|:-:|
+        /// |None|0|Invalid endianness|
+        /// |LSB|1|Little-endian|
+        /// |MSB|2|Big-endian|
+        ///
+        /// For the convenience of code that examines ELF object files at run time
+        /// (e.g., the dynamic loader), it is intended that the data encoding of the
+        /// object file will match that of the running program. For environments that
+        /// support both byte orders, a processor-specific flag in the e_flags field,
+        /// described below, may be used to identify the application’s operating mode.
+        pub endianness: T,
+        /// # Version of the object file format.
+        ///
+        /// Currently, this field has the value
+        /// CURRENT, which is defined with the value 1.
+        pub version: T,
+        /// # Operating system and ABI for which the object is prepared.
+        ///
+        /// Some fields in other ELF structures have flags and values
+        /// that have environment-specific meanings; the interpretation of
+        /// those fields is determined by the value of this field.
+        pub osabi: T,
+        /// # ABI version for which the object is prepared.
+        ///
+        /// Used to distinguish incompatible versions of an ABI.
+        /// Interpretation of this version number is dependent on the ABI identified
+        /// by the EI_OSABI field.
+        /// For applications conforming to the System V ABI, third edition, this field
+        /// should contain 0.
+        pub abiversion: T,
+        /// # Padding bytes
+        pub padding: T,
+        /// # Five unsassigned bytes
+        pub unassigned0: T,
+        pub unassigned1: T,
+        pub unassigned2: T,
+        pub unassigned3: T,
+        pub unassigned4: T,
+        /// # Number of bytes of identifier
+        pub nident: T,
+    }
+);
 
 impl Identifier {
     /// Loads ELF Identifier from a compliant path

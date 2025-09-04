@@ -13,6 +13,7 @@ pub trait TypeTrait {
 
 macro_rules! bring_atype {
     (
+        $(#[$($struct_doc:meta),*])*
         $enum_vis:vis $enum_identifier:ident,
         $enum_discriminant_type:ty,
         $enum_label:expr,
@@ -30,6 +31,7 @@ macro_rules! bring_atype {
         ]
     ) => {
         ample::enum_labeled!(
+            $(#[$($struct_doc),*])*
             $enum_vis $enum_identifier,
             $enum_discriminant_type,
             $enum_label,
@@ -108,6 +110,7 @@ macro_rules! bring_atype {
 }
 
 bring_atype! (
+    #[derive(Debug)]
     pub Type,
     usize,
     "AT_TYPE",
