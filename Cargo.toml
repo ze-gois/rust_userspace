@@ -26,6 +26,9 @@ name = "userspace"
 path = "src/entry.rs"
 test = false
 
+# Removed standalone binary target for image_example
+# The functionality is now provided as a module inside the library
+
 [dependencies]
 ample = { path = "../ample" }
 

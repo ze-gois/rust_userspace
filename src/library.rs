@@ -10,7 +10,9 @@ ample::r#struct!(
 
 #[macro_use]
 pub mod target;
+pub mod examples;
 pub mod file;
+pub mod image;
 pub mod license;
 pub mod memory;
 pub mod panic;
