@@ -4,7 +4,9 @@
 #![feature(generic_const_exprs)]
 #![feature(generic_const_items)]
 
-pub struct Origin;
+ample::r#struct!(
+    pub Origin {}
+);
 
 #[macro_use]
 pub mod target;

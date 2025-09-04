@@ -1,5 +1,5 @@
 use crate::target::os::syscall;
-
+use ample::traits::Allocatable;
 pub fn load(filepath: &str) -> Option<(isize, syscall::fstat::Stat, *const u8)> {
     let filepath = ample::string::terminate(filepath);
     let license_mapping;

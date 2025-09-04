@@ -1,4 +1,5 @@
 use crate::target::os::syscall;
+pub mod primitives;
 
 pub fn alloc<T>(n: usize) -> *mut T {
     let t_size = core::mem::size_of::<T>();
