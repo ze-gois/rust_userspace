@@ -12,7 +12,7 @@ hooking!(MMAP);
 #[rustfmt::skip]
 pub fn mmap(addr: *mut u8, length: usize, prot: i32, flags: i32, fd: i32, offset: i64) -> crate::Result {
     let arch_result = Arch::syscall6(
-        9,
+        NUMBER,
         addr as usize,
         length,
         prot as usize,
