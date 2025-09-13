@@ -14,7 +14,6 @@ pub fn write(file_descriptor: isize, byte_buffer: *const u8, byte_count: usize) 
 }
 
 pub mod ok {
-    ample::r#struct!(OkSyscallMUnMap { value: usize });
 
     ample::result!( Ok; "MUnMap Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],

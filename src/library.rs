@@ -5,7 +5,7 @@
 #![feature(generic_const_items)]
 
 ample::r#struct!(
-    pub Origin {}
+    pub struct Origin {}
 );
 
 #[macro_use]

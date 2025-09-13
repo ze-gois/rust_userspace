@@ -9,7 +9,6 @@ pub fn munmap(addr: *mut u8, length: usize) -> crate::Result {
 }
 
 pub mod ok {
-    ample::r#struct!(OkSyscallMUnMap { value: usize });
 
     ample::result!( Ok; "MUnMap Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],

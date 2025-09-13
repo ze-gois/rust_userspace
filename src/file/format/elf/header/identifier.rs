@@ -23,7 +23,7 @@ use dtype::UChar as T;
 
 ample::r#struct!(
     #[derive(Debug)]
-    pub Identifier {
+    pub struct Identifier {
         /// # Array with “magic numbers” identifying the file as an ELF object file.
         ///
         /// They contain the characters ‘\x7f’, ‘E’, ‘L’, and ‘F’, respectively.

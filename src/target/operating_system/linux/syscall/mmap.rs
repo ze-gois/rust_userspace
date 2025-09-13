@@ -25,7 +25,6 @@ pub fn mmap(addr: *mut u8, length: usize, prot: i32, flags: i32, fd: i32, offset
 }
 
 pub mod ok {
-    ample::r#struct!(OkSyscallMUnMap { value: usize });
 
     ample::result!( Ok; "MUnMap Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],

@@ -1,5 +1,5 @@
 #[macro_use]
-pub mod publishing;
+pub mod syscall_modules;
 #[macro_use]
 pub mod hooking;
 #[macro_use]

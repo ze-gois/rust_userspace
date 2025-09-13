@@ -1,10 +1,12 @@
 pub type Pci8 = *const i8;
 pub type Pcu = *const usize;
 
-ample::r#struct!(pub Pair{
-    key: Pcu,
-    value: Pci8
-});
+ample::r#struct!(
+    pub struct Pair {
+        key: Pcu,
+        value: Pci8,
+    }
+);
 
 pub trait TypeTrait {
     fn from_pair(etype: *const usize, p: *const u8) -> Self;

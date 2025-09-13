@@ -11,7 +11,6 @@ pub fn mprotect(addr: *mut u8, len: usize, prot: i32) -> crate::Result {
 }
 
 pub mod ok {
-    ample::r#struct!(OkSyscallMUnMap { value: usize });
 
     ample::result!( Ok; "MUnMap Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
