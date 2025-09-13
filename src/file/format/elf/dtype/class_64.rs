@@ -1,16 +1,20 @@
 // use super::ELFType;
 
-crate::publish_types!(class_64, Class64,[
-    [pub Null, usize],
-    [pub UChar, u8],
-    [pub SXWord, i64],
-    [pub Half, u16],
-    [pub SWord, i32],
-    [pub XWord, u64],
-    [pub Word, u32],
-    [pub Off, u64],
-    [pub Addr, u64],
-]);
+crate::file_format_elf_dtype_class!(
+    class_64,
+    Class64,
+    [
+        [pub Null, usize],
+        [pub UChar, u8],
+        [pub SXWord, i64],
+        [pub Half, u16],
+        [pub SWord, i32],
+        [pub XWord, u64],
+        [pub Word, u32],
+        [pub Off, u64],
+        [pub Addr, u64],
+    ]
+);
 
 ample::result!(
     Ok;

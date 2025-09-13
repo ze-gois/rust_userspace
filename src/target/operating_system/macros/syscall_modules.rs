@@ -64,4 +64,4 @@ macro_rules! syscall_modules {
     };
 }
 
-pub use publish_syscalls;
+pub use syscall_modules;

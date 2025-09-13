@@ -2,10 +2,154 @@
 #![no_main]
 #![allow(unused_variables)]
 #![allow(unused_imports)]
+#![allow(incomplete_features)]
+#![allow(unused_assignments)]
+#![feature(generic_const_exprs)]
+#![feature(generic_const_items)]
+#![feature(const_trait_impl)]
+#![feature(fundamental)]
 
 use userspace;
 use userspace::info;
 use userspace::target;
+
+use ample::traits::Bytes;
+
+pub struct Origin;
+
+ample::trait_implement_primitives!();
+
+ample::r#struct!(
+    #[derive(Debug)]
+    pub struct Example {
+        pub field1: u8,
+        pub field2: *const u32,
+    }
+);
+
+fn demo_original_heap_allocation() {
+    use userspace::memory::heap::Allocating;
+
+    info!("=== Demonstrating Basic Heap Allocation ===");
+
+    let slice = u16::allocate_slice(10);
+
+    info!("Allocated slice: {:?}", slice);
+
+    slice[5] = 42;
+
+    info!("Modified slice: {:?}", slice);
+
+    u16::deallocate_slice(slice);
+
+    let a = 3u32;
+    let b: *const u32 = &a;
+
+    let e = Example {
+        field1: 3,
+        field2: b,
+    };
+
+    info!("Example struct: {:?}", e);
+
+    let b = e.to_le_bytes();
+
+    info!("Struct as bytes: {:?}", b);
+
+    let x = Example::from_le_bytes(b);
+
+    info!("Struct from bytes: {:?}", x);
+
+    info!(
+        "Pointer bytes: {:?}",
+        <*const u32 as Bytes<Origin>>::to_le_bytes(&x.field2)
+    );
+
+    let ee = e.clone();
+
+    info!("Original struct: {:?}", e);
+    info!("Cloned struct: {:?}", ee);
+
+    info!("{:?}", Example::default());
+}
+
+fn demo_linked_list() {
+    info!("\n=== Demonstrating Linked List with Heap Allocation ===");
+
+    // Create a new linked list using our SystemAllocator
+    let mut list =
+        ample::list::LinkedList::<Origin, u32, userspace::memory::heap::Allocator>::new();
+
+    info!("Created empty list");
+    info!("List length: {}", list.numerosity());
+
+    // Add elements to the list
+    list.push_back(10);
+    list.push_back(20);
+    list.push_back(30);
+    list.push_front(5);
+
+    info!("Added elements: 5, 10, 20, 30");
+    info!("List length: {}", list.numerosity());
+
+    // Iterate through the list
+    info!("List contents: ");
+    for value in list.iter() {
+        info!("{} ", value);
+    }
+    info!("\n");
+
+    // Access front and back
+    info!("Front element: {:?}", list.front());
+    info!("Back element: {:?}", list.back());
+
+    // Pop elements
+    info!("Popped from front: {:?}", list.pop_front());
+    info!("Popped from front: {:?}", list.pop_front());
+
+    info!("List length after popping: {}", list.numerosity());
+
+    // Check if we can still iterate
+    info!("Remaining contents: ");
+    for value in list.iter() {
+        info!("{} ", value);
+    }
+    info!("\n");
+
+    // Clear the list
+    list.clear();
+    info!("Cleared list, length: {}", list.numerosity());
+
+    // Using a custom struct in the list
+    info!("\n=== Demonstrating Linked List with Custom Type ===");
+
+    // Define a custom struct using the struct macro
+    ample::r#struct!(
+        #[derive(Debug)]
+        pub struct Person {
+            pub id: u32,
+            pub age: u8,
+        }
+    );
+
+    let mut person_list =
+        ample::list::LinkedList::<Origin, Person, userspace::memory::heap::Allocator>::new();
+
+    person_list.push_back(Person { id: 1, age: 25 });
+    person_list.push_back(Person { id: 2, age: 30 });
+    person_list.push_back(Person { id: 3, age: 40 });
+
+    info!("Added 3 persons to list");
+    info!("List length: {}", person_list.numerosity());
+
+    // Print front person
+    if let Some(person) = person_list.front() {
+        info!("First person: id={}, age={}", person.id, person.age);
+    }
+
+    // The list will automatically deallocate all nodes when it goes out of scope
+    info!("Lists will be automatically cleaned up when they go out of scope");
+}
 
 #[unsafe(no_mangle)]
 pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
@@ -27,12 +171,17 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
             let cstr = core::ffi::CStr::from_ptr(arg0.pointer.0 as *mut i8);
             let self_path = cstr.to_str().unwrap();
             userspace::info!("\n{:?}\n", self_path);
-            let identifier = userspace::file::format::elf::header::Identifier::from_path(self_path);
-            userspace::info!("{:?}\n", identifier);
+            // let identifier = userspace::file::format::elf::header::Identifier::from_path(self_path);
+            // userspace::info!("{:?}\n", identifier);
         }
     }
 
-    let uchar32 = userspace::file::format::elf::dtype::class_32::UChar(3);
+    // let uchar32 = userspace::file::format::elf::dtype::class_32::UChar(3);
+
+    demo_original_heap_allocation();
+
+    // New example of linked list with heap allocation
+    demo_linked_list();
 
     panic!();
 }

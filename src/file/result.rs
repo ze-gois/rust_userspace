@@ -4,14 +4,14 @@ ample::result!(
     usize;
     [
         [1; USERSPACE_FILE_DEFAULT_OK; Default; usize; "ZE"; "Entry to ze"],
-        [2; USERSPACE_FILE_FORMAT_OK; Format; crate::file::format::Ok; "ZE"; "Entry to ze"],
+        // [2; USERSPACE_FILE_FORMAT_OK; Format; crate::file::format::Ok; "ZE"; "Entry to ze"],
     ];
     Error;
     "Human error";
     usize;
     [
         [1; USERSPACE_FILE_DEFAULT_ERROR; Default; usize; "ZE"; "Entry to ze"],
-        [2; USERSPACE_FILE_FORMAT_ERROR; Format; crate::file::format::Error; "ZE"; "Entry to ze"],
+        // [2; USERSPACE_FILE_FORMAT_ERROR; Format; crate::file::format::Error; "ZE"; "Entry to ze"],
     ]
 );
 
