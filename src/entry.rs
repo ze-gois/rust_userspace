@@ -30,15 +30,15 @@ ample::r#struct!(
 fn demo_original_heap_allocation() {
     use userspace::memory::heap::Allocating;
 
-    info!("=== Demonstrating Basic Heap Allocation ===");
+    info!("=== Demonstrating Basic Heap Allocation ===\n");
 
     let slice = u16::allocate_slice(10);
 
-    info!("Allocated slice: {:?}", slice);
+    info!("Allocated slice: {:?}\n", slice);
 
     slice[5] = 42;
 
-    info!("Modified slice: {:?}", slice);
+    info!("Modified slice: {:?}\n", slice);
 
     u16::deallocate_slice(slice);
 
@@ -50,15 +50,15 @@ fn demo_original_heap_allocation() {
         field2: b,
     };
 
-    info!("Example struct: {:?}", e);
+    info!("Example struct: {:?}\n", e);
 
     let b = e.to_le_bytes();
 
-    info!("Struct as bytes: {:?}", b);
+    info!("Struct as bytes: {:?}\n", b);
 
     let x = Example::from_le_bytes(b);
 
-    info!("Struct from bytes: {:?}", x);
+    info!("Struct from bytes: {:?}\n", x);
 
     info!(
         "Pointer bytes: {:?}",
@@ -67,21 +67,25 @@ fn demo_original_heap_allocation() {
 
     let ee = e.clone();
 
-    info!("Original struct: {:?}", e);
-    info!("Cloned struct: {:?}", ee);
+    info!("Original struct: {:?}\n", e);
+    info!("Cloned struct: {:?}\n", ee);
 
-    info!("{:?}", Example::default());
+    info!("{:?}\n", Example::default());
 }
 
 fn demo_linked_list() {
-    info!("\n=== Demonstrating Linked List with Heap Allocation ===");
+    info!("\n=== Demonstrating Linked List with Heap Allocation ===\n");
 
     // Create a new linked list using our SystemAllocator
-    let mut list =
-        ample::list::LinkedList::<Origin, u32, userspace::memory::heap::Allocator>::new();
+    let mut list = ample::list::LinkedList::<
+        Origin,
+        userspace::Origin,
+        u32,
+        userspace::memory::heap::Allocator,
+    >::new();
 
-    info!("Created empty list");
-    info!("List length: {}", list.numerosity());
+    info!("Created empty list\n");
+    info!("List length: {}\n", list.numerosity());
 
     // Add elements to the list
     list.push_back(10);
@@ -89,39 +93,39 @@ fn demo_linked_list() {
     list.push_back(30);
     list.push_front(5);
 
-    info!("Added elements: 5, 10, 20, 30");
-    info!("List length: {}", list.numerosity());
+    info!("Added elements: 5, 10, 20, 30\n");
+    info!("List length: {}\n", list.numerosity());
 
     // Iterate through the list
-    info!("List contents: ");
+    info!("List contents: \n");
     for value in list.iter() {
-        info!("{} ", value);
+        info!("{} \n", value);
     }
-    info!("\n");
+    info!("\n\n");
 
     // Access front and back
-    info!("Front element: {:?}", list.front());
-    info!("Back element: {:?}", list.back());
+    info!("Front element: {:?}\n", list.front());
+    info!("Back element: {:?}\n", list.back());
 
     // Pop elements
-    info!("Popped from front: {:?}", list.pop_front());
-    info!("Popped from front: {:?}", list.pop_front());
+    info!("Popped from front: {:?}\n", list.pop_front());
+    info!("Popped from front: {:?}\n", list.pop_front());
 
-    info!("List length after popping: {}", list.numerosity());
+    info!("List length after popping: {}\n", list.numerosity());
 
     // Check if we can still iterate
-    info!("Remaining contents: ");
+    info!("Remaining contents: \n");
     for value in list.iter() {
-        info!("{} ", value);
+        info!("{} \n", value);
     }
-    info!("\n");
+    info!("\n\n");
 
     // Clear the list
     list.clear();
-    info!("Cleared list, length: {}", list.numerosity());
+    info!("Cleared list, length: {}\n", list.numerosity());
 
     // Using a custom struct in the list
-    info!("\n=== Demonstrating Linked List with Custom Type ===");
+    info!("\n=== Demonstrating Linked List with Custom Type ===\n");
 
     // Define a custom struct using the struct macro
     ample::r#struct!(
@@ -132,33 +136,37 @@ fn demo_linked_list() {
         }
     );
 
-    let mut person_list =
-        ample::list::LinkedList::<Origin, Person, userspace::memory::heap::Allocator>::new();
+    let mut person_list = ample::list::LinkedList::<
+        Origin,
+        userspace::Origin,
+        Person,
+        userspace::memory::heap::Allocator,
+    >::new();
 
     person_list.push_back(Person { id: 1, age: 25 });
     person_list.push_back(Person { id: 2, age: 30 });
     person_list.push_back(Person { id: 3, age: 40 });
 
-    info!("Added 3 persons to list");
-    info!("List length: {}", person_list.numerosity());
+    info!("Added 3 persons to list\n");
+    info!("List length: {}\n", person_list.numerosity());
 
     // Print front person
     if let Some(person) = person_list.front() {
-        info!("First person: id={}, age={}", person.id, person.age);
+        info!("First person: id={}, age={}\n", person.id, person.age);
     }
 
     // The list will automatically deallocate all nodes when it goes out of scope
-    info!("Lists will be automatically cleaned up when they go out of scope");
+    info!("Lists will be automatically cleaned up when they go out of scope\n");
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
     let stack_pointer = crate::target::arch::Pointer(stack_pointer);
 
-    info!("eXecuting Executable and Linkable Format\n\n");
+    info!("eXecuting Executable and Linkable Format\n\n\n");
 
     let argc = stack_pointer.0 as *const usize;
-    info!("argc={:?}\n", unsafe { *argc });
+    info!("argc={:?}\n\n", unsafe { *argc });
     let stack = userspace::memory::Stack::from_pointer(stack_pointer);
     // stack.print();
     stack.arguments.print();
@@ -170,9 +178,9 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
         unsafe {
             let cstr = core::ffi::CStr::from_ptr(arg0.pointer.0 as *mut i8);
             let self_path = cstr.to_str().unwrap();
-            userspace::info!("\n{:?}\n", self_path);
+            userspace::info!("\n{:?}\n\n", self_path);
             // let identifier = userspace::file::format::elf::header::Identifier::from_path(self_path);
-            // userspace::info!("{:?}\n", identifier);
+            // userspace::info!("{:?}\n\n", identifier);
         }
     }
 
