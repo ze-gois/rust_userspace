@@ -1,6 +1,6 @@
 ample::result!(
     Ok;
-    "Human Ok";
+    "AHuman Ok";
     usize;
     [
         [1; USERSPACE_DEFAULT_OK; Default; usize; "ZE"; "Entry to ze"],

@@ -5,6 +5,7 @@
 #![feature(generic_const_items)]
 
 ample::r#struct!(
+    #[derive(Debug)]
     pub struct Origin {}
 );
 

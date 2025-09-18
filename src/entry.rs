@@ -15,6 +15,7 @@ use userspace::target;
 
 use ample::traits::Bytes;
 
+#[derive(Debug)]
 pub struct Origin;
 
 ample::trait_implement_primitives!();
@@ -136,12 +137,44 @@ fn demo_linked_list() {
         }
     );
 
-    let mut person_list = ample::list::LinkedList::<
-        Origin,
-        userspace::Origin,
-        Person,
-        userspace::memory::heap::Allocator,
-    >::new();
+    macro_rules! lister {
+        ($identifier:ident) => {
+            ample::list::LinkedList::<
+                Origin,
+                userspace::Origin,
+                $identifier,
+                userspace::memory::heap::Allocator,
+            >::new()
+        };
+    }
+
+    // let mut person_list = ample::list::LinkedList::<
+    //     Origin,
+    //     userspace::Origin,
+    //     Person,
+    //     userspace::memory::heap::Allocator,
+    // >::new();
+
+    let mut person_list = lister!(Person);
+
+    ample::r#enum!(
+        u8;
+        #[derive(Debug)]
+        pub enum Our {
+            A(u8) = 3,
+            B(Person) = 1,
+            C(Example) = 2,
+        }
+    );
+
+    let mut our_list = lister!(Our);
+    our_list.push_back(Our::A(1));
+    our_list.push_back(Our::B(Person { id: 1, age: 25 }));
+    our_list.push_back(Our::A(2));
+    our_list.push_back(Our::B(Person { id: 2, age: 30 }));
+    our_list.push_back(Our::A(3));
+    our_list.push_back(Our::B(Person { id: 3, age: 40 }));
+    info!("========> {:?}\n", our_list);
 
     person_list.push_back(Person { id: 1, age: 25 });
     person_list.push_back(Person { id: 2, age: 30 });
@@ -168,7 +201,7 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
     let argc = stack_pointer.0 as *const usize;
     info!("argc={:?}\n\n", unsafe { *argc });
     let stack = userspace::memory::Stack::from_pointer(stack_pointer);
-    // stack.print();
+    stack.print();
     stack.arguments.print();
 
     let arg0 = stack.arguments.get(0).unwrap();
@@ -186,10 +219,10 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
 
     // let uchar32 = userspace::file::format::elf::dtype::class_32::UChar(3);
 
-    demo_original_heap_allocation();
+    // demo_original_heap_allocation();
 
     // New example of linked list with heap allocation
-    demo_linked_list();
+    // demo_linked_list();
 
     panic!();
 }
