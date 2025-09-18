@@ -219,10 +219,10 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
 
     // let uchar32 = userspace::file::format::elf::dtype::class_32::UChar(3);
 
-    // demo_original_heap_allocation();
+    demo_original_heap_allocation();
 
     // New example of linked list with heap allocation
-    // demo_linked_list();
+    demo_linked_list();
 
     panic!();
 }
