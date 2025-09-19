@@ -67,7 +67,7 @@ fn demo_original_heap_allocation() {
 
     info!(
         "Pointer bytes: {:?}",
-        <*const u32 as Bytes<Origin>>::to_le_bytes(&x.field2)
+        <*const u32 as Bytes<Origin, Destination>>::to_le_bytes(&x.field2)
     );
 
     let ee = e.clone();
