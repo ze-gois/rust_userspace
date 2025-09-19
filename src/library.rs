@@ -19,28 +19,49 @@ pub mod result;
 pub use result::{Error, Ok, Result};
 pub mod traits;
 
-//ample::trait_implement_primitives!();
+ample::trait_implement_primitives!();
 
-impl<A: ample::traits::Bytes<ample::Origin>> crate::traits::Bytes<Origin> for A {
-    const BYTES_SIZE: usize = A::BYTES_SIZE;
-    const BYTES_ALIGN: usize = A::BYTES_ALIGN;
+impl ample::traits::Bytes<crate::Origin> for u8 {
+    const BYTES_SIZE: usize = 1;
+    const BYTES_ALIGN: usize = 1;
 
     fn from_bytes(
         bytes: [u8; <Self as crate::traits::Bytes<Origin>>::BYTES_SIZE],
-        endianness: bool,
-    ) -> Self
-    where
-        [u8; <A as ample::traits::Bytes<ample::Origin>>::BYTES_SIZE]:,
-    {
-        let mut ample_bytes = [0u8; <A as ample::traits::Bytes<ample::Origin>>::BYTES_SIZE];
-        ample_bytes.copy_from_slice(&bytes);
-        <A as ample::traits::Bytes<ample::Origin>>::from_bytes(ample_bytes, endianness)
+        _endianness: bool,
+    ) -> Self {
+        bytes[0]
     }
 
     fn to_bytes(
         &self,
-        endianness: bool,
+        _endianness: bool,
     ) -> [u8; <Self as crate::traits::Bytes<Origin>>::BYTES_SIZE] {
-        <A as ample::traits::Bytes<ample::Origin>>::to_bytes(self, endianness)
+        [*self]
     }
 }
+
+// ample::trait_bytes_naturalize!(ample, crate);
+
+// impl<A: ample::traits::Bytes<ample::Origin>> crate::traits::Bytes<Origin> for A {
+//     const BYTES_SIZE: usize = A::BYTES_SIZE;
+//     const BYTES_ALIGN: usize = A::BYTES_ALIGN;
+
+//     fn from_bytes(
+//         bytes: [u8; <Self as crate::traits::Bytes<Origin>>::BYTES_SIZE],
+//         endianness: bool,
+//     ) -> Self
+//     where
+//         [u8; <A as ample::traits::Bytes<ample::Origin>>::BYTES_SIZE]:,
+//     {
+//         let mut ample_bytes = [0u8; <A as ample::traits::Bytes<ample::Origin>>::BYTES_SIZE];
+//         ample_bytes.copy_from_slice(&bytes);
+//         <A as ample::traits::Bytes<ample::Origin>>::from_bytes(ample_bytes, endianness)
+//     }
+
+//     fn to_bytes(
+//         &self,
+//         endianness: bool,
+//     ) -> [u8; <Self as crate::traits::Bytes<Origin>>::BYTES_SIZE] {
+//         <A as ample::traits::Bytes<ample::Origin>>::to_bytes(self, endianness)
+//     }
+// }

@@ -1,3 +1,5 @@
+use ample::traits::AllocatableResult;
+
 use crate::Origin;
 
 ample::r#struct!(
@@ -27,10 +29,8 @@ impl ample::traits::Allocatable<Origin> for Allocator {
                 crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::MMap(
                     crate::target::os::syscall::mmap::Ok::Default(m),
                 )),
-            ))) => core::result::Result::Ok(crate::Ok::Memory(crate::memory::Ok::Allocate(
-                crate::memory::allocation::Ok::Allocate(
-                    crate::memory::allocation::heap::Ok::Allocator(m as *mut Self),
-                ),
+            ))) => core::result::Result::Ok(crate::Ok::Memory(crate::memory::Ok::HeapAllocate(
+                m as *mut Self,
             ))),
             _ => panic!("Failed to allocate memory"),
         }
@@ -40,10 +40,8 @@ impl ample::traits::Allocatable<Origin> for Allocator {
         match crate::target::os::syscall::munmap(ptr as *mut u8, numerosity_of_bytes) {
             _ => true,
         };
-        core::result::Result::Ok(crate::Ok::Memory(crate::memory::Ok::Allocate(
-            crate::memory::allocation::Ok::Allocate(
-                crate::memory::allocation::heap::Ok::Deallocator(ptr),
-            ),
+        core::result::Result::Ok(crate::Ok::Memory(crate::memory::Ok::HeapAllocate(
+            ptr as *mut Self,
         )))
     }
 }
@@ -62,7 +60,10 @@ where
 {
     fn allocate(numerosity: usize) -> *mut T {
         let numerosity_of_bytes = numerosity * T::BYTES_SIZE + T::BYTES_ALIGN;
-        <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity_of_bytes) as *mut T
+        match <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity_of_bytes) {
+            Ok(m) => m.as_ptr() as *mut T,
+            _ => core::ptr::null_mut(),
+        }
     }
 
     /// Deallocate an array previously allocated with allocate_array
@@ -74,10 +75,13 @@ where
 
         // let _ = crate::target::os::syscall::munmap(ptr as *mut u8, aligned_size);
         // true
-        <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
+        match <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
             ptr as *mut Allocator,
             aligned_size,
-        )
+        ) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
     }
 
     /// Allocate and initialize a slice
@@ -104,21 +108,31 @@ where
     T: Default,
 {
     fn allocate(numerosity: usize) -> *mut T {
-        <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity * T::BYTES_SIZE)
-            as *mut T
+        match <Allocator as ample::traits::Allocatable<Origin>>::allocate(
+            numerosity * T::BYTES_SIZE,
+        ) {
+            Ok(ptr) => ptr.as_ptr() as *mut T,
+            Err(_) => core::ptr::null_mut(),
+        }
     }
 
     /// Deallocate an array previously allocated with allocate_array
     fn deallocate(ptr: *mut T, numerosity: usize) -> bool {
-        <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
+        match <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
             ptr as *mut Allocator,
             numerosity,
-        )
+        ) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
     }
 
     /// Allocate and initialize a slice
     fn allocate_slice(numerosity: usize) -> &'static mut [T] {
-        let ptr = <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity) as *mut T;
+        let ptr = match <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity) {
+            Ok(ptr) => ptr.as_ptr() as *mut T,
+            Err(_) => core::ptr::null_mut(),
+        };
 
         for i in 0..numerosity {
             unsafe {
@@ -130,71 +144,70 @@ where
     }
 
     fn deallocate_slice(slice: &mut [T]) -> bool {
-        <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
+        match <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
             slice.as_mut_ptr() as *mut Allocator,
             slice.len(),
-        )
+        ) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
     }
 }
 
-ample::result!(
-    Ok;
-    "Allocate Ok";
-    usize;
-    [
-        [1; USERSPACE_MEMORY_ALLOCATION_HEAP_DEFAULT_OK; Default; AllocatorPointer; "ZE"; "Entry to ze"],
-        [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATOR_DEFAULT_OK; Allocator; AllocatorPointer; "ZE"; "Entry to ze"],
-        [3; USERSPACE_MEMORY_ALLOCATION_HEAP_DEALLOCATOR_DEFAULT_OK; Deallocator; AllocatorPointer; "ZE"; "Entry to ze"],
-        // [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATING_OK; Allocator; crate::memory::allocation::heap::Ok; "ZE"; "Entry to ze"],
-    ];
-    Error;
-    "Allocator Ok";
-    usize;
-    [
-        [1; USERSPACE_MEMORY_ALLOCATION_HEAP_DEFAULT_ERROR; Default; AllocatorPointer; "ZE"; "Entry to ze"],
-        [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATOR_DEFAULT_ERROR; Allocator; AllocatorPointer; "ZE"; "Entry to ze"],
-        [3; USERSPACE_MEMORY_ALLOCATION_HEAP_DEALLOCATOR_DEFAULT_ERROR; Deallocator; AllocatorPointer; "ZE"; "Entry to ze"],
-    ]
-);
+// pub type StringAllocator = *const u8;
+
+// ample::result!(
+//     Ok;
+//     "Allocate Ok";
+//     usize;
+//     [
+//         [1; USERSPACE_MEMORY_ALLOCATION_HEAP_DEFAULT_OK; Default; AllocatorPointer; "ZE"; "Entry to ze"],
+//         [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATOR_DEFAULT_OK; Allocator; AllocatorPointer; "ZE"; "Entry to ze"],
+//         [3; USERSPACE_MEMORY_ALLOCATION_HEAP_DEALLOCATOR_DEFAULT_OK; Deallocator; AllocatorPointer; "ZE"; "Entry to ze"],
+//         [4; USERSPACE_MEMORY_ALLOCATION_HEAP_STRING_DEFAULT_OK; String; StringAllocator; "ZE"; "Entry to ze"],
+//         // [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATING_OK; Allocator; crate::memory::Ok; "ZE"; "Entry to ze"],
+//     ];
+//     Error;
+//     "Allocator Ok";
+//     usize;
+//     [
+//         [1; USERSPACE_MEMORY_ALLOCATION_HEAP_DEFAULT_ERROR; Default; AllocatorPointer; "ZE"; "Entry to ze"],
+//         [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATOR_DEFAULT_ERROR; Allocator; AllocatorPointer; "ZE"; "Entry to ze"],
+//         [3; USERSPACE_MEMORY_ALLOCATION_HEAP_DEALLOCATOR_DEFAULT_ERROR; Deallocator; AllocatorPointer; "ZE"; "Entry to ze"],
+//     ]
+// );
 
 impl ample::traits::AllocatableResult for crate::Ok {
     fn as_ptr(&self) -> *mut u8 {
         match self {
-            crate::Ok::Memory(crate::memory::Ok::Allocate(
-                crate::memory::allocation::Ok::Allocate(
-                    crate::memory::allocation::heap::Ok::Default(m),
-                ),
-            )) => *m as *mut u8,
+            crate::Ok::Memory(crate::memory::Ok::HeapAllocate(m)) => *m as *mut u8,
             _ => core::ptr::null_mut(),
         }
     }
 
     fn from_raw(raw: *mut u8) -> Self {
-        crate::Ok::Memory(crate::memory::Ok::Allocate(
-            crate::memory::allocation::Ok::Allocate(crate::memory::allocation::heap::Ok::Default(
-                core::ptr::null_mut(),
-            )),
-        ))
+        crate::Ok::Memory(crate::memory::Ok::HeapAllocate(raw as *mut Allocator))
     }
 }
 
 impl ample::traits::AllocatableResult for crate::Error {
     fn as_ptr(&self) -> *mut u8 {
         match self {
-            crate::Error::Memory(crate::memory::Error::Allocate(
-                crate::memory::allocation::Error::Allocate(
-                    crate::memory::allocation::heap::Error::Default(m),
-                ),
-            )) => *m as *mut u8,
             _ => core::ptr::null_mut(),
+            // core::result::Result::Err(crate::Error::Memory(crate::memory::Error::Allocate(
+            //     crate::memory::heap::Error::Allocate(
+            //         crate::memory::Error::Default(m),
+            //     ),
+            // ))) => *m as *mut u8,
         }
     }
 
-    fn from_raw(raw: *mut u8) -> Self {
-        crate::Error::Memory(crate::memory::Error::Allocate(
-            crate::memory::allocation::Error::Allocate(
-                crate::memory::allocation::heap::Error::Default(core::ptr::null_mut()),
-            ),
-        ))
+    fn from_raw(_raw: *mut u8) -> Self {
+        crate::Error::Error(3)
+        // crate::Error::Memory(crate::memory::Error::Allocate(
+        //     crate::memory::heap::Error::Allocate(
+        //         crate::memory::Error::Default(core::ptr::null_mut()),
+        //     ),
+        // ))
     }
 }

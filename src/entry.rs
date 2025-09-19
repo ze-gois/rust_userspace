@@ -13,11 +13,15 @@ use userspace;
 use userspace::info;
 use userspace::target;
 
+use ample::traits;
 use ample::traits::Bytes;
 
 #[derive(Debug)]
 pub struct Origin;
 
+// Import traits from the ample crate to make them available in the macro expansion
+#[allow(unused_imports)]
+use ample::traits::*;
 ample::trait_implement_primitives!();
 
 ample::r#struct!(
@@ -29,7 +33,7 @@ ample::r#struct!(
 );
 
 fn demo_original_heap_allocation() {
-    use userspace::memory::allocate::heap::Allocating;
+    use userspace::memory::heap::Allocating;
 
     info!("=== Demonstrating Basic Heap Allocation ===\n");
 
@@ -82,7 +86,7 @@ fn demo_linked_list() {
         Origin,
         userspace::Origin,
         u32,
-        userspace::memory::allocate::heap::Allocator,
+        userspace::memory::heap::Allocator,
     >::new();
 
     info!("Created empty list\n");
@@ -143,7 +147,7 @@ fn demo_linked_list() {
                 Origin,
                 userspace::Origin,
                 $identifier,
-                userspace::memory::allocate::heap::Allocator,
+                userspace::memory::heap::Allocator,
             >::new()
         };
     }
@@ -198,24 +202,24 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
 
     info!("eXecuting Executable and Linkable Format\n\n\n");
 
-    let argc = stack_pointer.0 as *const usize;
-    info!("argc={:?}\n\n", unsafe { *argc });
-    let stack = userspace::memory::Stack::from_pointer(stack_pointer);
-    stack.print();
-    stack.arguments.print();
+    // let argc = stack_pointer.0 as *const usize;
+    // info!("argc={:?}\n\n", unsafe { *argc });
+    // let stack = userspace::memory::Stack::from_pointer(stack_pointer);
+    // stack.print();
+    // stack.arguments.print();
 
-    let arg0 = stack.arguments.get(0).unwrap();
-    let arg0_pointer = arg0.pointer;
+    // let arg0 = stack.arguments.get(0).unwrap();
+    // let arg0_pointer = arg0.pointer;
 
-    if !arg0.pointer.0.is_null() {
-        unsafe {
-            let cstr = core::ffi::CStr::from_ptr(arg0.pointer.0 as *mut i8);
-            let self_path = cstr.to_str().unwrap();
-            userspace::info!("\n{:?}\n\n", self_path);
-            // let identifier = userspace::file::format::elf::header::Identifier::from_path(self_path);
-            // userspace::info!("{:?}\n\n", identifier);
-        }
-    }
+    // if !arg0.pointer.0.is_null() {
+    //     unsafe {
+    //         let cstr = core::ffi::CStr::from_ptr(arg0.pointer.0 as *mut i8);
+    //         let self_path = cstr.to_str().unwrap();
+    //         userspace::info!("\n{:?}\n\n", self_path);
+    //         // let identifier = userspace::file::format::elf::header::Identifier::from_path(self_path);
+    //         // userspace::info!("{:?}\n\n", identifier);
+    //     }
+    // }
 
     // let uchar32 = userspace::file::format::elf::dtype::class_32::UChar(3);
 

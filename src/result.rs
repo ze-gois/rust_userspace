@@ -4,7 +4,7 @@ ample::result!(
     usize;
     [
         [1; USERSPACE_DEFAULT_OK; Default; usize; "ZE"; "Entry to ze"],
-        [2; USERSPACE_AMPLE_OK; Ample; ample::Ok; "ZE"; "Entry to ze"],
+        // [2; USERSPACE_AMPLE_OK; Ample; ample::Ok; "ZE"; "Entry to ze"],
         [3; USERSPACE_MEMORY_OK; Memory; crate::memory::Ok; "ZE"; "Entry to ze"],
         [4; USERSPACE_TARGET_OK; Target; crate::target::Ok; "ZE"; "Entry to ze"],
         [5; USERSPACE_FILE_OK; File; crate::file::Ok; "ZE"; "Entry to ze"],
