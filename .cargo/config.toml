@@ -8,6 +8,8 @@ build-std = ["core", "alloc"]
 
 [target.x86_64-unknown-none]
 rustflags = [
+    "-Z",
+    "macro-backtrace",
     # Use static relocation model for bare-metal
     "-C",
     "relocation-model=static",

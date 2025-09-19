@@ -6,7 +6,9 @@ pub use x86_64::*;
 pub mod macros;
 pub mod traits;
 
-pub struct Arch;
+ample::r#struct!(
+    pub struct Arch {}
+);
 
 impl core::ops::Sub for Pointer {
     type Output = usize;

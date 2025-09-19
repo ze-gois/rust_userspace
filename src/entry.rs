@@ -29,7 +29,7 @@ ample::r#struct!(
 );
 
 fn demo_original_heap_allocation() {
-    use userspace::memory::heap::Allocating;
+    use userspace::memory::allocate::heap::Allocating;
 
     info!("=== Demonstrating Basic Heap Allocation ===\n");
 
@@ -82,7 +82,7 @@ fn demo_linked_list() {
         Origin,
         userspace::Origin,
         u32,
-        userspace::memory::heap::Allocator,
+        userspace::memory::allocate::heap::Allocator,
     >::new();
 
     info!("Created empty list\n");
@@ -143,7 +143,7 @@ fn demo_linked_list() {
                 Origin,
                 userspace::Origin,
                 $identifier,
-                userspace::memory::heap::Allocator,
+                userspace::memory::allocate::heap::Allocator,
             >::new()
         };
     }

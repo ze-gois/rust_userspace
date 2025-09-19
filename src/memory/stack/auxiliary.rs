@@ -5,6 +5,8 @@ pub mod atype;
 pub use atype::Type;
 pub use atype::TypeTrait;
 
+use crate::memory::allocate::heap::Allocating;
+
 #[repr(C)]
 #[derive(Debug)]
 pub struct List {
@@ -53,7 +55,7 @@ impl List {
             return (List::default(), crate::target::arch::Pointer(latter_pointer));
         }
 
-        let list_pointer = crate::memory::alloc::<Entry>(counter);
+        let list_pointer = Entry::allocate(counter);
 
         unsafe {
             // preenche cada Entry in-place

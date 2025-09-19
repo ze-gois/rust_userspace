@@ -42,7 +42,8 @@ impl List {
             return (List::default(), Pointer(auxiliary_pointer));
         }
 
-        let list_pointer = crate::memory::alloc::<Entry>(counter);
+        use crate::memory::allocate::heap::Allocating;
+        let list_pointer = Entry::allocate(counter);
 
         unsafe {
             // preenche cada Entry in-place

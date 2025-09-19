@@ -1,9 +1,11 @@
-#[repr(C)]
-pub struct Entry {
-    pub prev: *mut Entry,
-    pub next: *mut Entry,
-    pub pointer: crate::target::arch::Pointer, // armazenar o ponteiro cru
-}
+ample::r#struct!(
+    #[repr(C)]
+    pub struct Entry {
+        pub prev: *mut Entry,
+        pub next: *mut Entry,
+        pub pointer: crate::target::arch::Pointer, // armazenar o ponteiro cru
+    }
+);
 
 impl Entry {
     pub fn from_pointer(pointer: crate::target::arch::Pointer) -> Entry {

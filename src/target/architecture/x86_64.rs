@@ -16,8 +16,10 @@ pub use result::{Error, Ok, Result};
 
 pub type PointerType = *const u64;
 
-#[derive(Debug, Clone, Copy)]
-pub struct Pointer(pub PointerType);
+ample::tuple!(
+    #[derive(Debug, Clone, Copy)]
+    pub struct Pointer(0: pub PointerType)
+);
 
 impl Pointer {
     pub fn current() -> Self {
