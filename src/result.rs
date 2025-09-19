@@ -4,8 +4,10 @@ ample::result!(
     usize;
     [
         [1; USERSPACE_DEFAULT_OK; Default; usize; "ZE"; "Entry to ze"],
-        [2; USERSPACE_TARGET_OK; Target; crate::target::Ok; "ZE"; "Entry to ze"],
-        [3; USERSPACE_FILE_OK; File; crate::file::Ok; "ZE"; "Entry to ze"],
+        [2; USERSPACE_AMPLE_OK; Ample; ample::Ok; "ZE"; "Entry to ze"],
+        [3; USERSPACE_MEMORY_OK; Memory; crate::memory::Ok; "ZE"; "Entry to ze"],
+        [4; USERSPACE_TARGET_OK; Target; crate::target::Ok; "ZE"; "Entry to ze"],
+        [5; USERSPACE_FILE_OK; File; crate::file::Ok; "ZE"; "Entry to ze"],
         [99; STDOUT; StdoutOk; usize; "ZE"; "Entry to ze"],
     ];
     Error;
@@ -13,8 +15,9 @@ ample::result!(
     usize;
     [
         [1; ERROR; Error; usize; "ZE"; "Entry to ze"],
-        [2; USERSPACE_TARGET_ERROR; Target; crate::target::Error; "ZE"; "Entry to ze"],
-        [3; USERSPACE_FILE_ERROR; File; crate::file::Error; "ZE"; "Entry to ze"],
+        [2; USERSPACE_MEMORY_ERROR; Memory; crate::memory::Error; "ZE"; "Entry to ze"],
+        [3; USERSPACE_TARGET_ERROR; Target; crate::target::Error; "ZE"; "Entry to ze"],
+        [4; USERSPACE_FILE_ERROR; File; crate::file::Error; "ZE"; "Entry to ze"],
         [99; STDOUT_ERRPR; Stdout; usize; "ZE"; "Entry to ze"],
     ]
 );

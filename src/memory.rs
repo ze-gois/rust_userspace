@@ -1,9 +1,11 @@
+pub mod allocation;
 pub mod page;
+pub mod result;
 pub mod stack;
-pub use stack::Stack;
-pub mod allocate;
 // pub use allocate::allocate;
 
+pub use result::{Error, Ok};
+pub use stack::Stack;
 // pub mod macros;
 
 pub struct Origin {}

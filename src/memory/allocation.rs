@@ -1,7 +1,9 @@
 pub mod heap;
 pub mod primitives;
 pub use heap::Allocator as Heap;
+pub mod result;
 
+pub use result::{Error, Ok};
 // use crate::target::os::syscall;
 
 // pub fn alloc<T>(n: usize) -> *mut T {
