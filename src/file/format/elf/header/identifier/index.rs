@@ -1,5 +1,5 @@
 ample::enum_labeled!(
-    pub Index,
+    pub enum Index,
     u8,
     "Identifier byte-byte identification",
 [

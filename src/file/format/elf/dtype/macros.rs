@@ -1,39 +1,41 @@
 #[macro_export]
 macro_rules! file_format_elf_dtype_class {
-    ($class:ident, $class_ident:ident, $(#[$meta:meta])* [$([$vis:vis $name:ident, $inner:ty]),* $(,)?]) => {
-        $(#[$meta])*
-        #[derive(Clone, Copy, Debug, PartialEq)]
-        $vis struct $name(pub $inner);
-
-        impl $crate::file::format::elf::dtype::Trait for $name {
-            type Inner = $inner;
-        }
-
-        impl Default for $name {
-            fn default() -> Self {
-                Self(0)
-            }
-        }
-
-        impl core::fmt::Display for $name {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{}",self.0)?;
-                Ok(())
-            }
-        }
-
-        impl core::fmt::LowerHex for $name {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "0x{:#x}",self.0)?;
-                Ok(())
-            }
-        }
-
-        ample::trait_implement_primitive!(false, $($name),*);
-        ample::trait_implement_from!($name, $inner, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, usize, isize);
-        ample::trait_implement_partial_eq!($name, $inner, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, usize, isize);
-
+    ($class:ident, $class_ident:ident, [$([$vis:vis $name:ident, $inner:ty]),* $(,)?]) => {
         $(
+            ample::r#tuple!(
+                #[derive(Clone, Copy, Debug, PartialEq)]
+                $vis struct $name(0: pub $inner)
+            );
+
+
+            impl $crate::file::format::elf::dtype::Trait for $name {
+                type Inner = $inner;
+            }
+
+            impl Default for $name {
+                fn default() -> Self {
+                    Self(0)
+                }
+            }
+
+            impl core::fmt::Display for $name {
+                fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                    write!(f, "{}",self.0)?;
+                    Ok(())
+                }
+            }
+
+            impl core::fmt::LowerHex for $name {
+                fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                    write!(f, "0x{:#x}",self.0)?;
+                    Ok(())
+                }
+            }
+
+            ample::trait_implement_primitive!(false, $name);
+            ample::trait_implement_from!($name, $inner, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, usize, isize);
+            ample::trait_implement_partial_eq!($name, $inner, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, usize, isize);
+
             impl $name {
                 pub fn read(fd: isize, endianness: bool) -> core::result::Result<$name,$crate::Error>
                 where
@@ -82,6 +84,7 @@ macro_rules! file_format_elf_dtype_class {
                     }
                 }
             }
+
         )*
     };
 }

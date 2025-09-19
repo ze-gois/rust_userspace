@@ -1,5 +1,5 @@
 ample::enum_labeled!(
-    pub Magic,
+    pub enum Magic,
     u8,
     "Dope",
     [

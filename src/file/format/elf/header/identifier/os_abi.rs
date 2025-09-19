@@ -2,7 +2,7 @@
 // use crate::dtype::UChar as T;
 
 ample::enum_labeled!(
-    pub OsABI,
+    pub enum OsABI,
     u8,
     "Operating System Application Binary Interface",
     [

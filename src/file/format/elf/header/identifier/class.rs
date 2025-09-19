@@ -1,5 +1,5 @@
 ample::enum_labeled!(
-    pub Class,
+    pub enum Class,
     u8,
     "Class of pointer power",
     [
