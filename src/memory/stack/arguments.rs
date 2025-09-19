@@ -30,7 +30,7 @@ impl List {
             return (List::default(), crate::target::arch::Pointer(environment_pointer));
         }
 
-        use crate::memory::allocate::heap::Allocating;
+        use crate::memory::allocation::heap::Allocating;
         let list_pointer = Entry::allocate(counter);
 
         unsafe {

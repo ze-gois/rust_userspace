@@ -5,7 +5,7 @@ pub mod atype;
 pub use atype::Type;
 pub use atype::TypeTrait;
 
-use crate::memory::allocate::heap::Allocating;
+use crate::memory::allocation::heap::Allocating;
 
 #[repr(C)]
 #[derive(Debug)]

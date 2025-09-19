@@ -1,16 +1,15 @@
 use crate::Origin;
 
-use ample::traits::Allocatable;
-use ample::traits::Bytes;
-
 ample::r#struct!(
     #[derive(Debug)]
     pub struct Allocator {}
 );
 
+// ample::traits_impl_blanket_bytes!(Allocator);
+
 pub type AllocatorPointer = *mut Allocator;
 
-impl Allocatable<Origin> for Allocator {
+impl ample::traits::Allocatable<Origin> for Allocator {
     type Ok = crate::Ok;
     type Error = crate::Error;
     fn allocate(numerosity_of_bytes: usize) -> crate::Result {
@@ -30,7 +29,7 @@ impl Allocatable<Origin> for Allocator {
                 )),
             ))) => core::result::Result::Ok(crate::Ok::Memory(crate::memory::Ok::Allocate(
                 crate::memory::allocation::Ok::Allocate(
-                    crate::memory::allocation::heap::Ok::Default(m as *mut Self),
+                    crate::memory::allocation::heap::Ok::Allocator(m as *mut Self),
                 ),
             ))),
             _ => panic!("Failed to allocate memory"),
@@ -43,7 +42,7 @@ impl Allocatable<Origin> for Allocator {
         };
         core::result::Result::Ok(crate::Ok::Memory(crate::memory::Ok::Allocate(
             crate::memory::allocation::Ok::Allocate(
-                crate::memory::allocation::heap::Ok::Deallocate(ptr),
+                crate::memory::allocation::heap::Ok::Deallocator(ptr),
             ),
         )))
     }
@@ -58,12 +57,12 @@ pub trait Allocating<T> {
 
 impl<T> Allocating<T> for T
 where
-    T: Bytes<Origin>,
+    T: ample::traits::Bytes<Origin>,
     T: Default,
 {
     fn allocate(numerosity: usize) -> *mut T {
         let numerosity_of_bytes = numerosity * T::BYTES_SIZE + T::BYTES_ALIGN;
-        <Allocator as Allocatable<Origin>>::allocate(numerosity_of_bytes) as *mut T
+        <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity_of_bytes) as *mut T
     }
 
     /// Deallocate an array previously allocated with allocate_array
@@ -75,7 +74,10 @@ where
 
         // let _ = crate::target::os::syscall::munmap(ptr as *mut u8, aligned_size);
         // true
-        <Allocator as Allocatable<Origin>>::deallocate(ptr as *mut Allocator, aligned_size)
+        <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
+            ptr as *mut Allocator,
+            aligned_size,
+        )
     }
 
     /// Allocate and initialize a slice
@@ -98,21 +100,25 @@ where
 
 impl<T> Allocating<T> for &[T]
 where
-    T: Bytes<Origin>,
+    T: ample::traits::Bytes<Origin>,
     T: Default,
 {
     fn allocate(numerosity: usize) -> *mut T {
-        <Allocator as Allocatable<Origin>>::allocate(numerosity * T::BYTES_SIZE) as *mut T
+        <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity * T::BYTES_SIZE)
+            as *mut T
     }
 
     /// Deallocate an array previously allocated with allocate_array
     fn deallocate(ptr: *mut T, numerosity: usize) -> bool {
-        <Allocator as Allocatable<Origin>>::deallocate(ptr as *mut Allocator, numerosity)
+        <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
+            ptr as *mut Allocator,
+            numerosity,
+        )
     }
 
     /// Allocate and initialize a slice
     fn allocate_slice(numerosity: usize) -> &'static mut [T] {
-        let ptr = <Allocator as Allocatable<Origin>>::allocate(numerosity) as *mut T;
+        let ptr = <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity) as *mut T;
 
         for i in 0..numerosity {
             unsafe {
@@ -124,7 +130,7 @@ where
     }
 
     fn deallocate_slice(slice: &mut [T]) -> bool {
-        <Allocator as Allocatable<Origin>>::deallocate(
+        <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
             slice.as_mut_ptr() as *mut Allocator,
             slice.len(),
         )
@@ -137,17 +143,17 @@ ample::result!(
     usize;
     [
         [1; USERSPACE_MEMORY_ALLOCATION_HEAP_DEFAULT_OK; Default; AllocatorPointer; "ZE"; "Entry to ze"],
-        [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATE_DEFAULT_OK; Allocate; AllocatorPointer; "ZE"; "Entry to ze"],
-        [3; USERSPACE_MEMORY_ALLOCATION_HEAP_DEALLOCATE_DEFAULT_OK; Deallocate; AllocatorPointer; "ZE"; "Entry to ze"],
-        // [2; USERSPACE_MEMORY_ALLOCATE_HEAP_ALLOCATE_OK; Allocate; crate::memory::allocation::heap::Ok; "ZE"; "Entry to ze"],
+        [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATOR_DEFAULT_OK; Allocator; AllocatorPointer; "ZE"; "Entry to ze"],
+        [3; USERSPACE_MEMORY_ALLOCATION_HEAP_DEALLOCATOR_DEFAULT_OK; Deallocator; AllocatorPointer; "ZE"; "Entry to ze"],
+        // [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATING_OK; Allocator; crate::memory::allocation::heap::Ok; "ZE"; "Entry to ze"],
     ];
     Error;
-    "Allocate Ok";
+    "Allocator Ok";
     usize;
     [
-        [1; USERSPACE_MEMORY_ALLOCATE_HEAP_DEFAULT_ERROR; Default; AllocatorPointer; "ZE"; "Entry to ze"],
-        [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATE_DEFAULT_ERROR; Allocate; AllocatorPointer; "ZE"; "Entry to ze"],
-        [3; USERSPACE_MEMORY_ALLOCATION_HEAP_DEALLOCATE_DEFAULT_ERROR; Deallocate; AllocatorPointer; "ZE"; "Entry to ze"],
+        [1; USERSPACE_MEMORY_ALLOCATION_HEAP_DEFAULT_ERROR; Default; AllocatorPointer; "ZE"; "Entry to ze"],
+        [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATOR_DEFAULT_ERROR; Allocator; AllocatorPointer; "ZE"; "Entry to ze"],
+        [3; USERSPACE_MEMORY_ALLOCATION_HEAP_DEALLOCATOR_DEFAULT_ERROR; Deallocator; AllocatorPointer; "ZE"; "Entry to ze"],
     ]
 );
 
