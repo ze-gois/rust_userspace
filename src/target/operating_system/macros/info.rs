@@ -33,7 +33,7 @@ macro_rules! info {
         // let out = info::syscall::write(1, file.as_ptr(), file.len());
 
         use core::fmt::Write;
-        let mut writer = crate::target::os::macros::info::Stdout;
+        let mut writer = $crate::target::os::macros::info::Stdout;
         // let _ = write!(&mut writer, "\n[ {}:{}:{} ] ",file!(),line!(),column!());
         let _ = write!(&mut writer, $($arg)*);
     }};
@@ -57,7 +57,7 @@ macro_rules! tinfo {
         // let out = info::syscall::write(1, file.as_ptr(), file.len());
 
         use core::fmt::Write;
-        let mut writer = crate::target::os::macros::info::Stdout;
+        let mut writer = $crate::target::os::macros::info::Stdout;
         // let _ = write!(&mut writer, "\n[ {}:{}:{} ] ",file!(),line!(),column!());
         let _ = write!(&mut writer, $($arg)*);
     }};

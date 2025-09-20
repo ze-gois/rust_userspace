@@ -30,8 +30,8 @@ test = false
 # The functionality is now provided as a module inside the library
 
 [dependencies]
-# ample = { path = "../ample" }
-ample = { version="0.1.1" }
+ample = { path = "../ample" }
+# ample = { version="0.1.1" }
 
 [workspace.dependencies]
 userspace = { path = "." }

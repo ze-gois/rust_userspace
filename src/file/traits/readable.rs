@@ -19,16 +19,16 @@ where
 
     fn read_from_descriptor(file_descriptor: isize, offset: usize, endianness: bool) -> Self
     where
-        Self: ample::traits::Bytes<crate::Origin, crate::Origin>, // [(); <Self as ample::traits::Bytes<crate::Origin, crate::Origin>>::BYTES_SIZE]:,
+        Self: ample::traits::Bytes<crate::Origin, crate::Origin>,
     {
-        // let _ = crate::file::seek(file_descriptor, offset as i64);
-        // let size = 10; // <Self as ample::traits::Bytes<crate::Origin, crate::Origin>>::BYTES_SIZE;
-        // // let bytes = [0u8; <Self as ample::traits::Bytes<crate::Origin, crate::Origin>>::BYTES_SIZE];
-        // use crate::memory::heap::Allocating;
-        // let bytes = u8::allocate(size);
-        // let _ = crate::target::os::syscall::read(file_descriptor, bytes, size);
-        // Self::from_bytes_pointer(bytes, endianness)
-        Self::default()
+        let _ = crate::file::seek(file_descriptor, offset as i64);
+        let size = <Self as ample::traits::Bytes<crate::Origin, crate::Origin>>::BYTES_SIZE;
+        // let bytes = [0u8; <Self as ample::traits::Bytes<crate::Origin, crate::Origin>>::BYTES_SIZE];
+        use crate::memory::heap::Allocating;
+        let bytes = u8::allocate(size);
+        let _ = crate::target::os::syscall::read(file_descriptor, bytes, size);
+        Self::from_bytes_pointer(bytes, endianness)
+        // Self::default()
     }
 
     fn read_from_pointer(ptr: *const u8, offset: usize, endianness: bool) -> Self {
