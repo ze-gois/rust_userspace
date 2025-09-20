@@ -18,11 +18,10 @@ pub fn load(filepath: &str) -> Option<(isize, syscall::fstat::Stat, *const u8)> 
         let stat;
         'closing: loop {
             fd = match syscall::openat(
-                syscall::open::flags::AtFlag::FDCWD as isize,
+                syscall::open::AtFlag::FDCWD.to(),
                 filepath,
-                syscall::open::flags::Flag::RDONLY as i32,
+                syscall::open::Flag::RDONLY.to(),
             ) {
-                // Ok(syscall::Ok::Open(syscall::open::Ok::OPENAT(no))) => no as isize,
                 core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
                     crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::Open(
                         crate::target::os::syscall::open::Ok::OPENAT(fd),
@@ -32,8 +31,6 @@ pub fn load(filepath: &str) -> Option<(isize, syscall::fstat::Stat, *const u8)> 
             };
 
             stat = crate::file::information::from_fd(fd);
-
-            // crate::info!("{:?}\n", stat);
 
             license_mapping = match syscall::mmap(
                 core::ptr::null_mut(),

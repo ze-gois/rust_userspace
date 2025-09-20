@@ -16,8 +16,10 @@ pub mod license;
 pub mod memory;
 pub mod panic;
 pub mod result;
-pub use result::{Error, Ok, Result};
 pub mod traits;
+
+pub use file::File;
+pub use result::{Error, Ok, Result};
 
 ample::trait_implement_primitives!();
 

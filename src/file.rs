@@ -26,14 +26,11 @@ pub use result::{Error, Ok, Result};
 //     }
 // }
 
-pub mod a {
-    ample::r#struct!(
-        pub struct Information {
-            size: usize,
-        }
-    );
-}
-pub use a::Information;
+ample::r#struct!(
+    pub struct Information {
+        size: usize,
+    }
+);
 
 ample::r#struct!(
     pub struct File {
