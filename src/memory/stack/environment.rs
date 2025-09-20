@@ -42,7 +42,7 @@ impl List {
             return (List::default(), Pointer(auxiliary_pointer));
         }
 
-        use crate::memory::allocation::heap::Allocating;
+        use crate::memory::heap::Allocating;
         let list_pointer = Entry::allocate(counter);
 
         unsafe {

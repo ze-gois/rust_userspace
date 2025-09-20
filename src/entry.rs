@@ -204,11 +204,11 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
 
     info!("eXecuting Executable and Linkable Format\n\n\n");
 
-    // let argc = stack_pointer.0 as *const usize;
-    // info!("argc={:?}\n\n", unsafe { *argc });
-    // let stack = userspace::memory::Stack::from_pointer(stack_pointer);
-    // stack.print();
-    // stack.arguments.print();
+    let argc = stack_pointer.0 as *const usize;
+    info!("argc={:?}\n\n", unsafe { *argc });
+    let stack = userspace::memory::Stack::from_pointer(stack_pointer);
+    stack.print();
+    stack.arguments.print();
 
     // let arg0 = stack.arguments.get(0).unwrap();
     // let arg0_pointer = arg0.pointer;
