@@ -67,7 +67,7 @@ fn demo_original_heap_allocation() {
 
     info!(
         "Pointer bytes: {:?}",
-        <*const u32 as Bytes<Origin, Destination>>::to_le_bytes(&x.field2)
+        <*const u32 as Bytes<Origin, Origin>>::to_le_bytes(&x.field2)
     );
 
     let ee = e.clone();
@@ -83,6 +83,7 @@ fn demo_linked_list() {
 
     // Create a new linked list using our SystemAllocator
     let mut list = ample::list::LinkedList::<
+        Origin,
         Origin,
         userspace::Origin,
         u32,
@@ -144,6 +145,7 @@ fn demo_linked_list() {
     macro_rules! lister {
         ($identifier:ident) => {
             ample::list::LinkedList::<
+                Origin,
                 Origin,
                 userspace::Origin,
                 $identifier,

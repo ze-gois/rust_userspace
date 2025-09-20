@@ -55,7 +55,7 @@ pub trait Allocating<T> {
 
 impl<T> Allocating<T> for T
 where
-    T: ample::traits::Bytes<Origin, Destination>,
+    T: ample::traits::Bytes<Origin, Origin>,
     T: Default,
 {
     fn allocate(numerosity: usize) -> *mut T {
@@ -104,7 +104,7 @@ where
 
 impl<T> Allocating<T> for &[T]
 where
-    T: ample::traits::Bytes<Origin, Destination>,
+    T: ample::traits::Bytes<Origin, Origin>,
     T: Default,
 {
     fn allocate(numerosity: usize) -> *mut T {

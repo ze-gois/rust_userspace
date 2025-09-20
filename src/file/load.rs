@@ -2,7 +2,9 @@ use crate::target::os::syscall;
 pub fn load(filepath: &str) -> Option<(isize, syscall::fstat::Stat, *const u8)> {
     use ample::traits::AllocatableResult;
     let filepath =
-        ample::string::terminate::<crate::Origin, crate::memory::heap::Allocator>(filepath);
+        ample::string::terminate::<crate::Origin, crate::Origin, crate::memory::heap::Allocator>(
+            filepath,
+        );
 
     let filepath = match filepath {
         core::result::Result::Ok(a) => a.as_ptr(),
