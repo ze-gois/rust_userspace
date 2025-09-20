@@ -1,5 +1,5 @@
-// ample::trait_place_allocatable!();
-ample::trait_bytes_place!();
-ample::trait_primitive_place!();
-// pub use crate::traits::Allocatable;
-// pub use crate::traits::Bytes;
+pub trait Ample {}
+pub trait Userspace {}
+
+impl<A: ample::traits::Bytes<ample::Origin, ample::Origin>> Ample for A {}
+impl<U: ample::traits::Bytes<crate::Origin, crate::Origin>> Userspace for U {}

@@ -18,6 +18,8 @@ pub mod format;
 pub mod result;
 pub use result::{Error, Ok, Result};
 
+pub mod traits;
+
 // impl traits::Bytes<Origin, Origin> for &str {
 //     const BYTES_SIZE: usize = core::mem::size_of::<&str>();
 //     fn to_bytes(&self, endianness: bool) -> [u8; Self::BYTES_SIZE] {

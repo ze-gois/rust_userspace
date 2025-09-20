@@ -1,4 +1,6 @@
+use crate::memory::heap::Allocating;
 use crate::target::os::syscall;
+
 pub fn load(filepath: &str) -> Option<(isize, syscall::fstat::Stat, *const u8)> {
     use ample::traits::AllocatableResult;
     let filepath =
@@ -32,24 +34,7 @@ pub fn load(filepath: &str) -> Option<(isize, syscall::fstat::Stat, *const u8)> 
 
             stat = crate::file::information::from_fd(fd);
 
-            license_mapping = match syscall::mmap(
-                core::ptr::null_mut(),
-                stat.st_size as usize,
-                (syscall::mmap::Prot::Read | syscall::mmap::Prot::Write) as i32,
-                (syscall::mmap::Flag::Anonymous | syscall::mmap::Flag::Private) as i32,
-                -1,
-                0,
-            ) {
-                core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
-                    crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::MMap(
-                        crate::target::os::syscall::mmap::Ok::Default(fd),
-                    )),
-                ))) => fd as *const u8,
-                _ => {
-                    crate::info!("Failed to mmap file");
-                    panic!("k")
-                }
-            };
+            license_mapping = u8::allocate(stat.st_size as usize);
 
             let _ = syscall::read(fd, license_mapping, stat.st_size as usize);
             break 'closing;

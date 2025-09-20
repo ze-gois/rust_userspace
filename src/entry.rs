@@ -11,6 +11,7 @@
 
 use userspace;
 use userspace::info;
+use userspace::memory::heap::Allocating;
 use userspace::target;
 
 #[derive(Debug)]
@@ -37,23 +38,27 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
         unsafe {
             let cstr = core::ffi::CStr::from_ptr(arg0.pointer.0 as *mut i8);
             let self_path = cstr.to_str().unwrap();
+
             userspace::info!("\n{:?}\n\n", self_path);
+
             let self_fd = userspace::file::open(self_path);
 
             let (fd, stat, ptr) = userspace::file::load(self_path).unwrap();
 
-            info!("fd={:?}, stat={:?}, ptr={:?}", fd, stat, ptr);
+            info!("fd={:?}\n\n stat={:?}\n\n ptr={:?}\n\n", fd, stat, ptr);
 
-            // userspace::target::os::syscall::open(
-            //     self_path,
-            //     userspace::target::os::syscall::open::Flag::RDONLY,
-            //     userspace::target::os::syscall::open::Mode::,
-            // );
-            // userspace::File::from_fd(self_fd);
-            // userspace::File::from_path(self_path);
+            for c in 0..=15 {
+                info!("*ptr.add({:?}) as char == {:?}\n", c, *ptr.add(c) as char);
+            }
 
-            // let identifier = userspace::file::format::elf::header::Identifier::from_path(self_path);
-            // userspace::info!("{:?}\n\n", identifier);
+            let entries = userspace::memory::stack::auxiliary::Entry::allocate_slice(10);
+
+            for e in entries.iter_mut() {
+                info!("{:?}\n", e);
+            }
+
+            let identifier = userspace::file::format::elf::header::Identifier::from_path(self_path);
+            userspace::info!("{:?}\n\n", identifier);
         }
     }
 
