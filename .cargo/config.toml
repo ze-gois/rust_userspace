@@ -23,10 +23,10 @@ rustflags = [
     "prefer-dynamic=no",
 
     # Pass linker script
-    "-C",
-    "link-arg=-T",
-    "-C",
-    "link-arg=linker.ld",
+    # "-C",
+    # "link-arg=-T",
+    # "-C",
+    # "link-arg=linker.ld",
 
     # Additional flags for bare metal
     "-C",
