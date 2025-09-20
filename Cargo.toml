@@ -2,8 +2,8 @@
 members = []
 
 [package]
-version = "0.1.0"
-publish = false
+version = "0.1.124"
+publish = true
 license-file = "LICENSE"
 authors = ["José Gois <ze.gois.00@gmail.com>"]
 homepage = "https://userspace.builders"
@@ -30,14 +30,15 @@ test = false
 # The functionality is now provided as a module inside the library
 
 [dependencies]
-ample = { path = "../ample" }
+# ample = { path = "../ample" }
+ample = { version="0.1.1" }
 
 [workspace.dependencies]
 userspace = { path = "." }
 
 [build-dependencies]
 cc = "1.0"
-userspace_build = { version = "0.1.123", features = ["with_std"] }
+userspace_build = { version = "0.1.12", features = ["with_std"] }
 
 [features]
 default = ["no_std"]
