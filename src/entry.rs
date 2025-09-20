@@ -59,14 +59,14 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
 
     // let uchar32 = userspace::file::format::elf::dtype::class_32::UChar(3);
 
-    info!("<<< we");
-    info!("<<< we are");
-    info!("<<< we are executing");
-    info!("<<< we are executing an");
-    info!("<<< we are executing an executable");
-    info!("<<< we are executing an executable and");
-    info!("<<< we are executing an executable and linkable");
-    info!("<<< we are executing an executable and linkable format");
-    info!("<<< we are executing an executable and linkable format\n\n");
+    info!("<<< we\n");
+    info!("<<< we are\n");
+    info!("<<< we are executing\n");
+    info!("<<< we are executing an\n");
+    info!("<<< we are executing an executable\n");
+    info!("<<< we are executing an executable and\n");
+    info!("<<< we are executing an executable and linkable\n");
+    info!("<<< we are executing an executable and linkable format\n");
+    info!("<<< we are executing an executable and linkable format\n\n\n");
     panic!();
 }
