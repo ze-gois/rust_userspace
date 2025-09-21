@@ -9,6 +9,7 @@
 #![feature(const_trait_impl)]
 #![feature(fundamental)]
 
+use ample::traits::Bytes;
 use userspace;
 use userspace::info;
 use userspace::memory::heap::Allocating;
@@ -57,8 +58,21 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
                 info!("{:?}\n", e);
             }
 
-            let identifier = userspace::file::format::elf::header::Identifier::from_path(self_path);
+            use userspace::file::traits::Readable;
+
+            let identifier =
+                userspace::file::format::elf::header::Identifier::read_from_pointer(ptr, 0, true);
             userspace::info!("{:?}\n\n", identifier);
+            let identifier = userspace::file::format::elf::header::Identifier::read_from_path(
+                self_path, 0, true,
+            );
+
+            userspace::info!("{:?}\n\n", identifier);
+
+            userspace::info!(
+                "{:?}\n",
+                userspace::file::format::elf::header::Identifier::BYTES_SIZE
+            );
         }
     }
 
