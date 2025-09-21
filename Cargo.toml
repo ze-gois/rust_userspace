@@ -1,6 +1,6 @@
 [package]
 name = "userspace"
-version = "0.1.1"
+version = "0.1.124"
 edition = "2024"
 authors = ["José Gois <ze.gois.00@gmail.com>"]
 description = "userspace library"
@@ -96,26 +96,26 @@ with_std = []
 github-actions = { repository = "ze-gois/rust_userspace" }
 # # travis-ci = { repository = "ze-gois/rust_ample", branch = "main" }
 
-[profile.dev]
-opt-level = 0
-debug = true
-overflow-checks = true
-lto = false
-panic = "unwind"
-incremental = true
-codegen-units = 256
-debug-assertions = true
-split-debuginfo = "packed"
+# [profile.dev]
+# opt-level = 0
+# debug = true
+# overflow-checks = true
+# lto = false
+# panic = "unwind"
+# incremental = true
+# codegen-units = 256
+# debug-assertions = true
+# split-debuginfo = "packed"
 
-[profile.release]
-opt-level = 3
-debug = false
-overflow-checks = true
-lto = true
-panic = "abort"
-codegen-units = 1
-incremental = false
-debug-assertions = false
-split-debuginfo = "unpacked"
-rpath = false
-strip = "debuginfo"
+# [profile.release]
+# opt-level = 3
+# debug = false
+# overflow-checks = true
+# lto = true
+# panic = "abort"
+# codegen-units = 1
+# incremental = false
+# debug-assertions = false
+# split-debuginfo = "unpacked"
+# rpath = false
+# strip = "debuginfo"
