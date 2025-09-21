@@ -1,30 +1,59 @@
 [package]
-version = "0.1.124"
-publish = true
-license-file = "LICENSE"
-authors = ["José Gois <ze.gois.00@gmail.com>"]
-homepage = "https://userspace.builders"
-repository = "https://github.com/ze-gois/rust_userspace"
-description = "Standard library for userspace applications"
-documentation = "https://docs.rs/bitflags"
 name = "userspace"
-readme = "README.md"
+version = "0.1.1"
 edition = "2024"
+authors = ["José Gois <ze.gois.00@gmail.com>"]
+description = "userspace library"
+documentation = "https://docs.rs/bitflags"
+repository = "https://github.com/ze-gois/rust_userspace"
+readme = "README.md"
+homepage = "https://userspace.builders"
+license-file = "LICENSE"
 keywords = ["architecture", "operating_system"]
 categories = ["no-std", "os"]
+publish = true
+exclude = []
+include = []
+rust-version = "1.85"
+autobins = true
+autotests = true
+autobenches = true
+resolver = "2"
+# license = "BSD-3 Clause"
+# links = ""
+
+[package.metadata]
+mode = "unoticed"
+note = "esta é uma crate padrão"
+whatever = 42
+
+[package.metadata.debug]
+mode = "debug"
+
+[package.metadata.release]
+metadata = "required"
+# pre-release-hook = "./scripts/pre_release.sh"
+# pre-release-replacements = []
 
 [lib]
 name = "userspace"
 path = "src/library.rs"
+crate-type = ["lib"]
 test = false
+doctest = true
+bench = false
+required-features = []        # nenhuma feature obrigatória
+doc = true                     # gera docs
 
 [[bin]]
 name = "userspace"
 path = "src/entry.rs"
+# crate-type = ["bin"]
 test = false
-
-# Removed standalone binary target for image_example
-# The functionality is now provided as a module inside the library
+doctest = true
+bench = false
+required-features = []        # nenhuma feature obrigatória
+doc = true                     # gera docs
 
 [dependencies]
 ample = { path = "../ample" }
@@ -37,3 +66,31 @@ userspace_build = { path = "../userspace_build", features = ["with_std"] }
 default = ["no_std"]
 no_std = []
 with_std = []
+
+[badges]
+github-actions = { repository = "ze-gois/rust_userspace" }
+# # travis-ci = { repository = "ze-gois/rust_ample", branch = "main" }
+
+[profile.dev]
+opt-level = 0
+debug = true
+overflow-checks = true
+lto = false
+panic = "unwind"
+incremental = true
+codegen-units = 256
+debug-assertions = true
+split-debuginfo = "packed"
+
+[profile.release]
+opt-level = 3
+debug = false
+overflow-checks = true
+lto = true
+panic = "abort"
+codegen-units = 1
+incremental = false
+debug-assertions = false
+split-debuginfo = "unpacked"
+rpath = false
+strip = "debuginfo"
