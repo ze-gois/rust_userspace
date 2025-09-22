@@ -1,13 +1,7 @@
 #![no_std]
 #![no_main]
-#![allow(unused_variables)]
-#![allow(unused_imports)]
 #![allow(incomplete_features)]
-#![allow(unused_assignments)]
 #![feature(generic_const_exprs)]
-#![feature(generic_const_items)]
-#![feature(const_trait_impl)]
-#![feature(fundamental)]
 
 use ample::traits::Bytes;
 use userspace;
@@ -33,7 +27,6 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
     stack.arguments.print();
 
     let arg0 = stack.arguments.get(0).unwrap();
-    let arg0_pointer = arg0.pointer;
 
     if !arg0.pointer.0.is_null() {
         unsafe {
@@ -60,12 +53,15 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
 
             use userspace::file::traits::Readable;
 
-            let identifier =
+            let (identifier, offset) =
                 userspace::file::format::elf::header::Identifier::read_from_pointer(ptr, 0, true);
+
             userspace::info!("{:?}\n\n", identifier);
-            let identifier = userspace::file::format::elf::header::Identifier::read_from_path(
-                self_path, 0, true,
-            );
+
+            let (identifier, offset) =
+                userspace::file::format::elf::header::Identifier::read_from_path(
+                    self_path, 0, true,
+                );
 
             userspace::info!("{:?}\n\n", identifier);
 
@@ -73,19 +69,15 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
                 "{:?}\n",
                 userspace::file::format::elf::header::Identifier::BYTES_SIZE
             );
+
+            let (identifier_slice, offset) =
+                <[userspace::file::format::elf::header::Identifier; 1]>::read_from_path(
+                    self_path, 0, true,
+                );
         }
     }
 
     // let uchar32 = userspace::file::format::elf::dtype::class_32::UChar(3);
 
-    info!("<<< we\n");
-    info!("<<< we are\n");
-    info!("<<< we are executing\n");
-    info!("<<< we are executing an\n");
-    info!("<<< we are executing an executable\n");
-    info!("<<< we are executing an executable and\n");
-    info!("<<< we are executing an executable and linkable\n");
-    info!("<<< we are executing an executable and linkable format\n");
-    info!("<<< we are executing an executable and linkable format\n\n\n");
     panic!();
 }
