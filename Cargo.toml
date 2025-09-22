@@ -1,6 +1,6 @@
 [package]
 name = "userspace"
-version = "0.1.127"
+version = "0.1.128"
 edition = "2024"
 authors = ["José Gois <ze.gois.00@gmail.com>"]
 description = "userspace library"
@@ -81,11 +81,11 @@ required-features = []        # nenhuma feature obrigatória
 doc = true                     # gera docs
 
 [dependencies]
-ample = { version= "0.1.127", path = "../ample" }
+ample = { version= "0.1.128", path = "../ample" }
 
 [build-dependencies]
 cc = "1.0"
-userspace_build = { version= "0.1.127", path = "../userspace_build", features = ["with_std"] }
+userspace_build = { version= "0.1.128", path = "../userspace_build", features = ["with_std"] }
 
 [features]
 default = ["no_std"]
