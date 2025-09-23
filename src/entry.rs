@@ -70,10 +70,10 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
                 userspace::file::format::elf::header::Identifier::BYTES_SIZE
             );
 
-            let (identifier_slice, offset) =
-                <[userspace::file::format::elf::header::Identifier; 1]>::read_from_path(
-                    self_path, 0, true,
-                );
+            let fil = <[userspace::file::format::elf::header::Identifier; 1] as Readable<
+                userspace::Origin,
+            >>::read_from_path(self_path, 0, true);
+            userspace::info!("File content: {:?}", fil);
         }
     }
 
