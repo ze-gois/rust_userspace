@@ -59,7 +59,7 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
             userspace::info!("{:?}\n\n", identifier);
 
             let (identifier, offset) =
-                userspace::file::format::elf::header::Identifier::read_from_path(
+                userspace::file::format::elf::header::Identifier::read_from_file_path(
                     self_path, 0, true,
                 );
 
@@ -72,8 +72,14 @@ pub extern "C" fn entry(stack_pointer: crate::target::arch::PointerType) -> ! {
 
             let fil = <[userspace::file::format::elf::header::Identifier; 1] as Readable<
                 userspace::Origin,
-            >>::read_from_path(self_path, 0, true);
+            >>::read_from_file_path(self_path, 0, true);
             userspace::info!("File content: {:?}", fil);
+
+            let magic = u8::read_from_file_path_offsets(self_path, &[0, 1, 2, 3], true);
+            userspace::info!("\n\n{:?}\n", magic);
+
+            // let magic = u8::read_from_file_path_offsets(self_path, 0..4, true);
+            // userspace::info!("\n\n{:?}\n", magic);
         }
     }
 
