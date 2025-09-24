@@ -1,6 +1,6 @@
-pub mod class_32;
-pub mod class_64;
-pub use class_64::UChar;
+pub mod class;
+pub use class::class_32;
+pub use class::class_64;
 
 #[macro_use]
 pub mod macros;
@@ -12,6 +12,11 @@ pub use result::{Error, Ok, Result};
 
 pub mod endianness;
 pub use endianness::Endianness;
+
+// ample::r#enum!(
+//     u8;
+//     pub
+// );
 
 // pub mod ok {
 //     ample::r#struct!(pub OurStruct {

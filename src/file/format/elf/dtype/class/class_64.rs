@@ -4,15 +4,14 @@ crate::file_format_elf_dtype_class!(
     class_64,
     Class64,
     [
-        [pub Null, usize],
-        [pub UChar, u8],
-        [pub SXWord, i64],
-        [pub Half, u16],
-        [pub SWord, i32],
-        [pub XWord, u64],
-        [pub Word, u32],
-        [pub Off, u64],
-        [pub Addr, u64],
+        [pub Addr,   u64, "Unsigned program address"],
+        [pub Off,    u64, "Unsigned file offset"],
+        [pub Half,   u16, "Unsigned medium integer"],
+        [pub Word,   u32, "Unsigned integer"],
+        [pub SWord,  i32, "Signed integer"],
+        [pub XWord,  u64, "Unsigned long integer"],
+        [pub SXWord, i64, "Signed long integer"],
+        [pub UChar,  u8,  "Unsigned small integer"],
     ]
 );
 
@@ -21,7 +20,7 @@ ample::result!(
     "Human Ok";
     usize;
     [
-        [0; NULL_OK;       Null;    Null;  "UChar_64";  "UChar_64"],
+
         [1; UCHAR_64_OK;   UChar;   UChar;     "UChar_64";  "UChar_64"],
         [2; SXWORD_64_OK;  SXWord;  SXWord;   "SXWord_64"; "SXWord_64"],
         [3; HALF_64_OK;    Half;    Half;     "Half_64";   "Half_64"],
@@ -35,7 +34,6 @@ ample::result!(
     "Human error";
     usize;
     [
-        [0; NULL_ERROR;       Null;    Null;     "UChar_64";  "UChar_64"],
         [1; UCHAR_64_ERROR;   UChar;   UChar;     "UChar_64";  "UChar_64"],
         [2; SXWORD_64_ERROR;  SXWord;  SXWord;   "SXWord_64"; "SXWord_64"],
         [3; HALF_64_ERROR;    Half;    Half;     "Half_64";   "Half_64"],
@@ -48,14 +46,14 @@ ample::result!(
 );
 
 impl Ok {
-    pub fn from_no(no: usize) -> Self {
-        Ok::Null(Null(no))
+    pub fn from_no(_no: usize) -> Self {
+        Ok::Off(Off(0))
     }
 }
 
 impl Error {
-    pub fn from_no(no: usize) -> Self {
-        Error::Null(Null(no))
+    pub fn from_no(_no: usize) -> Self {
+        Error::Off(Off(0))
     }
 }
 

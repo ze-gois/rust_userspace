@@ -6,9 +6,14 @@ where
     Self: crate::memory::heap::Allocating<Self>,
 {
     type Origin = Origin;
-    fn read_from_file_path(file_path: &str, offset: usize, endianness: bool) -> (Self, usize) {
+    fn read_from_file_path(
+        file_path: &str,
+        offset: usize,
+        endianness: bool,
+    ) -> (Self, isize, usize) {
         let file_descriptor = crate::file::open(file_path);
-        Self::read_from_file_descriptor(file_descriptor, offset, endianness)
+        let (value, size) = Self::read_from_file_descriptor(file_descriptor, offset, endianness);
+        (value, file_descriptor, size)
     }
 
     fn read_from_file_descriptor(
@@ -29,10 +34,8 @@ where
         offset: usize,
         endianness: bool,
     ) -> (Self, usize) {
-        (
-            Self::from_bytes_pointer(unsafe { bytes_pointer.add(offset) }, endianness),
-            Self::BYTES_SIZE + offset,
-        )
+        let value = Self::from_bytes_pointer(unsafe { bytes_pointer.add(offset) }, endianness);
+        (value, Self::offset_step(&value) + offset)
     }
 
     fn read_from_file_path_offsets(
@@ -51,13 +54,13 @@ where
     ) -> &'static mut [Self] {
         use crate::memory::heap::Allocating;
 
-        let bytes = u8::allocate(Self::BYTES_SIZE);
+        let bytes_pointer = u8::allocate(Self::BYTES_SIZE);
         let values = Self::allocate_slice(offsets.len());
         for (o, offset) in offsets.iter().enumerate() {
             let _ = crate::file::seek(file_descriptor, *offset as i64);
-            let _ = crate::target::os::syscall::read(file_descriptor, bytes, Self::BYTES_SIZE);
-            let (value, _) = Self::read_from_pointer(bytes, 0, endianness);
-            values[o] = value;
+            let _ =
+                crate::target::os::syscall::read(file_descriptor, bytes_pointer, Self::BYTES_SIZE);
+            values[o] = Self::from_bytes_pointer(bytes_pointer, endianness);
         }
         values
     }
@@ -78,7 +81,7 @@ where
 impl<U> Readable<crate::Origin> for U
 where
     Self: Copy,
-    Self: ample::traits::Bytes<crate::Origin, crate::Origin>,
+    Self: ample::traits::BytesDefault<crate::Origin>,
     Self: crate::memory::heap::Allocating<Self>,
 {
     type Origin = crate::Origin;
