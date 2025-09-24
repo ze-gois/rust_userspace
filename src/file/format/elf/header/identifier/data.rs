@@ -1,10 +1,11 @@
-ample::enum_labeled_typed!(
+ample::enum_labeled!(
+    #[derive(Debug)]
     pub enum Data,
     u8,
     "Data endianness",
     [
-        [0; Data0; super::T; ELFDATANONE; "Data 0"; "Del (0x7f)"],
-        [1; Data1; super::T; ELFDATA2LSB; "Data 1"; "E (0x45)"],
-        [2; Data2; super::T; ELFDATA2MSB; "Data 2"; "L (0x4c)"],
+        [0; DataNone; ELFDATANONE; "Data 0";   "No data encoding?"],
+        [1; DataLSB;  ELFDATA2LSB; "Data LSB"; "Least-Significant Byte stored in byte 0"],
+        [2; DataMSB;  ELFDATA2MSB; "Data MSB"; "Most-Significant Byte stored in byte 0"],
     ]
 );

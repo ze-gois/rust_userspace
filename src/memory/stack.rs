@@ -36,9 +36,9 @@ ample::r#struct!(
     }
 );
 
-ample::r#enum!(
+ample::enum_typed!(
     u32;
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug)]
     pub enum StackNode {
         A(ArgumentNode) = 1,
         B(()) = 2,

@@ -35,14 +35,14 @@ where
         endianness: bool,
     ) -> (Self, usize) {
         let value = Self::from_bytes_pointer(unsafe { bytes_pointer.add(offset) }, endianness);
-        (value, Self::primitive_offset_size(&value) + offset)
+        (value, Self::BYTES_SIZE + offset)
     }
 
     fn read_from_file_path_offsets(
         file_path: &str,
         offsets: &[usize],
         endianness: bool,
-    ) -> &'static mut [Self] {
+    ) -> (&'static mut [Self], isize) {
         let file_descriptor = crate::file::open(file_path);
         Self::read_from_file_descriptor_offsets(file_descriptor, offsets, endianness)
     }
@@ -51,7 +51,7 @@ where
         file_descriptor: isize,
         offsets: &[usize],
         endianness: bool,
-    ) -> &'static mut [Self] {
+    ) -> (&'static mut [Self], isize) {
         use crate::memory::heap::Allocating;
 
         let bytes_pointer = u8::allocate(Self::BYTES_SIZE);
@@ -62,7 +62,7 @@ where
                 crate::target::os::syscall::read(file_descriptor, bytes_pointer, Self::BYTES_SIZE);
             values[o] = Self::from_bytes_pointer(bytes_pointer, endianness);
         }
-        values
+        (values, file_descriptor)
     }
 
     fn read_from_pointer_offsets(

@@ -12,7 +12,7 @@ macro_rules! file_format_elf_dtype_class {
         ]
     ) => {
         $(
-            ample::r#tuple!(
+            ample::struct_tuple!(
                 #[derive(Debug, Clone, Copy, PartialEq)]
                 $vis struct $name(0: pub $inner)
             );
