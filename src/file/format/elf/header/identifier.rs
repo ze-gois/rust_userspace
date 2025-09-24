@@ -40,6 +40,15 @@ ample::r#struct!(
 );
 
 impl Identifier {
+    pub fn class(&self) -> Class {
+        match self.class.0 {
+            0x0 => Class::ClassNone(self.class),
+            0x1 => Class::Class32(self.class),
+            0x2 => Class::Class64(self.class),
+            _ => Class::ClassNone(self.class),
+        }
+    }
+
     pub fn as_array(&self) -> [T; 16] {
         [
             self.magic0,
@@ -90,7 +99,7 @@ impl core::fmt::Display for Identifier {
             self.magic1.0 as char,
             self.magic2.0 as char,
             self.magic3.0 as char,
-            self.class,
+            self.class(),
             self.endianness,
             self.version,
             self.osabi,

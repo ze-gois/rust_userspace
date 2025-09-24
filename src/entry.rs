@@ -36,12 +36,7 @@ pub extern "C" fn entry(stack_pointer: userspace::target::arch::PointerType) -> 
 
             info!("identifier={}\n\n", identifier);
 
-            // pub type X = [u8;16];
-            // pub type X = &'static [userspace::file::format::elf::dtype::class_64::UChar;16];
 
-            let a = <[userspace::file::format::elf::dtype::class_64::UChar;16]>::read_from_file_path(self_path, 0, true);
-
-            info!("\n{:?}\n",a);
         }
     }
 

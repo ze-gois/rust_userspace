@@ -32,7 +32,7 @@ macro_rules! bring_atype {
             ),* $(,)?
         ]
     ) => {
-        ample::enum_labeled!(
+        ample::enum_labeled_typed!(
             $(#[$($struct_doc),*])*
             $enum_vis enum $enum_identifier,
             $enum_discriminant_type,
@@ -52,7 +52,7 @@ macro_rules! bring_atype {
         );
 
         pub mod unit {
-            ample::enum_labeled!(
+            ample::enum_labeled_typed!(
                 pub enum TypeUnit,
                 $enum_discriminant_type,
                 $enum_label,

@@ -35,7 +35,7 @@ where
         endianness: bool,
     ) -> (Self, usize) {
         let value = Self::from_bytes_pointer(unsafe { bytes_pointer.add(offset) }, endianness);
-        (value, Self::offset_step(&value) + offset)
+        (value, Self::primitive_offset_size(&value) + offset)
     }
 
     fn read_from_file_path_offsets(
