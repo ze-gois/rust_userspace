@@ -1,5 +1,3 @@
-pub type ElfMagic = [Magic; 4];
-
 ample::enum_labeled!(
     pub enum Magic,
     u8,

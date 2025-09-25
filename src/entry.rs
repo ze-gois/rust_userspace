@@ -27,23 +27,34 @@ pub extern "C" fn entry(stack_pointer: userspace::target::arch::PointerType) -> 
     let self_file_path_pointer = stack.arguments.get(0).unwrap();
 
     if !self_file_path_pointer.pointer.0.is_null() {
-        unsafe {
-            let cstr = core::ffi::CStr::from_ptr(self_file_path_pointer.pointer.0 as *mut i8);
-            let self_path = cstr.to_str().unwrap();
+        use userspace::traits::Str;
 
-            // let (fd, stat, fptr) = userspace::file::load(self_path).unwrap();
-            let (identifier, _file_descriptor, _offset) = userspace::file::format::elf::header::Identifier::read_from_file_path(self_path, 0, true);
+        let self_path = <&str>::from_null_terminated_pointer(self_file_path_pointer.pointer.0 as *const u8);
 
-            info!("identifier={}\n\n", identifier);
-            //
-            let (magic, file_descriptor) = userspace::file::format::elf::header::identifier::Magic::read_from_file_path_offsets(self_path, &[0,1,2,3], true);
+        let Some(self_elf_file_descriptor) = <&str>::open_elf(&self_path) else {
+            userspace::target::os::syscall::exit(32)
+        };
 
-            info!("\n\n{:?}\n\n{:?}", magic, file_descriptor);
+        let (self_elf_identifier,current_offset) = userspace::file::format::elf::header::Identifier::read_from_file_descriptor(self_elf_file_descriptor, 0, true);
 
-            let (magic, file_descriptor, offset) = <[userspace::file::format::elf::dtype::class_64::UChar;4]>::read_from_file_path(self_path, 0, true);
-            info!("\n\n{:?}\n{:?}\n{:?}", magic, file_descriptor, offset);
+        info!("\n{:?}\n",self_elf_identifier);
 
-        }
+        let endianness = match self_elf_identifier.data() {
+            userspace::file::format::elf::header::identifier::Data::DataLSB => true,
+            userspace::file::format::elf::header::identifier::Data::DataMSB => false,
+            userspace::file::format::elf::header::identifier::Data::DataNone => userspace::target::os::syscall::exit(33),
+        };
+
+        let (header, current_offset) = userspace::file::format::elf::Header64::read_from_file_descriptor(self_elf_file_descriptor, 0, endianness);
+
+        info!("\n{:?}\n",header);
+
+        extern crate alloc;
+
+        let x = alloc::string::String::new();
+
+        userspace::info!("\n\n=>>>{:?}\n\n",x);
+
     }
 
 

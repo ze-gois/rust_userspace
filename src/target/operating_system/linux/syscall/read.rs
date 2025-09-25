@@ -27,14 +27,14 @@ pub mod ok {
 
 pub mod error {
     ample::result!(Error; "MUnMap error"; usize; [
-        [1; ERROR;          Default;            usize; "Error"; "Something wicked this way comes"],
-        [4;   EINTR;        Interrupted;      usize;            "EINTR";     "System call was interrupted"],
-        [5;   EIO;          IOError;          usize;              "EIO";       "Input/output error"],
-        [9;   EBADF;        BadFileDescriptor;usize;            "EBADF";     "Bad file descriptor"],
-        [14;  EFAULT;       InvalidBuffer;    usize;           "EFAULT";    "Invalid buffer pointer"],
-        [22;  EINVAL;       InvalidCount;     usize;           "EINVAL";    "Invalid count"],
-        [21;  EISDIR;       IsDirectory;      usize;           "EISDIR";    "Is a directory"],
-        [13;  EACCES;       NotReadable;      usize;           "EACCES";    "File not open for reading"],
+        [1  ; ERROR  ; Default           ; usize ; "Error"  ; "Something wicked this way comes"],
+        [4  ; EINTR  ; Interrupted       ; usize ; "EINTR"  ; "System call was interrupted"],
+        [5  ; EIO    ; IOError           ; usize ; "EIO"    ; "Input/output error"],
+        [9  ; EBADF  ; BadFileDescriptor ; usize ; "EBADF"  ; "Bad file descriptor"],
+        [14 ; EFAULT ; InvalidBuffer     ; usize ; "EFAULT" ; "Invalid buffer pointer"],
+        [22 ; EINVAL ; InvalidCount      ; usize ; "EINVAL" ; "Invalid count"],
+        [21 ; EISDIR ; IsDirectory       ; usize ; "EISDIR" ; "Is a directory"],
+        [13 ; EACCES ; NotReadable       ; usize ; "EACCES" ; "File not open for reading"],
     ]);
 
     impl Error {

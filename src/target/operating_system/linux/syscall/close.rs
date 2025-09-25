@@ -3,7 +3,7 @@ use crate::target::arch::{Arch, traits::Callable};
 hooking!(CLOSE);
 
 #[inline(always)]
-pub fn close(fd: i32) -> crate::Result {
+pub fn close(fd: isize) -> crate::Result {
     let arch_result = Arch::syscall1(NUMBER, fd as usize);
     handle_result(arch_result)
 }

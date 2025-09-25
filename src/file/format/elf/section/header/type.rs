@@ -1,0 +1,32 @@
+ample::enum_labeled!(
+    #[derive(Debug)]
+    pub enum Type,
+    u32,
+    "Data endianness",
+    [
+        [0          ; Null         ; SHT_NULL          ; "SHT_NULL"          ; "SHT_NULL"],
+        [1          ; Progbits     ; SHT_PROGBITS      ; "SHT_PROGBITS"      ; "SHT_PROGBITS"],
+        [2          ; Symtab       ; SHT_SYMTAB        ; "SHT_SYMTAB"        ; "SHT_SYMTAB"],
+        [3          ; Strtab       ; SHT_STRTAB        ; "SHT_STRTAB"        ; "SHT_STRTAB"],
+        [4          ; Rela         ; SHT_RELA          ; "SHT_RELA"          ; "SHT_RELA"],
+        [5          ; Hash         ; SHT_HASH          ; "SHT_HASH"          ; "SHT_HASH"],
+        [6          ; Dynamic      ; SHT_DYNAMIC       ; "SHT_DYNAMIC"       ; "SHT_DYNAMIC"],
+        [7          ; Note         ; SHT_NOTE          ; "SHT_NOTE"          ; "SHT_NOTE"],
+        [8          ; Nobits       ; SHT_NOBITS        ; "SHT_NOBITS"        ; "SHT_NOBITS"],
+        [9          ; Rel          ; SHT_REL           ; "SHT_REL"           ; "SHT_REL"],
+        [10         ; Shlib        ; SHT_SHLIB         ; "SHT_SHLIB"         ; "SHT_SHLIB"],
+        [11         ; Dynsym       ; SHT_DYNSYM        ; "SHT_DYNSYM"        ; "SHT_DYNSYM"],
+        [14         ; InitArray    ; SHT_INIT_ARRAY    ; "SHT_INIT_ARRAY"    ; "SHT_INIT_ARRAY"],
+        [15         ; FiniArray    ; SHT_FINI_ARRAY    ; "SHT_FINI_ARRAY"    ; "SHT_FINI_ARRAY"],
+        [16         ; PreinitArray ; SHT_PREINIT_ARRAY ; "SHT_PREINIT_ARRAY" ; "SHT_PREINIT_ARRAY"],
+        [17         ; Group        ; SHT_GROUP         ; "SHT_GROUP"         ; "SHT_GROUP"],
+        [18         ; SymtabShndx  ; SHT_SYMTAB_SHNDX  ; "SHT_SYMTAB_SHNDX"  ; "SHT_SYMTAB_SHNDX"],
+        [19         ; Relr         ; SHT_RELR          ; "SHT_RELR"          ; "SHT_RELR"],
+        [0x60000000 ; Loos         ; SHT_LOOS          ; "SHT_LOOS"          ; "SHT_LOOS"],
+        [0x6fffffff ; Hios         ; SHT_HIOS          ; "SHT_HIOS"          ; "SHT_HIOS"],
+        [0x70000000 ; Loproc       ; SHT_LOPROC        ; "SHT_LOPROC"        ; "SHT_LOPROC"],
+        [0x7fffffff ; Hiproc       ; SHT_HIPROC        ; "SHT_HIPROC"        ; "SHT_HIPROC"],
+        [0x80000000 ; Louser       ; SHT_LOUSER        ; "SHT_LOUSER"        ; "SHT_LOUSER"],
+        [0xffffffff ; Hiuser       ; SHT_HIUSER        ; "SHT_HIUSER"        ; "SHT_HIUSER"],
+    ]
+);

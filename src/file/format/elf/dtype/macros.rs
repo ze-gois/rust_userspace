@@ -13,7 +13,7 @@ macro_rules! file_format_elf_dtype_class {
     ) => {
         $(
             ample::struct_tuple!(
-                #[derive(Debug, Clone, Copy, PartialEq)]
+                #[derive(Debug, PartialEq)]
                 $vis struct $name(0: pub $inner)
             );
 
@@ -21,12 +21,6 @@ macro_rules! file_format_elf_dtype_class {
             impl $crate::file::format::elf::dtype::Trait for $name {
                 type Inner = $inner;
                 const LABEL : &'static str = $label;
-            }
-
-            impl Default for $name {
-                fn default() -> Self {
-                    Self(0)
-                }
             }
 
             impl core::fmt::Display for $name {

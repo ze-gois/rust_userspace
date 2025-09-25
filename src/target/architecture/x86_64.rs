@@ -17,7 +17,7 @@ pub use result::{Error, Ok, Result};
 pub type PointerType = *const u64;
 
 ample::struct_tuple!(
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug)]
     pub struct Pointer(0: pub PointerType)
 );
 

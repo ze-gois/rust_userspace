@@ -7,8 +7,6 @@ ample::r#struct!(
     pub struct Allocator {}
 );
 
-// ample::traits_impl_blanket_bytes!(Allocator);
-
 pub type AllocatorPointer = *mut Allocator;
 
 impl ample::traits::Allocatable<Origin> for Allocator {

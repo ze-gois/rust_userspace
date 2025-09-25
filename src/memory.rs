@@ -1,3 +1,4 @@
+pub mod alloc;
 pub mod heap;
 pub mod page;
 pub mod result;

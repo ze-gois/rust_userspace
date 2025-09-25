@@ -16,13 +16,14 @@ pub use os_abi::OsABI;
 pub mod version;
 pub use version::Version;
 
+use crate::file::traits::Readable;
+
 // use super::super::dtype::Trait;
 use super::super::dtype::class_32::UChar as T;
 
 pub const MAGIC: [<T as super::super::dtype::Trait>::Inner; 4] = [0x7f, 0x45, 0x4c, 0x46];
 
 ample::r#struct!(
-    #[derive(Debug)]
     pub struct Identifier {
         pub magic0: T,     //EI_MAG0 0 File identification
         pub magic1: T,     //EI_MAG1 1 File identification
@@ -44,6 +45,19 @@ ample::r#struct!(
 );
 
 impl Identifier {
+    pub fn is_file_path_magical(file_path: &str) -> (bool, isize) {
+        let (suspect, file_descriptor) =
+            T::read_from_file_path_offsets(file_path, &[0, 1, 2, 3], true);
+
+        for (m, sus) in suspect.iter().enumerate() {
+            if sus.0 != MAGIC[m] {
+                return (false, file_descriptor);
+            }
+        }
+
+        (true, file_descriptor)
+    }
+
     pub fn magic(&self) -> [Option<Magic>; 4] {
         [
             Magic::from_discriminant(self.magic0.0),
@@ -116,40 +130,25 @@ impl Identifier {
     }
 }
 
-impl core::fmt::Display for Identifier {
+impl core::fmt::Debug for Identifier {
     fn fmt(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(
-            formatter,
-            "
-            \tELF Identifier {{
-                Magic : {:?},
-                Class : {:?},
-                Data : {:?},
-                Version : {:?},
-                OsABI : {:?},
-                ABIVersion : {:?},
-                Padding : {:?},
-                Unassigned0 : {:?},
-                Unassigned1 : {:?},
-                Unassigned2 : {:?},
-                Unassigned3 : {:?},
-                Unassigned4 : {:?},
-                Nident : {:?},
-            \t}}
-            ",
-            self.magic(),
-            self.class(),
-            self.data(),
-            self.version(),
-            self.osabi,
-            self.abiversion,
-            self.padding,
-            self.unassigned0,
-            self.unassigned1,
-            self.unassigned2,
-            self.unassigned3,
-            self.unassigned4,
-            self.nident,
-        )
+        write!(formatter, "\nELF Identifier {{\n")?;
+        write!(formatter, "\tMagic#0 : {:?}\n", self.magic0)?;
+        write!(formatter, "\tMagic#1 : {:?}\n", self.magic1)?;
+        write!(formatter, "\tMagic#2 : {:?}\n", self.magic2)?;
+        write!(formatter, "\tMagic#3 : {:?}\n", self.magic3)?;
+        write!(formatter, "\tClass : {:?}\n", self.class)?;
+        write!(formatter, "\tData : {:?}\n", self.data)?;
+        write!(formatter, "\tVersion : {:?}\n", self.version)?;
+        write!(formatter, "\tOsABI : {:?}\n", self.osabi)?;
+        write!(formatter, "\tABIVersion : {:?}\n", self.abiversion)?;
+        write!(formatter, "\tPadding : {:?}\n", self.padding)?;
+        write!(formatter, "\tUnassigned0 : {:?}\n", self.unassigned0)?;
+        write!(formatter, "\tUnassigned1 : {:?}\n", self.unassigned1)?;
+        write!(formatter, "\tUnassigned2 : {:?}\n", self.unassigned2)?;
+        write!(formatter, "\tUnassigned3 : {:?}\n", self.unassigned3)?;
+        write!(formatter, "\tUnassigned4 : {:?}\n", self.unassigned4)?;
+        write!(formatter, "\tNident : {:?}\n", self.nident)?;
+        write!(formatter, "}} ELF Identifier")
     }
 }
