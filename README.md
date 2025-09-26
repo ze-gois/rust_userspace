@@ -1,9 +1,9 @@
 # Userspace
 
 <div align="center">
-  
+
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+![License](https://img.shields.io/badge/license-BSD3-green.svg)
 ![Rust](https://img.shields.io/badge/rust-2024_edition-orange.svg)
 ![Architecture](https://img.shields.io/badge/arch-x86__64-purple.svg)
 ![Status](https://img.shields.io/badge/status-experimental-yellow.svg)
@@ -91,12 +91,12 @@ pub extern "C" fn entry(stack_pointer: userspace::target::arch::PointerType) -> 
     let stack = userspace::memory::Stack::from_pointer(
         userspace::target::arch::Pointer(stack_pointer)
     );
-    
+
     // Access command-line arguments
     if let Some(arg) = stack.arguments.get(0) {
         userspace::info!("Program name: {:?}", arg);
     }
-    
+
     // Work with the ELF format
     if let Some(arg0) = stack.arguments.get(0) {
         if !arg0.pointer.0.is_null() {
@@ -108,7 +108,7 @@ pub extern "C" fn entry(stack_pointer: userspace::target::arch::PointerType) -> 
             }
         }
     }
-    
+
     loop {}
 }
 ```
