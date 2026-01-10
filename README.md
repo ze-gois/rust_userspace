@@ -69,6 +69,28 @@ userspace/
 
 ### Installation
 
+#### With standard library 
+
+Add this to your `Cargo.toml`:
+
+```toml
+[dependencies]
+userspace = { version="*", features=["with_std"] }
+```
+
+##### Usage Example
+
+```rust
+use userspace;
+
+fn main() {
+    userspace::info!("Hello, world!\n");
+    userspace::file::print(file!());
+}
+```
+
+#### Standalone
+
 Add this to your `Cargo.toml`:
 
 ```toml
