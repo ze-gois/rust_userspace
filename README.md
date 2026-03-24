@@ -69,6 +69,13 @@ userspace/
 
 ### Installation
 
+```sh
+rustup toolchain install nightly
+cargo new usespace_sample
+cd userspace_sample
+rustup override set nightly
+```
+
 #### With standard library 
 
 Add this to your `Cargo.toml`:
@@ -86,52 +93,6 @@ use userspace;
 fn main() {
     userspace::info!("Hello, world!\n");
     userspace::file::print(file!());
-}
-```
-
-#### Standalone
-
-Add this to your `Cargo.toml`:
-
-```toml
-[dependencies]
-userspace = { git = "https://github.com/ze-gois/rust_userspace" }
-```
-
-### Usage Example
-
-```rust
-// Create a no_std binary
-#![no_std]
-#![no_main]
-
-use userspace;
-
-#[unsafe(no_mangle)]
-pub extern "C" fn entry(stack_pointer: userspace::target::arch::PointerType) -> ! {
-    // Convert raw stack pointer to a safe abstraction
-    let stack = userspace::memory::Stack::from_pointer(
-        userspace::target::arch::Pointer(stack_pointer)
-    );
-
-    // Access command-line arguments
-    if let Some(arg) = stack.arguments.get(0) {
-        userspace::info!("Program name: {:?}", arg);
-    }
-
-    // Work with the ELF format
-    if let Some(arg0) = stack.arguments.get(0) {
-        if !arg0.pointer.0.is_null() {
-            unsafe {
-                let cstr = core::ffi::CStr::from_ptr(arg0.pointer.0 as *mut i8);
-                let path = cstr.to_str().unwrap();
-                let elf = userspace::file::format::elf::header::Identifier::from_path(path);
-                userspace::info!("ELF identifier: {:?}", elf);
-            }
-        }
-    }
-
-    loop {}
 }
 ```
 
