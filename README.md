@@ -67,7 +67,7 @@ userspace/
 - Rust 2024 Edition or newer
 - Cargo and Rustup
 
-### Installation
+### Usage
 
 ```sh
 rustup toolchain install nightly
