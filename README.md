@@ -41,7 +41,7 @@
 ```
 userspace/
 ├── src/
-│   ├── file/         # File format handling (ELF)
+│   ├── file/         # File format handling
 │   ├── macros/       # Utility macros
 │   ├── memory/       # Memory management
 │   │   ├── alloc/    # Allocation functionality
