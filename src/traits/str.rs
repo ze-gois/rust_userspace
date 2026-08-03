@@ -24,7 +24,7 @@ impl Str for &str {
         cstr.to_str().unwrap()
     }
 
-    fn from_pointer(ptr: *const u8, len: usize) -> Self {
+    fn from_pointer(ptr: *const u8, _len: usize) -> Self {
         let cstr = unsafe { core::ffi::CStr::from_ptr(ptr as *mut i8) };
         cstr.to_str().unwrap()
     }
