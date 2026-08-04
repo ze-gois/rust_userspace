@@ -12,6 +12,6 @@ syscall_modules!(
     [10;  mprotect; MPROTECT; Syscall3;  "MProtect"],
     [11;  munmap;   MUNMAP;   Syscall2;  "MUnMap"],
     [60;  exit;     EXIT;     Syscall1;  "Exit"],
-    [257; openat;   OPENAT;   Syscall3;  "OpenAt"],
+    [257; openat;   OPENAT;   Syscall4;  "OpenAt"],
     [258; openat4;  OPENAT4;  Syscall4;  "OpenAt4"]
 );
