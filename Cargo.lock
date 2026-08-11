@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "ample"
-version = "0.1.129"
+version = "0.2.0"
 dependencies = [
  "cc",
 ]
@@ -26,7 +26,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "userspace"
-version = "0.1.129"
+version = "0.2.0"
 dependencies = [
  "ample",
  "cc",
@@ -35,7 +35,7 @@ dependencies = [
 
 [[package]]
 name = "userspace_build"
-version = "0.1.129"
+version = "0.2.0"
 dependencies = [
  "ample",
  "cc",
