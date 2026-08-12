@@ -5,16 +5,13 @@
    .section .text._start
    .type   _start,@function
    _start:
-       # Store the original stack pointer
-       mov     %rsp, %rdi
+       # Preserve the kernel-provided initial stack pointer across calls.
+       # r12 is callee-saved by the System V x86_64 ABI.
+       mov     %rsp, %r12
 
-       # Always ensure 16-byte alignment
+       # The stack must be 16-byte aligned immediately before a call.
        and     $-16, %rsp
-
-       # Create a standard stack frame
-       push    %rbp
-       mov     %rsp, %rbp
-       sub     $16, %rsp        # Reserve some stack space
+       xor     %ebp, %ebp
 
        # Initialize BSS section to zero
        # bss_start and bss_end are provided by the linker script
@@ -27,18 +24,15 @@ bss_zero_loop:
        movq    $0, (%rax)
        add     $8, %rax
        cmp     %rcx, %rax
-       jl      bss_zero_loop
+       jb      bss_zero_loop
 
 bss_init_done:
-       # Initialize any relocations if needed
-       # This would typically be done by the dynamic loader
-       # For our static binary, we don't need much here
-
-       # Call the Rust entry point
+       # Run optional process initialization before handing off to Rust.
        call    flag_license
+
+       # Pass the untouched Linux initial stack to the application entry point.
+       mov     %r12, %rdi
        call    entry
 
-       # We shouldn't return, but clean up anyway
-       mov     %rbp, %rsp
-       pop     %rbp
-       hlt
+       # entry has return type `!`; reaching here indicates a contract violation.
+       ud2

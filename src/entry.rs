@@ -19,7 +19,6 @@ pub extern "C" fn entry(stack_pointer: userspace::target::arch::PointerType) -> 
 
     info!("eXecuting Executable and Linkable Format\n\n\n");
 
-    let argc = stack_pointer.0 as *const usize;
     let stack = userspace::memory::Stack::from_pointer(stack_pointer);
     // stack.print();
     stack.arguments.print();
@@ -35,7 +34,7 @@ pub extern "C" fn entry(stack_pointer: userspace::target::arch::PointerType) -> 
             userspace::target::os::syscall::exit(32)
         };
 
-        let (self_elf_identifier,current_offset) = userspace::file::format::elf::header::Identifier::read_from_file_descriptor(self_elf_file_descriptor, 0, true);
+        let (self_elf_identifier, _) = userspace::file::format::elf::header::Identifier::read_from_file_descriptor(self_elf_file_descriptor, 0, true);
 
         info!("\n{:?}\n",self_elf_identifier);
 
@@ -45,7 +44,7 @@ pub extern "C" fn entry(stack_pointer: userspace::target::arch::PointerType) -> 
             userspace::file::format::elf::header::identifier::Data::DataNone => userspace::target::os::syscall::exit(33),
         };
 
-        let (header, current_offset) = userspace::file::format::elf::Header64::read_from_file_descriptor(self_elf_file_descriptor, 0, endianness);
+        let (header, _) = userspace::file::format::elf::Header64::read_from_file_descriptor(self_elf_file_descriptor, 0, endianness);
 
         info!("\n{:?}\n",header);
 
