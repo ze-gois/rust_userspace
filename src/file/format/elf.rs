@@ -4,6 +4,7 @@ pub mod header;
 pub use header::Header32;
 pub use header::Header64;
 
+pub mod loader;
 pub mod section;
 pub mod segment;
 

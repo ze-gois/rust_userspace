@@ -68,6 +68,17 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
                 crate::target::os::syscall::mmap::Ok::Default(m),
             )),
         ))),
+        crate::Result::Err(crate::Error::Target(crate::target::Error::Arch(
+            crate::target::arch::Error::X86_64Syscall(
+                crate::target::arch::syscall::Error::X86_64Syscall6(
+                    crate::target::arch::syscall::syscall6::Error::Default(errno),
+                ),
+            ),
+        ))) => core::result::Result::Err(crate::Error::Target(crate::target::Error::Os(
+            crate::target::os::Error::Syscall(crate::target::os::syscall::Error::MMap(
+                Error::Default(errno),
+            )),
+        ))),
         _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::Os(
             crate::target::os::Error::Syscall(crate::target::os::syscall::Error::MMap(
                 Error::Default(3),

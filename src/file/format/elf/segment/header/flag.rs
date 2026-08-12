@@ -1,5 +1,5 @@
 ample::enum_flag!(
-    u64;
+    u32;
     "Segment Flags";
     pub enum Flag {
         [0;              None;        NONE;        "none"; "All access denied All access denied"],

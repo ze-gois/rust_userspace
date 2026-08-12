@@ -2,3 +2,11 @@
 	path = doc/gabi
 	url = https://github.com/xinuos/gabi
 	branch = main
+[submodule "crates/ample"]
+	path = crates/ample
+	url = git@github.com:ze-gois/rust_ample
+	branch = main
+[submodule "crates/userspace_build"]
+	path = crates/userspace_build
+	url = git@github.com:ze-gois/rust_userspace_build
+	branch = main

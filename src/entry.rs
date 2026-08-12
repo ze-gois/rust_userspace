@@ -3,8 +3,6 @@
 #![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
 
-use userspace;
-use userspace::file::traits::Readable;
 use userspace::info;
 
 #[derive(Debug)]
@@ -12,65 +10,69 @@ pub struct Origin;
 
 ample::trait_implement_primitives!();
 
-#[rustfmt::skip]
+#[inline(never)]
+fn jump_to_loaded_entry(entry: u64, initial_stack: userspace::target::arch::PointerType) -> ! {
+    unsafe { userspace::file::format::elf::loader::jump_to_entry(entry, initial_stack) }
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn entry(stack_pointer: userspace::target::arch::PointerType) -> ! {
     let stack_pointer = userspace::target::arch::Pointer(stack_pointer);
-
-    info!("eXecuting Executable and Linkable Format\n\n\n");
-
     let stack = userspace::memory::Stack::from_pointer(stack_pointer);
-    // stack.print();
     stack.arguments.print();
 
-    let self_file_path_pointer = stack.arguments.get(0).unwrap();
+    let (target_path, target_path_pointer) = match stack.arguments.get(1) {
+        Some(argument) if !argument.pointer.0.is_null() => {
+            use userspace::traits::Str;
+            (
+                <&str>::from_null_terminated_pointer(argument.pointer.0 as *const u8),
+                argument.pointer.0 as *const u8,
+            )
+        }
+        _ => ("/usr/bin/pwd", b"/usr/bin/pwd\0".as_ptr()),
+    };
 
-    if !self_file_path_pointer.pointer.0.is_null() {
-        use userspace::traits::Str;
+    let prepared = match userspace::file::format::elf::loader::prepare_execution(
+        target_path,
+        target_path_pointer,
+        stack_pointer.0,
+    ) {
+        Ok(prepared) => prepared,
+        Err(error) => {
+            info!("ELF execution preparation failed: {:?}\n", error);
+            userspace::target::os::syscall::exit(126);
+        }
+    };
 
-        let self_path = <&str>::from_null_terminated_pointer(self_file_path_pointer.pointer.0 as *const u8);
-
-        let Some(self_elf_file_descriptor) = <&str>::open_elf(&self_path) else {
-            userspace::target::os::syscall::exit(32)
-        };
-
-        let (self_elf_identifier, _) = userspace::file::format::elf::header::Identifier::read_from_file_descriptor(self_elf_file_descriptor, 0, true);
-
-        info!("\n{:?}\n",self_elf_identifier);
-
-        let endianness = match self_elf_identifier.data() {
-            userspace::file::format::elf::header::identifier::Data::DataLSB => true,
-            userspace::file::format::elf::header::identifier::Data::DataMSB => false,
-            userspace::file::format::elf::header::identifier::Data::DataNone => userspace::target::os::syscall::exit(33),
-        };
-
-        let (header, _) = userspace::file::format::elf::Header64::read_from_file_descriptor(self_elf_file_descriptor, 0, endianness);
-
-        info!("\n{:?}\n",header);
-
-        extern crate alloc;
-
-        let x = alloc::string::String::new();
-
-        userspace::info!("\n\n=>>>{:?}\n\n",x);
-
-    }
-
-
-    // Replace this process with `/usr/bin/ls`.
-    // The argument and environment vectors are terminated by null pointers,
-    // as required by Linux's execve(2) ABI.
-    let ls_path = b"/usr/bin/ls\0";
-    let ls_name = b"ls\0";
-    let ls_arguments = [ls_name.as_ptr(), core::ptr::null()];
-    let empty_environment = [core::ptr::null()];
-
-    let execve_result = userspace::target::os::syscall::execve(
-        ls_path.as_ptr(),
-        ls_arguments.as_ptr(),
-        empty_environment.as_ptr(),
+    let image = prepared.image;
+    info!(
+        "Loaded ELF image {:?}: bias={:#x}, entry={:#x}, range={:#x}..{:#x}, segments={}, interpreter={}\n",
+        target_path,
+        image.base,
+        image.entry,
+        image.base,
+        image.end,
+        image.segment_count,
+        image.interpreter.is_some(),
     );
 
-    info!("execve /usr/bin/ls failed: {:?}\n", execve_result);
-    userspace::target::os::syscall::exit(127);
+    for index in 0..image.segment_count {
+        if let Some(segment) = image.segments[index] {
+            info!(
+                "  PT_LOAD[{}]: addr={:#x}, vaddr={:#x}, offset={:#x}, filesz={:#x}, memsz={:#x}, flags={:#x}, align={:#x}, map={:#x}..{:#x}\n",
+                segment.index,
+                segment.address,
+                segment.virtual_address,
+                segment.file_offset,
+                segment.file_size,
+                segment.memory_size,
+                segment.flags,
+                segment.alignment,
+                segment.map_start,
+                segment.map_end,
+            );
+        }
+    }
+
+    jump_to_loaded_entry(prepared.entry, prepared.stack_pointer);
 }
