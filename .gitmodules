@@ -4,9 +4,9 @@
 	branch = main
 [submodule "crates/ample"]
 	path = crates/ample
-	url = git@github.com:ze-gois/rust_ample
+	url = https://github.com/ze-gois/rust_ample.git
 	branch = main
 [submodule "crates/userspace_build"]
 	path = crates/userspace_build
-	url = git@github.com:ze-gois/rust_userspace_build
+	url = https://github.com/ze-gois/rust_userspace_build.git
 	branch = main

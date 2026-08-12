@@ -1,5 +1,10 @@
 ENTRY(_start)
 
+/*
+ * The userspace loader is linked at 0x100000. ET_EXEC images mapped into
+ * this range are intentionally rejected by MAP_FIXED_NOREPLACE; ordinary
+ * Linux ET_EXEC images are usually linked near 0x400000.
+ */
 SECTIONS {
     . = 0x100000;
 

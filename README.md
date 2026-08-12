@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)
 ![License](https://img.shields.io/badge/license-BSD3-green.svg)
 ![Rust](https://img.shields.io/badge/rust-2024_edition-orange.svg)
 ![Architecture](https://img.shields.io/badge/arch-x86__64-purple.svg)
@@ -33,7 +33,8 @@
 - 🧩 **Modular Architecture**: Well-defined components with clear interfaces
 - 🔄 **Cross-Platform**: Architecture abstractions for portability (currently x86_64)
 - 📦 **No Standard Library**: Works in `no_std` environments
-- 📄 **ELF Support**: Parse and work with Executable and Linkable Format files
+- 📄 **ELF Support**: Parse, map, and launch ELF64 images according to the GABI
+- 🔗 **ELF Interpreters**: Load `PT_INTERP` dynamic linkers and prepare Linux startup state
 - 🧠 **Memory Management**: Stack manipulation and memory allocation utilities
 
 ## 🔍 Project Structure
@@ -115,6 +116,20 @@ The memory subsystem provides:
 - Page allocation primitives
 - Basic heap allocation in no_std environments
 
+### ELF Loading
+
+The ELF loader currently targets Linux x86_64 and follows the GABI program-header view:
+
+- Maps `PT_LOAD` segments with their file and memory sizes.
+- Applies load bias to `ET_DYN`/PIE images.
+- Preserves segment permissions from `p_flags`.
+- Detects `PT_INTERP` and transfers control to the system dynamic linker.
+- Builds the initial interpreter stack and updates the core auxiliary-vector entries.
+
+The current loader uses a fixed `0x100000` link address for the `userspace` executable. `ET_EXEC` images linked into that range are intentionally rejected by `MAP_FIXED_NOREPLACE`; conventional `ET_EXEC` images near `0x400000` do not collide with the loader. The initial rebuilt stack is a 64 KiB anonymous mapping. Independent copying of pointed-to argument/environment/auxiliary-vector data, guard pages, transactional mapping rollback, and broader relocation support remain planned work.
+
+See `tests/elf_fixtures/build.sh` for reproducible static, PIE, dynamic, large-BSS, and address-collision ELF fixtures.
+
 ### Architecture Abstraction
 
 The target subsystem abstracts architecture details:
@@ -161,6 +176,10 @@ This project is licensed under the terms found in the [LICENSE](LICENSE) file.
 
 ## 🔮 Future Work
 
+- Independent argv/envp/auxv string and pointed-data copying
+- Guard-page and expandable initial-stack support
+- Transactional mapping ownership and rollback
+- Complete auxiliary-vector pointer classification
 - Support for additional architectures (ARM, RISC-V)
 - Enhanced file system abstractions
 - Networking capabilities
