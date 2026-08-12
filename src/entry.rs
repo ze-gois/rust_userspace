@@ -57,7 +57,20 @@ pub extern "C" fn entry(stack_pointer: userspace::target::arch::PointerType) -> 
     }
 
 
-    // let uchar32 = userspace::file::format::elf::dtype::class_32::UChar(3);
+    // Replace this process with `/usr/bin/ls`.
+    // The argument and environment vectors are terminated by null pointers,
+    // as required by Linux's execve(2) ABI.
+    let ls_path = b"/usr/bin/ls\0";
+    let ls_name = b"ls\0";
+    let ls_arguments = [ls_name.as_ptr(), core::ptr::null()];
+    let empty_environment = [core::ptr::null()];
 
-    panic!();
+    let execve_result = userspace::target::os::syscall::execve(
+        ls_path.as_ptr(),
+        ls_arguments.as_ptr(),
+        empty_environment.as_ptr(),
+    );
+
+    info!("execve /usr/bin/ls failed: {:?}\n", execve_result);
+    userspace::target::os::syscall::exit(127);
 }

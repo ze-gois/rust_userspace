@@ -8,6 +8,8 @@ syscall_modules!(
     [3;   close;    CLOSE;    Syscall1;  "Close"],
     [5;   fstat;    FSTAT;    Syscall2;  "FStat"],
     [8;   lseek;    LSEEK;    Syscall3;  "LSeek"],
+    [57;  fork;     FORK;     Syscall0;  "Fork"],
+    [59;  execve;   EXECVE;   Syscall3;  "Execve"],
     [9;   mmap;     MMAP;     Syscall6;  "MMap"],
     [10;  mprotect; MPROTECT; Syscall3;  "MProtect"],
     [11;  munmap;   MUNMAP;   Syscall2;  "MUnMap"],

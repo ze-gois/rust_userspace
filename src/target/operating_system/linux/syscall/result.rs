@@ -8,8 +8,10 @@ pub mod ok {
         [6; ERR_MUNMAP;  MUnmap;   super::super::munmap::Ok;      "munmap";    "E_MUNMAP"],
         [7; ERR_OPEN;  Open;     super::super::open::Ok;          "open";      "E_OPEN"],
         [8; ERR_READ;  Read;     super::super::read::Ok;          "read";      "E_READ"],
-        [9; ERR_WRITE;  Write;    super::super::write::Ok;        "write";     "E_WRITE"],
-        [10; ERR_FSTAT; FStat;    super::super::fstat::Ok;        "fstat";     "E_FSTAT"]
+        [9; ERR_WRITE;  Write;    super::super::write::Ok;        "write";     "E_WRITE" ],
+        [10; ERR_FSTAT; FStat;    super::super::fstat::Ok;        "fstat";     "E_FSTAT"],
+        [11; ERR_FORK;  Fork;     super::super::fork::Ok;         "fork";      "E_FORK" ],
+        [12; ERR_EXECVE; Execve;  super::super::execve::Ok;       "execve";    "E_EXECVE"]
     ]);
 
     impl Ok {
@@ -30,7 +32,9 @@ pub mod error {
         [7; ERR_OPEN;  Open;     super::super::open::Error;          "open";      "E_OPEN"],
         [8; ERR_READ;  Read;     super::super::read::Error;          "read";      "E_READ"],
         [9; ERR_WRITE;  Write;    super::super::write::Error;        "write";     "E_WRITE"],
-        [10; ERR_FSTAT; FStat;    super::super::fstat::Error;        "fstat";     "E_FSTAT"]
+        [10; ERR_FSTAT; FStat;    super::super::fstat::Error;        "fstat";     "E_FSTAT"],
+        [11; ERR_FORK;  Fork;     super::super::fork::Error;         "fork";      "E_FORK" ],
+        [12; ERR_EXECVE; Execve;  super::super::execve::Error;       "execve";    "E_EXECVE"]
     ]);
 
     impl Error {
