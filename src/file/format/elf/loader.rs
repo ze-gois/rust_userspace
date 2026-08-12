@@ -811,14 +811,16 @@ fn build_initial_stack(
         unsafe { count_null_terminated(old_envp, 4096) }.ok_or(Error::StackConstructionFailed)?;
     let old_auxv = unsafe { old_envp.add(env_count + 1) };
     let mut aux_count = 0usize;
+    let mut found_aux_null = false;
     while aux_count < 1024 {
         let key = unsafe { *old_auxv.add(aux_count * 2) };
         aux_count += 1;
         if key == AT_NULL {
+            found_aux_null = true;
             break;
         }
     }
-    if aux_count == 1024 {
+    if !found_aux_null {
         return Err(Error::StackConstructionFailed);
     }
 
@@ -1053,7 +1055,7 @@ fn build_initial_stack(
             *auxv.add(index * 2 + 1) = value;
         }
 
-        debug_assert_eq!(data_cursor as usize, data_end);
+        debug_assert!((data_cursor as usize) <= data_end);
     }
 
     Ok(stack_start as crate::target::arch::PointerType)

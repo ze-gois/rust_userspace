@@ -126,7 +126,7 @@ The ELF loader currently targets Linux x86_64 and follows the GABI program-heade
 - Detects `PT_INTERP` and transfers control to the system dynamic linker.
 - Builds the initial interpreter stack and updates the core auxiliary-vector entries.
 
-The current loader uses a fixed `0x100000` link address for the `userspace` executable. `ET_EXEC` images linked into that range are intentionally rejected by `MAP_FIXED_NOREPLACE`; conventional `ET_EXEC` images near `0x400000` do not collide with the loader. The initial rebuilt stack is a 64 KiB anonymous mapping. Independent copying of pointed-to argument/environment/auxiliary-vector data, guard pages, transactional mapping rollback, and broader relocation support remain planned work.
+The current loader uses a fixed `0x100000` link address for the `userspace` executable. `ET_EXEC` images linked into that range are intentionally rejected by `MAP_FIXED_NOREPLACE`; conventional `ET_EXEC` images near `0x400000` do not collide with the loader. The rebuilt initial stack is a 64 KiB writable mapping preceded by a `PROT_NONE` guard page. `argv`, `envp`, `AT_EXECFN`, `AT_RANDOM`, `AT_PLATFORM`, and `AT_BASE_PLATFORM` data are copied into the new stack; `AT_SYSINFO_EHDR` remains a pointer to the existing vDSO mapping. The stack is still fixed-size, mappings are not yet transactionally rolled back, and some inherited auxiliary-vector values still require a complete semantic audit.
 
 See `tests/elf_fixtures/build.sh` for reproducible static, PIE, dynamic, large-BSS, and address-collision ELF fixtures.
 
@@ -176,10 +176,10 @@ This project is licensed under the terms found in the [LICENSE](LICENSE) file.
 
 ## 🔮 Future Work
 
-- Independent argv/envp/auxv string and pointed-data copying
-- Guard-page and expandable initial-stack support
+- Expand the fixed initial stack and add a growth policy
 - Transactional mapping ownership and rollback
-- Complete auxiliary-vector pointer classification
+- Complete auxiliary-vector semantic classification and regeneration
+- Validate source stack ranges before copying pointed data
 - Support for additional architectures (ARM, RISC-V)
 - Enhanced file system abstractions
 - Networking capabilities
