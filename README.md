@@ -191,6 +191,6 @@ This project is licensed under the terms found in the [LICENSE](LICENSE) file.
 <div align="center">
   <sub>
     Built for research purposes at the Federal University of Rio Grande do Norte (UFRN)<br>
-    © 2023-2024 José Gois - https://userspace.builders
+    © 2023-2024 José Gois - https://userspace.zegois.com
   </sub>
 </div>
