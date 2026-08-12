@@ -1,0 +1,4 @@
+[submodule "doc/gabi"]
+	path = doc/gabi
+	url = https://github.com/xinuos/gabi
+	branch = main
