@@ -1,4 +1,3 @@
-use crate::file::format::elf::header::Header64 as ElfHeader64;
 use crate::file::format::elf::segment::header::Header64 as ProgramHeader64;
 
 #[derive(Debug, Clone, Copy)]

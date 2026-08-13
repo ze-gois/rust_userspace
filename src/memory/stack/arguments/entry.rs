@@ -17,6 +17,13 @@ impl Entry {
     }
 }
 
+impl crate::memory::stack::list::LinkedEntry for Entry {
+    fn set_links(&mut self, previous: *mut Self, next: *mut Self) {
+        self.prev = previous;
+        self.next = next;
+    }
+}
+
 impl core::fmt::Debug for Entry {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         unsafe {

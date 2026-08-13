@@ -1,10 +1,10 @@
 use crate::target::os::syscall;
 
+use super::Error;
 use super::constants::{
     AT_BASE, AT_BASE_PLATFORM, AT_ENTRY, AT_EXECFN, AT_NULL, AT_PHDR, AT_PHENT, AT_PHNUM,
     AT_PLATFORM, AT_RANDOM, AT_SYSINFO_EHDR, STACK_SIZE,
 };
-use crate::file::format::elf::segment::types::LoadedImage;
 
 unsafe fn count_null_terminated(pointer: *const usize, limit: usize) -> Option<usize> {
     for index in 0..limit {
@@ -39,16 +39,19 @@ unsafe fn copy_c_string(source: *const u8, destination: *mut u8, limit: usize) -
 fn update_auxiliary(
     key: usize,
     value: &mut usize,
-    image: &LoadedImage,
+    entry: u64,
+    phdr: u64,
+    phent: usize,
+    phnum: usize,
     interpreter_base: usize,
     execfn: usize,
 ) {
     match key {
-        AT_PHDR => *value = image.phdr as usize,
-        AT_PHENT => *value = image.phent,
-        AT_PHNUM => *value = image.phnum,
+        AT_PHDR => *value = phdr as usize,
+        AT_PHENT => *value = phent,
+        AT_PHNUM => *value = phnum,
         AT_BASE => *value = interpreter_base,
-        AT_ENTRY => *value = image.entry as usize,
+        AT_ENTRY => *value = entry as usize,
         AT_EXECFN => *value = execfn,
         _ => {}
     }
@@ -58,19 +61,22 @@ pub fn build_initial_stack(
     initial_stack: crate::target::arch::PointerType,
     path: &str,
     _path_pointer: *const u8,
-    image: &LoadedImage,
+    entry: u64,
+    phdr: u64,
+    phent: usize,
+    phnum: usize,
     interpreter_base: usize,
-) -> Result<crate::target::arch::PointerType, crate::file::format::elf::segment::error::Error> {
+) -> Result<crate::target::arch::PointerType, Error> {
     let original = initial_stack as *const usize;
     let original_argc = unsafe { *original };
     if original_argc > 4096 {
-        return Err(crate::file::format::elf::segment::error::Error::AddressOverflow);
+        return Err(Error::StackConstructionFailed);
     }
 
     let old_argv = unsafe { original.add(1) };
     let old_envp = unsafe { old_argv.add(original_argc + 1) };
-    let env_count = unsafe { count_null_terminated(old_envp, 4096) }
-        .ok_or(crate::file::format::elf::segment::error::Error::AddressOverflow)?;
+    let env_count =
+        unsafe { count_null_terminated(old_envp, 4096) }.ok_or(Error::StackConstructionFailed)?;
     let old_auxv = unsafe { old_envp.add(env_count + 1) };
     let mut aux_count = 0usize;
     let mut found_aux_null = false;
@@ -83,7 +89,7 @@ pub fn build_initial_stack(
         }
     }
     if !found_aux_null {
-        return Err(crate::file::format::elf::segment::error::Error::StackConstructionFailed);
+        return Err(Error::StackConstructionFailed);
     }
 
     let new_argc = if original_argc >= 2 {
@@ -96,33 +102,33 @@ pub fn build_initial_stack(
         .checked_add(new_argc + 1)
         .and_then(|value| value.checked_add(env_count + 1))
         .and_then(|value| value.checked_add(aux_count.checked_mul(2)?))
-        .ok_or(crate::file::format::elf::segment::error::Error::StackConstructionFailed)?;
+        .ok_or(Error::StackConstructionFailed)?;
     let word_bytes = words
         .checked_mul(core::mem::size_of::<usize>())
-        .ok_or(crate::file::format::elf::segment::error::Error::StackConstructionFailed)?;
+        .ok_or(Error::StackConstructionFailed)?;
 
     let mut data_bytes = path
         .as_bytes()
         .len()
         .checked_add(1)
-        .ok_or(crate::file::format::elf::segment::error::Error::StackConstructionFailed)?;
+        .ok_or(Error::StackConstructionFailed)?;
 
     for index in 1..new_argc {
         let source = unsafe { *old_argv.add(index + 1) as *const u8 };
-        let size = unsafe { c_string_size(source, STACK_SIZE) }
-            .ok_or(crate::file::format::elf::segment::error::Error::StackConstructionFailed)?;
+        let size =
+            unsafe { c_string_size(source, STACK_SIZE) }.ok_or(Error::StackConstructionFailed)?;
         data_bytes = data_bytes
             .checked_add(size)
-            .ok_or(crate::file::format::elf::segment::error::Error::StackConstructionFailed)?;
+            .ok_or(Error::StackConstructionFailed)?;
     }
 
     for index in 0..env_count {
         let source = unsafe { *old_envp.add(index) as *const u8 };
-        let size = unsafe { c_string_size(source, STACK_SIZE) }
-            .ok_or(crate::file::format::elf::segment::error::Error::StackConstructionFailed)?;
+        let size =
+            unsafe { c_string_size(source, STACK_SIZE) }.ok_or(Error::StackConstructionFailed)?;
         data_bytes = data_bytes
             .checked_add(size)
-            .ok_or(crate::file::format::elf::segment::error::Error::StackConstructionFailed)?;
+            .ok_or(Error::StackConstructionFailed)?;
     }
 
     for index in 0..aux_count {
@@ -131,28 +137,27 @@ pub fn build_initial_stack(
         let extra = match key {
             AT_RANDOM if value != 0 => 16,
             AT_PLATFORM | AT_BASE_PLATFORM if value != 0 => unsafe {
-                c_string_size(value as *const u8, STACK_SIZE).ok_or(
-                    crate::file::format::elf::segment::error::Error::StackConstructionFailed,
-                )?
+                c_string_size(value as *const u8, STACK_SIZE)
+                    .ok_or(Error::StackConstructionFailed)?
             },
             _ => 0,
         };
         data_bytes = data_bytes
             .checked_add(extra)
-            .ok_or(crate::file::format::elf::segment::error::Error::StackConstructionFailed)?;
+            .ok_or(Error::StackConstructionFailed)?;
     }
 
     let required_bytes = word_bytes
         .checked_add(15)
         .and_then(|value| value.checked_add(data_bytes))
-        .ok_or(crate::file::format::elf::segment::error::Error::StackConstructionFailed)?;
+        .ok_or(Error::StackConstructionFailed)?;
     if required_bytes > STACK_SIZE {
-        return Err(crate::file::format::elf::segment::error::Error::StackConstructionFailed);
+        return Err(Error::StackConstructionFailed);
     }
 
     let mapping_length = STACK_SIZE
         .checked_add(crate::memory::page::SIZE)
-        .ok_or(crate::file::format::elf::segment::error::Error::StackConstructionFailed)?;
+        .ok_or(Error::StackConstructionFailed)?;
     let stack_address = match syscall::mmap(
         core::ptr::null_mut(),
         mapping_length,
@@ -164,7 +169,7 @@ pub fn build_initial_stack(
         Ok(crate::Ok::Target(crate::target::Ok::Os(crate::target::os::Ok::Syscall(
             crate::target::os::syscall::Ok::MMap(syscall::mmap::Ok::Default(address)),
         )))) if address != u64::MAX as usize => address,
-        _ => return Err(crate::file::format::elf::segment::error::Error::StackConstructionFailed),
+        _ => return Err(Error::StackConstructionFailed),
     };
 
     let unmap_stack = || {
@@ -181,7 +186,7 @@ pub fn build_initial_stack(
         )))) => {}
         _ => {
             unmap_stack();
-            return Err(crate::file::format::elf::segment::error::Error::StackConstructionFailed);
+            return Err(Error::StackConstructionFailed);
         }
     }
 
@@ -189,26 +194,26 @@ pub fn build_initial_stack(
         Some(value) => value,
         None => {
             unmap_stack();
-            return Err(crate::file::format::elf::segment::error::Error::StackConstructionFailed);
+            return Err(Error::StackConstructionFailed);
         }
     };
     let stack_start = match stack_top.checked_sub(required_bytes) {
         Some(value) => value & !15usize,
         None => {
             unmap_stack();
-            return Err(crate::file::format::elf::segment::error::Error::StackConstructionFailed);
+            return Err(Error::StackConstructionFailed);
         }
     };
     let usable_start = match stack_address.checked_add(crate::memory::page::SIZE) {
         Some(value) => value,
         None => {
             unmap_stack();
-            return Err(crate::file::format::elf::segment::error::Error::StackConstructionFailed);
+            return Err(Error::StackConstructionFailed);
         }
     };
     if stack_start < usable_start {
         unmap_stack();
-        return Err(crate::file::format::elf::segment::error::Error::StackConstructionFailed);
+        return Err(Error::StackConstructionFailed);
     }
 
     let stack = stack_start as *mut usize;
@@ -220,14 +225,14 @@ pub fn build_initial_stack(
         Some(value) => value,
         None => {
             unmap_stack();
-            return Err(crate::file::format::elf::segment::error::Error::StackConstructionFailed);
+            return Err(Error::StackConstructionFailed);
         }
     };
     let data_end = match data_start.checked_add(data_bytes) {
         Some(value) if value <= stack_top => value,
         _ => {
             unmap_stack();
-            return Err(crate::file::format::elf::segment::error::Error::StackConstructionFailed);
+            return Err(Error::StackConstructionFailed);
         }
     };
 
@@ -253,9 +258,7 @@ pub fn build_initial_stack(
             let destination = data_cursor;
             let Some(size) = copy_c_string(source, destination, STACK_SIZE) else {
                 unmap_stack();
-                return Err(
-                    crate::file::format::elf::segment::error::Error::StackConstructionFailed,
-                );
+                return Err(Error::StackConstructionFailed);
             };
             *argv.add(index) = destination as usize;
             data_cursor = data_cursor.add(size);
@@ -267,9 +270,7 @@ pub fn build_initial_stack(
             let destination = data_cursor;
             let Some(size) = copy_c_string(source, destination, STACK_SIZE) else {
                 unmap_stack();
-                return Err(
-                    crate::file::format::elf::segment::error::Error::StackConstructionFailed,
-                );
+                return Err(Error::StackConstructionFailed);
             };
             *envp.add(index) = destination as usize;
             data_cursor = data_cursor.add(size);
@@ -282,7 +283,10 @@ pub fn build_initial_stack(
             update_auxiliary(
                 key,
                 &mut value,
-                image,
+                entry,
+                phdr,
+                phent,
+                phnum,
                 interpreter_base,
                 target_path_destination as usize,
             );
@@ -299,7 +303,7 @@ pub fn build_initial_stack(
                     let destination = data_cursor;
                     let Some(size) = copy_c_string(source, destination, STACK_SIZE) else {
                         unmap_stack();
-                        return Err(crate::file::format::elf::segment::error::Error::StackConstructionFailed);
+                        return Err(Error::StackConstructionFailed);
                     };
                     value = destination as usize;
                     data_cursor = data_cursor.add(size);

@@ -4,7 +4,6 @@ pub mod header;
 pub use header::Header32;
 pub use header::Header64;
 
-// pub mod loader;
 pub mod section;
 pub mod segment;
 
@@ -14,7 +13,12 @@ pub fn execute_from_path(
     path: &str,
     stack_pointer: crate::target::arch::PointerType,
 ) -> core::result::Result<(), crate::file::format::elf::segment::Error> {
-    if !crate::file::format::elf::header::Identifier::is_file_path_magical(path).0 {
+    let (is_elf, file_descriptor) =
+        crate::file::format::elf::header::Identifier::is_file_path_magical(path);
+    if file_descriptor >= 0 {
+        let _ = crate::target::os::syscall::close(file_descriptor);
+    }
+    if !is_elf {
         return Err(crate::file::format::elf::segment::Error::InvalidHeader);
     }
 

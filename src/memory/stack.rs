@@ -4,6 +4,13 @@ pub mod auxiliary;
 pub mod build;
 pub mod constants;
 pub mod environment;
+pub mod list;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Error {
+    InvalidSource,
+    StackConstructionFailed,
+}
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy)]
@@ -41,9 +48,9 @@ pub struct Stack {
 
 impl Stack {
     pub fn from_pointer(stack_pointer: crate::target::arch::Pointer) -> Self {
-        let (arguments, environment_pointer) = arguments::List::from_pointer(stack_pointer);
-        let (environment, auxiliary_pointer) = environment::List::from_pointer(environment_pointer);
-        let (auxiliary, latter_pointer) = auxiliary::List::from_pointer(auxiliary_pointer);
+        let (arguments, environment_pointer) = arguments::from_pointer(stack_pointer);
+        let (environment, auxiliary_pointer) = environment::from_pointer(environment_pointer);
+        let (auxiliary, latter_pointer) = auxiliary::from_pointer(auxiliary_pointer);
         Self {
             former: stack_pointer,
             latter: latter_pointer,
@@ -62,11 +69,22 @@ impl Stack {
         initial_stack: crate::target::arch::PointerType,
         path: &str,
         path_pointer: *const u8,
-        image: &crate::file::format::elf::segment::types::LoadedImage,
+        entry: u64,
+        phdr: u64,
+        phent: usize,
+        phnum: usize,
         interpreter_base: usize,
-    ) -> Result<crate::target::arch::PointerType, crate::file::format::elf::segment::error::Error>
-    {
-        build::build_initial_stack(initial_stack, path, path_pointer, image, interpreter_base)
+    ) -> Result<crate::target::arch::PointerType, Error> {
+        build::build_initial_stack(
+            initial_stack,
+            path,
+            path_pointer,
+            entry,
+            phdr,
+            phent,
+            phnum,
+            interpreter_base,
+        )
     }
 
     pub fn print(&self) {

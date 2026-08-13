@@ -148,9 +148,13 @@ pub fn prepare_execution(
         initial_stack,
         path,
         path_pointer,
-        &image,
+        image.entry,
+        image.phdr,
+        image.phent,
+        image.phnum,
         interpreter_base,
-    )?;
+    )
+    .map_err(|_| Error::StackConstructionFailed)?;
     Ok(PreparedExecution {
         image,
         entry,

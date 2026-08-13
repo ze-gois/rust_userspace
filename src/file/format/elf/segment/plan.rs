@@ -2,7 +2,9 @@ use crate::file::format::elf::header::Header64;
 use crate::file::format::elf::segment::header::Header64 as ProgramHeader64;
 use crate::file::traits::Readable;
 
-use super::constants::{MAX_INTERPRETER_PATH, PAGE_SIZE, PF_X, PT_DYNAMIC, PT_INTERP, PT_LOAD, PT_PHDR, PT_TLS};
+use super::constants::{
+    MAX_INTERPRETER_PATH, PAGE_SIZE, PF_X, PT_DYNAMIC, PT_INTERP, PT_LOAD, PT_PHDR, PT_TLS,
+};
 use super::error::Error;
 use super::io::{read_at, read_bytes};
 use super::types::{ImagePlan, InterpreterPath, SegmentPlan};

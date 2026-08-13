@@ -2,14 +2,14 @@ pub mod header;
 pub mod linking;
 pub mod thread;
 
-pub mod constants;
-pub mod error;
-pub mod io;
-pub mod load;
-pub mod mapping;
-pub mod parse;
-pub mod plan;
-pub mod types;
+mod constants;
+mod error;
+mod io;
+mod load;
+mod mapping;
+mod parse;
+mod plan;
+mod types;
 
 pub use error::Error;
 pub use load::{load_inspect_path, load_path, load_static, load_static_path, prepare_execution};
