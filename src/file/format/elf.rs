@@ -4,9 +4,11 @@ pub mod header;
 pub use header::Header32;
 pub use header::Header64;
 
-pub mod loader;
+// pub mod loader;
 pub mod section;
 pub mod segment;
+
+pub mod transfer;
 
 pub fn execute_from_path(
     path: &str,
@@ -24,8 +26,12 @@ pub fn execute_from_path(
         Ok(prepared) => prepared,
         Err(error) => return Err(error),
     };
+
+    let new_stack = crate::memory::Stack::from_pointer(crate::target::arch::Pointer(stack_pointer));
+    new_stack.print();
+
     unsafe {
-        crate::file::format::elf::loader::jump_to_entry(prepared.entry, prepared.stack_pointer)
+        crate::file::format::elf::transfer::jump_to_entry(prepared.entry, prepared.stack_pointer)
     }
 }
 

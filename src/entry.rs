@@ -14,7 +14,7 @@ ample::trait_implement_primitives!();
 pub extern "C" fn entry(stack_pointer: userspace::target::arch::PointerType) -> ! {
     let stack_pointer = userspace::target::arch::Pointer(stack_pointer);
     let stack = userspace::memory::Stack::from_pointer(stack_pointer);
-    stack.arguments.print();
+    stack.print();
 
     let target_path = match stack.arguments.get(1) {
         Some(argument) if !argument.pointer.0.is_null() => {
