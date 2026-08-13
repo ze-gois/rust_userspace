@@ -18,6 +18,8 @@ pub mod format;
 pub mod result;
 pub use result::{Error, Ok, Result};
 
+// use crate::memory::heap::Allocating;
+
 pub mod traits;
 
 // impl traits::Bytes<Origin, Origin> for &str {
@@ -40,3 +42,9 @@ ample::r#struct!(
         pub information: Information, // pub memory : Option<*const u8>
     }
 );
+
+impl File {
+    // pub fn open(path: &str) -> Result<isize, Error> {
+    //     core::result::Result::Ok(open(path))
+    // }
+}

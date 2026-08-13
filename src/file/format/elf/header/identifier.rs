@@ -46,8 +46,7 @@ ample::r#struct!(
 
 impl Identifier {
     pub fn is_file_path_magical(file_path: &str) -> (bool, isize) {
-        let (suspect, file_descriptor) =
-            T::read_from_file_path_offsets(file_path, &[0, 1, 2, 3], true);
+        let (suspect, file_descriptor) = T::read_from_path_offsets(file_path, &[0, 1, 2, 3], true);
 
         for (m, sus) in suspect.iter().enumerate() {
             if sus.0 != MAGIC[m] {

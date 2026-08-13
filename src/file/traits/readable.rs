@@ -6,12 +6,8 @@ where
     Self: crate::memory::heap::Allocating<Self>,
 {
     type Origin = Origin;
-    fn read_from_file_path(
-        file_path: &str,
-        offset: usize,
-        endianness: bool,
-    ) -> (Self, isize, usize) {
-        let file_descriptor = crate::file::open(file_path);
+    fn read_from_path(path: &str, offset: usize, endianness: bool) -> (Self, isize, usize) {
+        let file_descriptor = crate::file::open(path);
         let (value, size) = Self::read_from_file_descriptor(file_descriptor, offset, endianness);
         (value, file_descriptor, size)
     }
@@ -38,12 +34,12 @@ where
         (value, Self::BYTES_SIZE + offset)
     }
 
-    fn read_from_file_path_offsets(
-        file_path: &str,
+    fn read_from_path_offsets(
+        path: &str,
         offsets: &[usize],
         endianness: bool,
     ) -> (&'static mut [Self], isize) {
-        let file_descriptor = crate::file::open(file_path);
+        let file_descriptor = crate::file::open(path);
         Self::read_from_file_descriptor_offsets(file_descriptor, offsets, endianness)
     }
 
