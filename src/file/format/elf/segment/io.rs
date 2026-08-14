@@ -2,11 +2,7 @@ use crate::target::os::syscall;
 
 use super::error::Error;
 
-pub(super) fn read_bytes(
-    file_descriptor: isize,
-    offset: u64,
-    bytes: &mut [u8],
-) -> Result<(), Error> {
+pub fn read_bytes(file_descriptor: isize, offset: u64, bytes: &mut [u8]) -> Result<(), Error> {
     if offset > i64::MAX as u64 {
         return Err(Error::AddressOverflow);
     }
@@ -42,16 +38,13 @@ pub(super) fn read_bytes(
     Ok(())
 }
 
-pub(super) fn read_at<const N: usize>(
-    file_descriptor: isize,
-    offset: u64,
-) -> Result<[u8; N], Error> {
+pub fn read_at<const N: usize>(file_descriptor: isize, offset: u64) -> Result<[u8; N], Error> {
     let mut bytes = [0u8; N];
     read_bytes(file_descriptor, offset, &mut bytes)?;
     Ok(bytes)
 }
 
-pub(super) fn file_size(file_descriptor: isize) -> Result<u64, Error> {
+pub fn file_size(file_descriptor: isize) -> Result<u64, Error> {
     let size = crate::file::information::from_fd(file_descriptor).st_size;
     if size < 0 {
         return Err(Error::FileMetadataFailed);

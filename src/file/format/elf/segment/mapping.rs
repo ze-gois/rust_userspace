@@ -1,9 +1,9 @@
 use crate::target::os::syscall;
 
 use super::super::LoadingPlan;
+use super::LoadedSegment;
 use super::constants::{MAP_FAILED, PF_R, PF_W, PF_X};
 use super::error::Error;
-use super::types::LoadedSegment;
 
 fn protections(flags: u32) -> i32 {
     let mut protection = syscall::mmap::Prot::None.to() as i32;

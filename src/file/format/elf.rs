@@ -11,11 +11,13 @@ pub mod transfer;
 
 pub(super) const MAX_INTERPRETER_PATH: usize = 256;
 
-#[derive(Debug, Clone, Copy)]
-pub struct InterpreterPath {
-    bytes: [u8; MAX_INTERPRETER_PATH],
-    len: usize,
-}
+ample::r#struct!(
+    #[derive(Debug)]
+    pub struct InterpreterPath {
+        bytes: [u8; MAX_INTERPRETER_PATH],
+        len: usize,
+    }
+);
 
 impl InterpreterPath {
     pub fn as_str(&self) -> Option<&str> {
@@ -44,7 +46,7 @@ pub struct LoadedELF {
 
 #[derive(Clone, Copy)]
 pub struct LoadingPlan {
-    pub segments: [Option<segment::types::SegmentLoadingPlan>; 32],
+    pub segments: [Option<segment::LoadingPlan>; 32],
     pub segment_count: usize,
     pub image_start: u64,
     pub image_end: u64,

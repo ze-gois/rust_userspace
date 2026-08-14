@@ -1,4 +1,3 @@
-pub(super) const PAGE_SIZE: u64 = 0x1000;
 pub(super) const ELFCLASS64: u8 = 2;
 pub(super) const ELFDATA2LSB: u8 = 1;
 pub(super) const EV_CURRENT: u8 = 1;

@@ -51,6 +51,7 @@ where
         use crate::memory::heap::Allocating;
 
         let bytes_pointer = u8::allocate(Self::BYTES_SIZE);
+
         let values = Self::allocate_slice(offsets.len());
         for (o, offset) in offsets.iter().enumerate() {
             let _ = crate::file::seek(file_descriptor, *offset as i64);

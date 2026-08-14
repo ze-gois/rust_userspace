@@ -2,21 +2,13 @@ use crate::file::format::elf::header::Header64;
 use crate::file::format::elf::segment::header::Header64 as ProgramHeader64;
 use crate::file::traits::Readable;
 
-use super::constants::{PAGE_SIZE, PF_X, PT_DYNAMIC, PT_INTERP, PT_LOAD, PT_PHDR, PT_TLS};
+use crate::target::arch::page;
+
+use super::LoadingPlan as SegmentLoadingPlan;
+use super::constants::{PF_X, PT_DYNAMIC, PT_INTERP, PT_LOAD, PT_PHDR, PT_TLS};
 use super::error::Error;
 use super::io::{read_at, read_bytes};
-use super::types::SegmentLoadingPlan;
 use crate::file::format::elf::{InterpreterPath, LoadingPlan, MAX_INTERPRETER_PATH};
-
-#[inline]
-pub(super) fn align_down(value: u64) -> u64 {
-    value & !(PAGE_SIZE - 1)
-}
-
-#[inline]
-pub(super) fn align_up(value: u64) -> Option<u64> {
-    value.checked_add(PAGE_SIZE - 1).map(align_down)
-}
 
 #[inline]
 pub(super) fn checked_end(start: u64, size: u64) -> Option<u64> {
@@ -131,7 +123,8 @@ pub(super) fn build_plan(
                 }
                 let memory_end = checked_end(program_header.p_vaddr.0, program_header.p_memsz.0)
                     .ok_or(Error::AddressOverflow)?;
-                if (program_header.p_vaddr.0 % PAGE_SIZE) != (program_header.p_offset.0 % PAGE_SIZE)
+                if (program_header.p_vaddr.0 % page::SIZE as u64)
+                    != (program_header.p_offset.0 % page::SIZE as u64)
                 {
                     return Err(Error::InvalidProgramHeader);
                 }
@@ -154,8 +147,8 @@ pub(super) fn build_plan(
                 let relocated_end = memory_end
                     .checked_add(load_bias)
                     .ok_or(Error::AddressOverflow)?;
-                let map_start = align_down(address);
-                let map_end = align_up(relocated_end).ok_or(Error::AddressOverflow)?;
+                let map_start = page::align_down(address);
+                let map_end = page::align_up(relocated_end).ok_or(Error::AddressOverflow)?;
                 if map_end < map_start || segment_count == 32 {
                     return Err(Error::AddressOverflow);
                 }

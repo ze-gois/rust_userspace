@@ -2,12 +2,12 @@ use crate::file::format::elf::header::Header64;
 use crate::target::os::syscall;
 
 use super::super::LoadedELF;
+use super::PreparedExecution;
 use super::constants::{ET_EXEC, MAP_FAILED};
 use super::error::Error;
 use super::mapping::{map_image, segment_metadata};
 use super::parse::{read_header, validate_header};
 use super::plan::{build_plan, entry_is_executable};
-use super::types::PreparedExecution;
 
 fn load_file_descriptor(file_descriptor: isize) -> Result<LoadedELF, Error> {
     let (header, endianness) = read_header(file_descriptor)?;
