@@ -1,8 +1,9 @@
 use crate::target::os::syscall;
 
+use super::super::LoadingPlan;
 use super::constants::{MAP_FAILED, PF_R, PF_W, PF_X};
 use super::error::Error;
-use super::types::{ImagePlan, LoadedSegment};
+use super::types::LoadedSegment;
 
 fn protections(flags: u32) -> i32 {
     let mut protection = syscall::mmap::Prot::None.to() as i32;
@@ -20,7 +21,7 @@ fn protections(flags: u32) -> i32 {
 
 pub(super) fn map_image(
     file_descriptor: isize,
-    plan: &ImagePlan,
+    plan: &LoadingPlan,
     mapping: Option<u64>,
 ) -> Result<(), Error> {
     let image_length =
@@ -89,7 +90,7 @@ pub(super) fn map_image(
     apply_permissions(plan)
 }
 
-fn apply_permissions(plan: &ImagePlan) -> Result<(), Error> {
+fn apply_permissions(plan: &LoadingPlan) -> Result<(), Error> {
     let mut boundaries = [0u64; 66];
     let mut boundary_count = 0usize;
     boundaries[boundary_count] = plan.image_start;
@@ -152,7 +153,7 @@ fn apply_permissions(plan: &ImagePlan) -> Result<(), Error> {
     Ok(())
 }
 
-pub(super) fn segment_metadata(plan: &ImagePlan) -> [Option<LoadedSegment>; 32] {
+pub(super) fn segment_metadata(plan: &LoadingPlan) -> [Option<LoadedSegment>; 32] {
     let mut segments = [None; 32];
     for index in 0..plan.segment_count {
         if let Some(segment) = plan.segments[index] {

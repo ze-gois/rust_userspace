@@ -9,6 +9,52 @@ pub mod segment;
 
 pub mod transfer;
 
+pub(super) const MAX_INTERPRETER_PATH: usize = 256;
+
+#[derive(Debug, Clone, Copy)]
+pub struct InterpreterPath {
+    bytes: [u8; MAX_INTERPRETER_PATH],
+    len: usize,
+}
+
+impl InterpreterPath {
+    pub fn as_str(&self) -> Option<&str> {
+        core::str::from_utf8(&self.bytes[..self.len]).ok()
+    }
+
+    pub(super) fn from_parts(bytes: [u8; MAX_INTERPRETER_PATH], len: usize) -> Self {
+        Self { bytes, len }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct LoadedELF {
+    pub entry: u64,
+    pub base: u64,
+    pub end: u64,
+    pub direct_entry: bool,
+    pub phdr: u64,
+    pub phent: usize,
+    pub phnum: usize,
+    pub interpreter: Option<InterpreterPath>,
+    pub dynamic: bool,
+    pub segments: [Option<segment::LoadedSegment>; 32],
+    pub segment_count: usize,
+}
+
+#[derive(Clone, Copy)]
+pub struct LoadingPlan {
+    pub segments: [Option<segment::types::SegmentLoadingPlan>; 32],
+    pub segment_count: usize,
+    pub image_start: u64,
+    pub image_end: u64,
+    pub phdr: u64,
+    pub phent: usize,
+    pub phnum: usize,
+    pub interpreter: Option<InterpreterPath>,
+    pub dynamic: bool,
+}
+
 pub fn execute_from_path(
     path: &str,
     stack_pointer: crate::target::arch::PointerType,

@@ -1,14 +1,15 @@
 use crate::file::format::elf::header::Header64;
 use crate::target::os::syscall;
 
+use super::super::LoadedELF;
 use super::constants::{ET_EXEC, MAP_FAILED};
 use super::error::Error;
 use super::mapping::{map_image, segment_metadata};
 use super::parse::{read_header, validate_header};
 use super::plan::{build_plan, entry_is_executable};
-use super::types::{LoadedImage, PreparedExecution};
+use super::types::PreparedExecution;
 
-fn load_file_descriptor(file_descriptor: isize) -> Result<LoadedImage, Error> {
+fn load_file_descriptor(file_descriptor: isize) -> Result<LoadedELF, Error> {
     let (header, endianness) = read_header(file_descriptor)?;
     validate_header(header, endianness)?;
     let size = super::io::file_size(file_descriptor)?;
@@ -55,7 +56,7 @@ fn load_file_descriptor(file_descriptor: isize) -> Result<LoadedImage, Error> {
         && !plan.dynamic
         && entry_is_executable(&plan, entry)?;
 
-    Ok(LoadedImage {
+    Ok(LoadedELF {
         entry,
         base,
         end: plan.image_end,
@@ -74,7 +75,7 @@ pub fn load_static(
     file_descriptor: isize,
     header: Header64,
     endianness: bool,
-) -> Result<LoadedImage, Error> {
+) -> Result<LoadedELF, Error> {
     validate_header(header, endianness)?;
     if header.e_type.0 != ET_EXEC {
         return Err(Error::UnsupportedType);
@@ -86,7 +87,7 @@ pub fn load_static(
     if !entry_is_executable(&plan, entry)? {
         return Err(Error::EntryOutsideExecutableSegment);
     }
-    Ok(LoadedImage {
+    Ok(LoadedELF {
         entry,
         base: 0,
         end: plan.image_end,
@@ -101,7 +102,7 @@ pub fn load_static(
     })
 }
 
-pub fn load_path(path: &str) -> Result<LoadedImage, Error> {
+pub fn load_path(path: &str) -> Result<LoadedELF, Error> {
     let file_descriptor = crate::file::open(path);
     if file_descriptor < 0 {
         return Err(Error::FileOpenFailed);
@@ -111,7 +112,7 @@ pub fn load_path(path: &str) -> Result<LoadedImage, Error> {
     result
 }
 
-pub fn load_static_path(path: &str) -> Result<LoadedImage, Error> {
+pub fn load_static_path(path: &str) -> Result<LoadedELF, Error> {
     let file_descriptor = crate::file::open(path);
     if file_descriptor < 0 {
         return Err(Error::FileOpenFailed);
@@ -124,7 +125,7 @@ pub fn load_static_path(path: &str) -> Result<LoadedImage, Error> {
     result
 }
 
-pub fn load_inspect_path(path: &str) -> Result<LoadedImage, Error> {
+pub fn load_inspect_path(path: &str) -> Result<LoadedELF, Error> {
     load_path(path)
 }
 

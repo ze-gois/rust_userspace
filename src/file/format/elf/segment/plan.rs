@@ -2,12 +2,11 @@ use crate::file::format::elf::header::Header64;
 use crate::file::format::elf::segment::header::Header64 as ProgramHeader64;
 use crate::file::traits::Readable;
 
-use super::constants::{
-    MAX_INTERPRETER_PATH, PAGE_SIZE, PF_X, PT_DYNAMIC, PT_INTERP, PT_LOAD, PT_PHDR, PT_TLS,
-};
+use super::constants::{PAGE_SIZE, PF_X, PT_DYNAMIC, PT_INTERP, PT_LOAD, PT_PHDR, PT_TLS};
 use super::error::Error;
 use super::io::{read_at, read_bytes};
-use super::types::{ImagePlan, InterpreterPath, SegmentPlan};
+use super::types::SegmentLoadingPlan;
+use crate::file::format::elf::{InterpreterPath, LoadingPlan, MAX_INTERPRETER_PATH};
 
 #[inline]
 pub(super) fn align_down(value: u64) -> u64 {
@@ -64,7 +63,7 @@ pub(super) fn build_plan(
     endianness: bool,
     load_bias: u64,
     reject_runtime_features: bool,
-) -> Result<ImagePlan, Error> {
+) -> Result<LoadingPlan, Error> {
     let phoff = header.e_phoff.0;
     let phent = header.e_phentsize.0 as usize;
     let phnum = header.e_phnum.0 as usize;
@@ -163,7 +162,7 @@ pub(super) fn build_plan(
 
                 image_start = image_start.min(map_start);
                 image_end = image_end.max(map_end);
-                segments[segment_count] = Some(SegmentPlan {
+                segments[segment_count] = Some(SegmentLoadingPlan {
                     header: program_header,
                     address,
                     map_start,
@@ -221,7 +220,7 @@ pub(super) fn build_plan(
         }
     };
 
-    Ok(ImagePlan {
+    Ok(LoadingPlan {
         segments,
         segment_count,
         image_start,
@@ -234,7 +233,7 @@ pub(super) fn build_plan(
     })
 }
 
-pub(super) fn entry_is_executable(plan: &ImagePlan, entry: u64) -> Result<bool, Error> {
+pub(super) fn entry_is_executable(plan: &LoadingPlan, entry: u64) -> Result<bool, Error> {
     for index in 0..plan.segment_count {
         let segment = plan.segments[index].ok_or(Error::InvalidProgramHeader)?;
         if entry >= segment.address

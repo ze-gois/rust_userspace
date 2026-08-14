@@ -14,4 +14,3 @@ pub(super) const PF_X: u32 = 1;
 pub(super) const PF_W: u32 = 2;
 pub(super) const PF_R: u32 = 4;
 pub(super) const MAP_FAILED: u64 = u64::MAX;
-pub(super) const MAX_INTERPRETER_PATH: usize = 256;
