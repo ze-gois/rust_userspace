@@ -1,10 +1,15 @@
 use crate::target::os::syscall;
 
 use super::Error;
-use super::constants::{
+
+use super::auxiliary::atype::constants::{
     AT_BASE, AT_BASE_PLATFORM, AT_ENTRY, AT_EXECFN, AT_NULL, AT_PHDR, AT_PHENT, AT_PHNUM,
-    AT_PLATFORM, AT_RANDOM, AT_SYSINFO_EHDR, STACK_SIZE,
+    AT_PLATFORM, AT_RANDOM, AT_SYSINFO_EHDR,
 };
+
+const REQUIRED_AUXILIARY_KEYS: [usize; 7] = [
+    AT_PHDR, AT_PHENT, AT_PHNUM, AT_BASE, AT_ENTRY, AT_EXECFN, AT_RANDOM,
+];
 
 unsafe fn count_null_terminated(pointer: *const usize, limit: usize) -> Option<usize> {
     for index in 0..limit {
@@ -57,6 +62,24 @@ fn update_auxiliary(
     }
 }
 
+fn has_auxiliary_key(auxiliary: *const usize, entry_count: usize, key: usize) -> bool {
+    for index in 0..entry_count {
+        if unsafe { *auxiliary.add(index.saturating_mul(2)) } == key {
+            return true;
+        }
+    }
+    false
+}
+
+fn fill_random(destination: *mut u8) -> bool {
+    match syscall::getrandom(destination, 16, 0) {
+        Ok(crate::Ok::Target(crate::target::Ok::Os(crate::target::os::Ok::Syscall(
+            crate::target::os::syscall::Ok::GetRandom(syscall::getrandom::Ok::Default(count)),
+        )))) if count == 16 => true,
+        _ => false,
+    }
+}
+
 pub fn build_initial_stack(
     initial_stack: crate::target::arch::PointerType,
     path: &str,
@@ -92,6 +115,20 @@ pub fn build_initial_stack(
         return Err(Error::StackConstructionFailed);
     }
 
+    let source_aux_count = aux_count.saturating_sub(1);
+    let mut missing_aux_count = 0usize;
+    for key in REQUIRED_AUXILIARY_KEYS {
+        if !has_auxiliary_key(old_auxv, source_aux_count, key) {
+            missing_aux_count = missing_aux_count
+                .checked_add(1)
+                .ok_or(Error::StackConstructionFailed)?;
+        }
+    }
+    let output_aux_count = source_aux_count
+        .checked_add(missing_aux_count)
+        .and_then(|value| value.checked_add(1))
+        .ok_or(Error::StackConstructionFailed)?;
+
     let new_argc = if original_argc >= 2 {
         original_argc - 1
     } else {
@@ -101,7 +138,7 @@ pub fn build_initial_stack(
     let words = 1usize
         .checked_add(new_argc + 1)
         .and_then(|value| value.checked_add(env_count + 1))
-        .and_then(|value| value.checked_add(aux_count.checked_mul(2)?))
+        .and_then(|value| value.checked_add(output_aux_count.checked_mul(2)?))
         .ok_or(Error::StackConstructionFailed)?;
     let word_bytes = words
         .checked_mul(core::mem::size_of::<usize>())
@@ -116,7 +153,7 @@ pub fn build_initial_stack(
     for index in 1..new_argc {
         let source = unsafe { *old_argv.add(index + 1) as *const u8 };
         let size =
-            unsafe { c_string_size(source, STACK_SIZE) }.ok_or(Error::StackConstructionFailed)?;
+            unsafe { c_string_size(source, super::SIZE) }.ok_or(Error::StackConstructionFailed)?;
         data_bytes = data_bytes
             .checked_add(size)
             .ok_or(Error::StackConstructionFailed)?;
@@ -125,19 +162,19 @@ pub fn build_initial_stack(
     for index in 0..env_count {
         let source = unsafe { *old_envp.add(index) as *const u8 };
         let size =
-            unsafe { c_string_size(source, STACK_SIZE) }.ok_or(Error::StackConstructionFailed)?;
+            unsafe { c_string_size(source, super::SIZE) }.ok_or(Error::StackConstructionFailed)?;
         data_bytes = data_bytes
             .checked_add(size)
             .ok_or(Error::StackConstructionFailed)?;
     }
 
-    for index in 0..aux_count {
+    for index in 0..source_aux_count {
         let key = unsafe { *old_auxv.add(index * 2) };
         let value = unsafe { *old_auxv.add(index * 2 + 1) };
         let extra = match key {
-            AT_RANDOM if value != 0 => 16,
+            AT_RANDOM => 16,
             AT_PLATFORM | AT_BASE_PLATFORM if value != 0 => unsafe {
-                c_string_size(value as *const u8, STACK_SIZE)
+                c_string_size(value as *const u8, super::SIZE)
                     .ok_or(Error::StackConstructionFailed)?
             },
             _ => 0,
@@ -146,16 +183,21 @@ pub fn build_initial_stack(
             .checked_add(extra)
             .ok_or(Error::StackConstructionFailed)?;
     }
+    if !has_auxiliary_key(old_auxv, source_aux_count, AT_RANDOM) {
+        data_bytes = data_bytes
+            .checked_add(16)
+            .ok_or(Error::StackConstructionFailed)?;
+    }
 
     let required_bytes = word_bytes
         .checked_add(15)
         .and_then(|value| value.checked_add(data_bytes))
         .ok_or(Error::StackConstructionFailed)?;
-    if required_bytes > STACK_SIZE {
+    if required_bytes > super::SIZE {
         return Err(Error::StackConstructionFailed);
     }
 
-    let mapping_length = STACK_SIZE
+    let mapping_length = super::SIZE
         .checked_add(crate::memory::page::SIZE)
         .ok_or(Error::StackConstructionFailed)?;
     let stack_address = match syscall::mmap(
@@ -256,7 +298,7 @@ pub fn build_initial_stack(
         for index in 1..new_argc {
             let source = *old_argv.add(index + 1) as *const u8;
             let destination = data_cursor;
-            let Some(size) = copy_c_string(source, destination, STACK_SIZE) else {
+            let Some(size) = copy_c_string(source, destination, super::SIZE) else {
                 unmap_stack();
                 return Err(Error::StackConstructionFailed);
             };
@@ -268,7 +310,7 @@ pub fn build_initial_stack(
         for index in 0..env_count {
             let source = *old_envp.add(index) as *const u8;
             let destination = data_cursor;
-            let Some(size) = copy_c_string(source, destination, STACK_SIZE) else {
+            let Some(size) = copy_c_string(source, destination, super::SIZE) else {
                 unmap_stack();
                 return Err(Error::StackConstructionFailed);
             };
@@ -277,7 +319,8 @@ pub fn build_initial_stack(
         }
         *envp.add(env_count) = 0;
 
-        for index in 0..aux_count {
+        let mut output_aux_index = 0usize;
+        for index in 0..source_aux_count {
             let key = *old_auxv.add(index * 2);
             let mut value = *old_auxv.add(index * 2 + 1);
             update_auxiliary(
@@ -292,16 +335,18 @@ pub fn build_initial_stack(
             );
 
             match key {
-                AT_RANDOM if value != 0 => {
-                    let source = value as *const u8;
-                    core::ptr::copy_nonoverlapping(source, data_cursor, 16);
+                AT_RANDOM => {
+                    if !fill_random(data_cursor) {
+                        unmap_stack();
+                        return Err(Error::StackConstructionFailed);
+                    }
                     value = data_cursor as usize;
                     data_cursor = data_cursor.add(16);
                 }
                 AT_PLATFORM | AT_BASE_PLATFORM if value != 0 => {
                     let source = value as *const u8;
                     let destination = data_cursor;
-                    let Some(size) = copy_c_string(source, destination, STACK_SIZE) else {
+                    let Some(size) = copy_c_string(source, destination, super::SIZE) else {
                         unmap_stack();
                         return Err(Error::StackConstructionFailed);
                     };
@@ -312,9 +357,44 @@ pub fn build_initial_stack(
                 _ => {}
             }
 
-            *auxv.add(index * 2) = key;
-            *auxv.add(index * 2 + 1) = value;
+            *auxv.add(output_aux_index * 2) = key;
+            *auxv.add(output_aux_index * 2 + 1) = value;
+            output_aux_index += 1;
         }
+
+        for key in REQUIRED_AUXILIARY_KEYS {
+            if has_auxiliary_key(old_auxv, source_aux_count, key) {
+                continue;
+            }
+
+            let mut value = 0usize;
+            update_auxiliary(
+                key,
+                &mut value,
+                entry,
+                phdr,
+                phent,
+                phnum,
+                interpreter_base,
+                target_path_destination as usize,
+            );
+
+            if key == AT_RANDOM {
+                if !fill_random(data_cursor) {
+                    unmap_stack();
+                    return Err(Error::StackConstructionFailed);
+                }
+                value = data_cursor as usize;
+                data_cursor = data_cursor.add(16);
+            }
+
+            *auxv.add(output_aux_index * 2) = key;
+            *auxv.add(output_aux_index * 2 + 1) = value;
+            output_aux_index += 1;
+        }
+
+        *auxv.add(output_aux_index * 2) = AT_NULL;
+        *auxv.add(output_aux_index * 2 + 1) = 0;
 
         debug_assert!((data_cursor as usize) <= data_end);
     }

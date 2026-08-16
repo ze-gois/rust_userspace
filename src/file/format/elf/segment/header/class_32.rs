@@ -1,6 +1,7 @@
 use super::super::super::dtype::class_32::*;
 
 ample::r#struct!(
+    #[repr(C)]
     pub struct Header32 {
         pub p_type: Word,
         pub p_offset: Off,

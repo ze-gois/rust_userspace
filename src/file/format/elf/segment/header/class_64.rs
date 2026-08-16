@@ -1,6 +1,7 @@
 use super::super::super::dtype::class_64::*;
 
 ample::r#struct!(
+    #[repr(C)]
     pub struct Header64 {
         pub p_type: Word,
         pub p_flags: Word,

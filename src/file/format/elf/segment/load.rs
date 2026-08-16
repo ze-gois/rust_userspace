@@ -35,26 +35,51 @@ fn load_file_descriptor(file_descriptor: isize) -> Result<LoadedELF, Error> {
             )))) if address != MAP_FAILED as usize => address as u64,
             _ => return Err(Error::MappingFailed),
         };
-        let base = mapping
-            .checked_sub(initial_plan.image_start)
-            .ok_or(Error::AddressOverflow)?;
-        let relocated = build_plan(size, file_descriptor, header, endianness, base, false)?;
-        map_image(file_descriptor, &relocated, Some(mapping))?;
-        (
-            relocated,
-            header
-                .e_entry
-                .0
-                .checked_add(base)
-                .ok_or(Error::AddressOverflow)?,
-            base,
-        )
+        let base = match mapping.checked_sub(initial_plan.image_start) {
+            Some(base) => base,
+            None => {
+                let _ = syscall::munmap(mapping as *mut u8, length);
+                return Err(Error::AddressOverflow);
+            }
+        };
+        let relocated = match build_plan(size, file_descriptor, header, endianness, base, false) {
+            Ok(plan) => plan,
+            Err(error) => {
+                let _ = syscall::munmap(mapping as *mut u8, length);
+                return Err(error);
+            }
+        };
+        if let Err(error) = map_image(file_descriptor, &relocated, Some(mapping)) {
+            let _ = syscall::munmap(mapping as *mut u8, length);
+            return Err(error);
+        }
+        let entry = match header.e_entry.0.checked_add(base) {
+            Some(entry) => entry,
+            None => {
+                let _ = syscall::munmap(mapping as *mut u8, length);
+                return Err(Error::AddressOverflow);
+            }
+        };
+        (relocated, entry, base)
     };
 
-    let direct_entry = header.e_type.0 == ET_EXEC
-        && plan.interpreter.is_none()
-        && !plan.dynamic
-        && entry_is_executable(&plan, entry)?;
+    let entry_is_executable = match entry_is_executable(&plan, entry) {
+        Ok(value) => value,
+        Err(error) => {
+            let length = usize::try_from(plan.image_end - plan.image_start)
+                .map_err(|_| Error::AddressOverflow)?;
+            let _ = syscall::munmap(plan.image_start as *mut u8, length);
+            return Err(error);
+        }
+    };
+    if !entry_is_executable {
+        let length = usize::try_from(plan.image_end - plan.image_start)
+            .map_err(|_| Error::AddressOverflow)?;
+        let _ = syscall::munmap(plan.image_start as *mut u8, length);
+        return Err(Error::EntryOutsideExecutableSegment);
+    }
+
+    let direct_entry = plan.interpreter.is_none() && !plan.runtime_dynamic;
 
     Ok(LoadedELF {
         entry,
@@ -84,7 +109,19 @@ pub fn load_static(
     let plan = build_plan(size, file_descriptor, header, endianness, 0, true)?;
     map_image(file_descriptor, &plan, None)?;
     let entry = header.e_entry.0;
-    if !entry_is_executable(&plan, entry)? {
+    let entry_is_executable = match entry_is_executable(&plan, entry) {
+        Ok(value) => value,
+        Err(error) => {
+            let length = usize::try_from(plan.image_end - plan.image_start)
+                .map_err(|_| Error::AddressOverflow)?;
+            let _ = syscall::munmap(plan.image_start as *mut u8, length);
+            return Err(error);
+        }
+    };
+    if !entry_is_executable {
+        let length = usize::try_from(plan.image_end - plan.image_start)
+            .map_err(|_| Error::AddressOverflow)?;
+        let _ = syscall::munmap(plan.image_start as *mut u8, length);
         return Err(Error::EntryOutsideExecutableSegment);
     }
     Ok(LoadedELF {
@@ -139,6 +176,9 @@ pub fn prepare_execution(
         Some(interpreter) => {
             let interpreter_path = interpreter.as_str().ok_or(Error::InvalidInterpreter)?;
             let interpreter_image = load_path(interpreter_path)?;
+            if interpreter_image.interpreter.is_some() {
+                return Err(Error::UnsupportedInterpreter);
+            }
             (interpreter_image.entry, interpreter_image.base as usize)
         }
         None if image.direct_entry => (image.entry, 0),

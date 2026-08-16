@@ -1,6 +1,7 @@
 use crate::file::format::elf::dtype::class_64::*;
 
 ample::r#struct!(
+    #[repr(C)]
     pub struct Header64 {
         pub e_ident: super::Identifier,
         pub e_type: Half,

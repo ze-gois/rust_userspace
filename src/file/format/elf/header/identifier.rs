@@ -24,6 +24,7 @@ use super::super::dtype::class_32::UChar as T;
 pub const MAGIC: [<T as super::super::dtype::Trait>::Inner; 4] = [0x7f, 0x45, 0x4c, 0x46];
 
 ample::r#struct!(
+    #[repr(C)]
     pub struct Identifier {
         pub magic0: T,     //EI_MAG0 0 File identification
         pub magic1: T,     //EI_MAG1 1 File identification

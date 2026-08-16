@@ -11,7 +11,8 @@ pub mod ok {
         [9; ERR_WRITE;  Write;    super::super::write::Ok;        "write";     "E_WRITE" ],
         [10; ERR_FSTAT; FStat;    super::super::fstat::Ok;        "fstat";     "E_FSTAT"],
         [11; ERR_FORK;  Fork;     super::super::fork::Ok;         "fork";      "E_FORK" ],
-        [12; ERR_EXECVE; Execve;  super::super::execve::Ok;       "execve";    "E_EXECVE"]
+        [12; ERR_EXECVE; Execve;    super::super::execve::Ok;       "execve";    "E_EXECVE"],
+        [13; ERR_GETRANDOM; GetRandom; super::super::getrandom::Ok; "getrandom"; "E_GETRANDOM"]
     ]);
 
     impl Ok {
@@ -34,7 +35,8 @@ pub mod error {
         [9; ERR_WRITE;  Write;    super::super::write::Error;        "write";     "E_WRITE"],
         [10; ERR_FSTAT; FStat;    super::super::fstat::Error;        "fstat";     "E_FSTAT"],
         [11; ERR_FORK;  Fork;     super::super::fork::Error;         "fork";      "E_FORK" ],
-        [12; ERR_EXECVE; Execve;  super::super::execve::Error;       "execve";    "E_EXECVE"]
+        [12; ERR_EXECVE;  Execve;    super::super::execve::Error;       "execve";    "E_EXECVE" ],
+        [13; ERR_GETRANDOM; GetRandom; super::super::getrandom::Error; "getrandom"; "E_GETRANDOM"]
     ]);
 
     impl Error {

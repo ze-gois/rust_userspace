@@ -1,5 +1,6 @@
+pub type AuxWord = usize;
 pub type Pci8 = *const i8;
-pub type Pcu = *const usize;
+pub type Pcu = *const AuxWord;
 
 ample::r#struct!(
     pub struct Pair {
@@ -9,7 +10,7 @@ ample::r#struct!(
 );
 
 pub trait TypeTrait {
-    fn from_pair(etype: *const usize, p: *const u8) -> Self;
+    fn from_pair(etype: *const AuxWord, p: *const u8) -> Self;
     fn is_null(&self) -> bool;
 }
 
@@ -47,12 +48,21 @@ macro_rules! bring_atype {
                         $variant_acronym;
                         $variant_description
                     ]
-                ),*
+                ),*,
+                [
+                    0xffff_ffff_ffff_ffff;
+                    Unknown;
+                    $enum_discriminant_type;
+                    AT_UNKNOWN;
+                    "Unknown";
+                    "Unknown auxiliary-vector entry"
+                ]
             ]
         );
 
         pub mod unit {
             ample::enum_labeled_typed!(
+                #[derive(Debug)]
                 pub enum TypeUnit,
                 $enum_discriminant_type,
                 $enum_label,
@@ -66,7 +76,15 @@ macro_rules! bring_atype {
                             $variant_acronym;
                             $variant_description
                         ]
-                    ),*
+                    ),*,
+                    [
+                        0xffff_ffff_ffff_ffff;
+                        Unknown;
+                        $enum_discriminant_type;
+                        AT_UNKNOWN;
+                        "Unknown";
+                        "Unknown auxiliary-vector entry"
+                    ]
                 ]
             );
 
@@ -78,9 +96,7 @@ macro_rules! bring_atype {
                 fn from_discriminant(discriminant : $enum_discriminant_type ) -> TypeUnit {
                     match discriminant {
                         $( $variant_discriminant => TypeUnit::$variant_identifier(()), )*
-                        _ => {
-                            TypeUnit::Ignore(())
-                        }
+                        _ => TypeUnit::Unknown(discriminant),
                     }
                 }
             }
@@ -89,15 +105,12 @@ macro_rules! bring_atype {
         pub use unit::{FromDiscriminant, TypeUnit};
 
         impl TypeTrait for $enum_identifier {
-            fn from_pair(etype: *const usize, p: *const u8) -> Self {
-                match TypeUnit::from_discriminant(unsafe { *etype }) {
-                    // $( TypeUnit::$variant_identifier(()) => $enum_identifier::$variant_identifier( unsafe { p as $variant_type } ),)*
-                    $( TypeUnit::$variant_identifier(()) => $enum_identifier::$variant_identifier( unsafe { *(p as *const $variant_type) }),)*
-                    // _ => unreachable!()
-                    // _ => $enum_identifier::TODO({
-                    //     let v :pair =(etype, p);
-                    //     v
-                    // })
+            fn from_pair(etype: *const AuxWord, p: *const u8) -> Self {
+                let discriminant = unsafe { *etype };
+                let raw_value = unsafe { *(p as *const AuxWord) };
+                match TypeUnit::from_discriminant(discriminant) {
+                    $( TypeUnit::$variant_identifier(()) => $enum_identifier::$variant_identifier(raw_value as $variant_type),)*
+                    TypeUnit::Unknown(_) => $enum_identifier::Unknown(raw_value),
                 }
             }
 
@@ -146,7 +159,7 @@ bring_atype! (
         [31;   ExecFn;          Pci8;        AT_EXECFN;            "ExecFn";          "Filename of program"],
         [32;   SysInfo;         usize;       AT_SYSINFO;           "SysInfo";         "System info, x86 specific"],
         [33;   SysInfoEhdr;     usize;       AT_SYSINFO_EHDR;      "SysInfoEhdr";     "System info ELF header, x86 specific"],
-        [51;   MinSigStackSz;   usize;       AT_MINSIGSTKSZ;       "MinSigStackSz";   "Minimal stack size for signal delivery"],
+        [51;   MinSigStackSz; usize;       AT_MINSIGSTKSZ;       "MinSigStackSz";        "Minimal stack size for signal delivery"],
         // [99;   TODO;            Pair;        AT_TODO;               "Pkmna";          "Pokemon not found"]
     ]
 );

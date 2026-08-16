@@ -15,5 +15,6 @@ syscall_modules!(
     [11;  munmap;   MUNMAP;   Syscall2;  "MUnMap"],
     [60;  exit;     EXIT;     Syscall1;  "Exit"],
     [257; openat;   OPENAT;   Syscall4;  "OpenAt"],
-    [258; openat4;  OPENAT4;  Syscall4;  "OpenAt4"]
+    [258; openat4;  OPENAT4;  Syscall4;  "OpenAt4"],
+    [318; getrandom; GETRANDOM; Syscall3; "GetRandom"]
 );

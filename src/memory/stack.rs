@@ -2,9 +2,10 @@ pub use crate::info;
 pub mod arguments;
 pub mod auxiliary;
 pub mod build;
-pub mod constants;
 pub mod environment;
 pub mod list;
+
+pub const SIZE: usize = 0x1000000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {

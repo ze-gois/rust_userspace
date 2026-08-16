@@ -87,10 +87,14 @@ ample = { version= "0.2.0", path = "crates/ample" }
 cc = "1.0"
 userspace_build = { version= "0.2.0", path = "crates/userspace_build", features = ["with_std"] }
 
+[dev-dependencies]
+ample = { version = "0.2.0", path = "crates/ample" }
+
 [features]
 default = ["no_std"]
 no_std = []
 with_std = []
+host_tests = []
 
 [badges]
 github-actions = { repository = "ze-gois/rust_userspace" }

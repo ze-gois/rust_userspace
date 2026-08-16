@@ -26,68 +26,83 @@ pub(super) fn map_image(
 ) -> Result<(), Error> {
     let image_length =
         usize::try_from(plan.image_end - plan.image_start).map_err(|_| Error::AddressOverflow)?;
-    let mapping = match mapping {
-        Some(address) => address,
-        None => match syscall::mmap(
-            plan.image_start as *mut u8,
-            image_length,
-            (syscall::mmap::Prot::Read.to() as i32) | (syscall::mmap::Prot::Write.to() as i32),
-            (syscall::mmap::Flag::Private.to() as i32)
-                | (syscall::mmap::Flag::Anonymous.to() as i32)
-                | (syscall::mmap::Flag::FixedNoReplace.to() as i32),
-            -1,
-            0,
-        ) {
-            Ok(crate::Ok::Target(crate::target::Ok::Os(crate::target::os::Ok::Syscall(
-                crate::target::os::syscall::Ok::MMap(syscall::mmap::Ok::Default(address)),
-            )))) => address as u64,
-            _ => return Err(Error::MappingFailed),
-        },
+    let (mapping, owns_mapping) = match mapping {
+        Some(address) => (address, false),
+        None => (
+            match syscall::mmap(
+                plan.image_start as *mut u8,
+                image_length,
+                (syscall::mmap::Prot::Read.to() as i32) | (syscall::mmap::Prot::Write.to() as i32),
+                (syscall::mmap::Flag::Private.to() as i32)
+                    | (syscall::mmap::Flag::Anonymous.to() as i32)
+                    | (syscall::mmap::Flag::FixedNoReplace.to() as i32),
+                -1,
+                0,
+            ) {
+                Ok(crate::Ok::Target(crate::target::Ok::Os(crate::target::os::Ok::Syscall(
+                    crate::target::os::syscall::Ok::MMap(syscall::mmap::Ok::Default(address)),
+                )))) => address as u64,
+                _ => return Err(Error::MappingFailed),
+            },
+            true,
+        ),
     };
 
     if mapping == MAP_FAILED || mapping != plan.image_start {
+        if owns_mapping && mapping != MAP_FAILED {
+            let _ = syscall::munmap(mapping as *mut u8, image_length);
+        }
         return Err(Error::MappingFailed);
     }
 
-    for index in 0..plan.segment_count {
-        let segment = plan.segments[index].ok_or(Error::InvalidProgramHeader)?;
-        if segment.header.p_filesz.0 == 0 {
-            continue;
-        }
-        if segment.file_start > i64::MAX as u64 {
-            return Err(Error::AddressOverflow);
-        }
-
-        let mut copied = 0u64;
-        while copied < segment.header.p_filesz.0 {
-            let destination = (segment.address + copied) as *mut u8;
-            let remaining = segment.header.p_filesz.0 - copied;
-            let chunk = remaining.min(usize::MAX as u64) as usize;
-            let read_count = match syscall::lseek(
-                file_descriptor as i32,
-                (segment.file_start + copied) as i64,
-                syscall::lseek::Flag::SET.to(),
-            ) {
-                Ok(crate::Ok::Target(crate::target::Ok::Os(crate::target::os::Ok::Syscall(
-                    crate::target::os::syscall::Ok::LSeek(syscall::lseek::Ok::Default(_)),
-                )))) => match syscall::read(file_descriptor, destination, chunk) {
-                    Ok(crate::Ok::Target(crate::target::Ok::Os(
-                        crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::Read(
-                            syscall::read::Ok::Default(count),
-                        )),
-                    ))) => count,
-                    _ => return Err(Error::FileReadFailed),
-                },
-                _ => return Err(Error::FileReadFailed),
-            };
-            if read_count == 0 || read_count > chunk {
-                return Err(Error::FileReadFailed);
+    let result = (|| {
+        for index in 0..plan.segment_count {
+            let segment = plan.segments[index].ok_or(Error::InvalidProgramHeader)?;
+            if segment.header.p_filesz.0 == 0 {
+                continue;
             }
-            copied += read_count as u64;
-        }
-    }
+            if segment.file_start > i64::MAX as u64 {
+                return Err(Error::AddressOverflow);
+            }
 
-    apply_permissions(plan)
+            let mut copied = 0u64;
+            while copied < segment.header.p_filesz.0 {
+                let destination = (segment.address + copied) as *mut u8;
+                let remaining = segment.header.p_filesz.0 - copied;
+                let chunk = remaining.min(usize::MAX as u64) as usize;
+                let read_count = match syscall::lseek(
+                    file_descriptor as i32,
+                    (segment.file_start + copied) as i64,
+                    syscall::lseek::Flag::SET.to(),
+                ) {
+                    Ok(crate::Ok::Target(crate::target::Ok::Os(
+                        crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::LSeek(
+                            syscall::lseek::Ok::Default(_),
+                        )),
+                    ))) => match syscall::read(file_descriptor, destination, chunk) {
+                        Ok(crate::Ok::Target(crate::target::Ok::Os(
+                            crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::Read(
+                                syscall::read::Ok::Default(count),
+                            )),
+                        ))) => count,
+                        _ => return Err(Error::FileReadFailed),
+                    },
+                    _ => return Err(Error::FileReadFailed),
+                };
+                if read_count == 0 || read_count > chunk {
+                    return Err(Error::FileReadFailed);
+                }
+                copied += read_count as u64;
+            }
+        }
+
+        apply_permissions(plan)
+    })();
+
+    if result.is_err() && owns_mapping {
+        let _ = syscall::munmap(mapping as *mut u8, image_length);
+    }
+    result
 }
 
 fn apply_permissions(plan: &LoadingPlan) -> Result<(), Error> {

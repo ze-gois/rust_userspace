@@ -20,8 +20,112 @@ fn read_program_header(
     offset: u64,
     endianness: bool,
 ) -> Result<ProgramHeader64, Error> {
-    let bytes = read_at::<{ core::mem::size_of::<ProgramHeader64>() }>(file_descriptor, offset)?;
+    let bytes = read_at::<
+        { <ProgramHeader64 as ample::traits::Bytes<crate::Origin, crate::Origin>>::BYTES_SIZE },
+    >(file_descriptor, offset)?;
     Ok(ProgramHeader64::read_from_pointer(bytes.as_ptr(), 0, endianness).0)
+}
+
+const DT_NULL: u64 = 0;
+const DT_NEEDED: u64 = 1;
+const DT_PLTRELSZ: u64 = 2;
+
+const DT_RELA: u64 = 7;
+const DT_RELASZ: u64 = 8;
+const DT_RELAENT: u64 = 9;
+const DT_INIT: u64 = 12;
+const DT_FINI: u64 = 13;
+const DT_REL: u64 = 17;
+const DT_RELSZ: u64 = 18;
+const DT_RELENT: u64 = 19;
+const DT_PLTREL: u64 = 20;
+
+const DT_TEXTREL: u64 = 22;
+const DT_JMPREL: u64 = 23;
+const DT_INIT_ARRAY: u64 = 25;
+const DT_FINI_ARRAY: u64 = 26;
+const DT_INIT_ARRAYSZ: u64 = 27;
+const DT_FINI_ARRAYSZ: u64 = 28;
+const DT_PREINIT_ARRAY: u64 = 32;
+
+fn dynamic_tag_requires_runtime_linker(tag: u64) -> bool {
+    matches!(
+        tag,
+        DT_NEEDED
+            | DT_PLTRELSZ
+            | DT_RELA
+            | DT_RELASZ
+            | DT_RELAENT
+            | DT_INIT
+            | DT_FINI
+            | DT_REL
+            | DT_RELSZ
+            | DT_RELENT
+            | DT_PLTREL
+            | DT_TEXTREL
+            | DT_JMPREL
+            | DT_INIT_ARRAY
+            | DT_FINI_ARRAY
+            | DT_INIT_ARRAYSZ
+            | DT_FINI_ARRAYSZ
+            | DT_PREINIT_ARRAY
+    )
+}
+
+fn dynamic_requires_runtime_linker(
+    file_descriptor: isize,
+    file_size: u64,
+    dynamic: Option<ProgramHeader64>,
+    endianness: bool,
+) -> Result<bool, Error> {
+    let Some(dynamic) = dynamic else {
+        return Ok(false);
+    };
+
+    if dynamic.p_filesz.0 == 0
+        || dynamic.p_filesz.0 % 16 != 0
+        || dynamic.p_filesz.0 > dynamic.p_memsz.0
+    {
+        return Err(Error::InvalidProgramHeader);
+    }
+    let file_end =
+        checked_end(dynamic.p_offset.0, dynamic.p_filesz.0).ok_or(Error::AddressOverflow)?;
+    if file_end > file_size {
+        return Err(Error::InvalidProgramHeader);
+    }
+
+    let entry_count = dynamic.p_filesz.0 / 16;
+    let mut requires_runtime = false;
+    let mut found_null = false;
+    for index in 0..entry_count {
+        let offset = dynamic
+            .p_offset
+            .0
+            .checked_add(index.checked_mul(16).ok_or(Error::AddressOverflow)?)
+            .ok_or(Error::AddressOverflow)?;
+        let bytes = read_at::<16>(file_descriptor, offset)?;
+        let tag_bytes: [u8; 8] = bytes[..8]
+            .try_into()
+            .map_err(|_| Error::InvalidProgramHeader)?;
+        let tag = if endianness {
+            u64::from_le_bytes(tag_bytes)
+        } else {
+            u64::from_be_bytes(tag_bytes)
+        };
+
+        if tag == DT_NULL {
+            found_null = true;
+            break;
+        }
+        if dynamic_tag_requires_runtime_linker(tag) {
+            requires_runtime = true;
+        }
+    }
+
+    if !found_null {
+        return Err(Error::InvalidProgramHeader);
+    }
+    Ok(requires_runtime)
 }
 
 fn read_interpreter(
@@ -60,7 +164,11 @@ pub(super) fn build_plan(
     let phent = header.e_phentsize.0 as usize;
     let phnum = header.e_phnum.0 as usize;
 
-    if phnum == 0 || phnum > 32 || phent != core::mem::size_of::<ProgramHeader64>() {
+    if phnum == 0
+        || phnum > 32
+        || phent
+            != <ProgramHeader64 as ample::traits::Bytes<crate::Origin, crate::Origin>>::BYTES_SIZE
+    {
         return Err(Error::InvalidProgramHeaderTable);
     }
 
@@ -80,6 +188,7 @@ pub(super) fn build_plan(
     let mut phdr = None;
     let mut interpreter = None;
     let mut dynamic = false;
+    let mut dynamic_header = None;
     let mut tls = false;
 
     for index in 0..phnum {
@@ -99,7 +208,13 @@ pub(super) fn build_plan(
                     program_header.p_filesz.0,
                 )?);
             }
-            PT_DYNAMIC => dynamic = true,
+            PT_DYNAMIC => {
+                if dynamic_header.is_some() {
+                    return Err(Error::InvalidProgramHeader);
+                }
+                dynamic = true;
+                dynamic_header = Some(program_header);
+            }
             PT_TLS => tls = true,
             PT_PHDR => {
                 phdr = Some(
@@ -172,6 +287,10 @@ pub(super) fn build_plan(
     if segment_count == 0 {
         return Err(Error::NoLoadableSegments);
     }
+
+    let runtime_dynamic =
+        dynamic_requires_runtime_linker(file_descriptor, file_size, dynamic_header, endianness)?;
+
     if reject_runtime_features {
         if interpreter.is_some() {
             return Err(Error::UnsupportedInterpreter);
@@ -223,6 +342,7 @@ pub(super) fn build_plan(
         phnum,
         interpreter,
         dynamic,
+        runtime_dynamic,
     })
 }
 

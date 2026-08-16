@@ -124,11 +124,12 @@ The ELF loader currently targets Linux x86_64 and follows the GABI program-heade
 - Applies load bias to `ET_DYN`/PIE images.
 - Preserves segment permissions from `p_flags`.
 - Detects `PT_INTERP` and transfers control to the system dynamic linker.
+- Executes static `ET_EXEC` and relocation-free `ET_DYN` images directly, while requiring an interpreter for relocation/dependency-bearing dynamic images.
 - Builds the initial interpreter stack and updates the core auxiliary-vector entries.
 
-The current loader uses a fixed `0x100000` link address for the `userspace` executable. `ET_EXEC` images linked into that range are intentionally rejected by `MAP_FIXED_NOREPLACE`; conventional `ET_EXEC` images near `0x400000` do not collide with the loader. The rebuilt initial stack is a 64 KiB writable mapping preceded by a `PROT_NONE` guard page. `argv`, `envp`, `AT_EXECFN`, `AT_RANDOM`, `AT_PLATFORM`, and `AT_BASE_PLATFORM` data are copied into the new stack; `AT_SYSINFO_EHDR` remains a pointer to the existing vDSO mapping. The stack is still fixed-size, mappings are not yet transactionally rolled back, and some inherited auxiliary-vector values still require a complete semantic audit.
+The current loader uses a fixed `0x100000` link address for the `userspace` executable. `ET_EXEC` images linked into that range are intentionally rejected by `MAP_FIXED_NOREPLACE`; conventional `ET_EXEC` images near `0x400000` do not collide with the loader. The rebuilt initial stack is a 16 MiB writable mapping preceded by a `PROT_NONE` guard page. `argv`, `envp`, `AT_EXECFN`, fresh `AT_RANDOM`, `AT_PLATFORM`, and `AT_BASE_PLATFORM` data are copied into the new stack; `AT_SYSINFO_EHDR` remains a pointer to the existing vDSO mapping. Required loader auxv entries are synthesized when absent, and newly created image mappings are rolled back when segment loading or permission application fails.
 
-See `tests/elf_fixtures/build.sh` for reproducible static, PIE, dynamic, large-BSS, and address-collision ELF fixtures.
+See `tests/elf_fixtures/build.sh` for reproducible static, PIE, dynamic, large-BSS, and address-collision ELF fixtures. Run `sh tests/host/run.sh` for host-side macro-layout, auxv, and loader regression tests.
 
 ### Architecture Abstraction
 

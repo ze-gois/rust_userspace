@@ -55,21 +55,13 @@ pub struct LoadingPlan {
     pub phnum: usize,
     pub interpreter: Option<InterpreterPath>,
     pub dynamic: bool,
+    pub runtime_dynamic: bool,
 }
 
 pub fn execute_from_path(
     path: &str,
     stack_pointer: crate::target::arch::PointerType,
 ) -> core::result::Result<(), crate::file::format::elf::segment::Error> {
-    let (is_elf, file_descriptor) =
-        crate::file::format::elf::header::Identifier::is_file_path_magical(path);
-    if file_descriptor >= 0 {
-        let _ = crate::target::os::syscall::close(file_descriptor);
-    }
-    if !is_elf {
-        return Err(crate::file::format::elf::segment::Error::InvalidHeader);
-    }
-
     let prepared = match crate::file::format::elf::segment::prepare_execution(
         path,
         path.as_ptr(),
