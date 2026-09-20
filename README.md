@@ -1,197 +1,62 @@
-# Userspace
+# userspace
 
-<div align="center">
+[![crates.io](https://img.shields.io/crates/v/userspace.svg)](https://crates.io/crates/userspace)
+[![docs.rs](https://docs.rs/userspace/badge.svg)](https://docs.rs/userspace)
 
-![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)
-![License](https://img.shields.io/badge/license-BSD3-green.svg)
-![Rust](https://img.shields.io/badge/rust-2024_edition-orange.svg)
-![Architecture](https://img.shields.io/badge/arch-x86__64-purple.svg)
-![Status](https://img.shields.io/badge/status-experimental-yellow.svg)
+A `no_std` userspace systems layer for the [userspace.party](https://userspace.party) ecosystem.
 
-</div>
+## Role
 
-<div align="center">
-  <strong>A modern standard library for userspace applications</strong><br>
-  Safe, portable abstractions for systems programming without the standard library
-</div>
+`userspace` explores the machinery a process needs below a conventional standard library: operating-system entry points, memory, files, executable loading, target-specific behavior, and freestanding startup.
 
-<br>
+The project currently focuses on Linux/x86_64 while keeping architecture and operating-system concerns separated in the source tree.
 
-<div align="center">
-  <sub>Built with ❤️ by <a href="https://github.com/ze-gois">José Gois</a></sub>
-</div>
+## Current surface
 
-<br>
+The crate contains work around:
 
-## 📋 Overview
+- files, seeking, opening and low-level I/O;
+- ELF parsing and loading;
+- memory allocation, pages, heap and process stack handling;
+- architecture- and OS-specific target modules;
+- freestanding entry/startup and panic paths;
+- shared traits and result types built on `ample`.
 
-**Userspace** is a Rust implementation of a standard library for userspace applications, designed to work without depending on the Rust standard library (`no_std`). It provides safe abstractions for low-level operations, architecture-specific functionality, memory management, and executable file format handling.
+The ELF path includes `PT_LOAD` mapping, PIE/`ET_DYN` load bias, `PT_INTERP` handling, segment permissions, auxiliary-vector preparation, and rollback of newly created mappings when loading fails.
 
-### Key Features
+## Use
 
-- 🔒 **Memory Safety**: Leverage Rust's ownership model for secure systems programming
-- 🧩 **Modular Architecture**: Well-defined components with clear interfaces
-- 🔄 **Cross-Platform**: Architecture abstractions for portability (currently x86_64)
-- 📦 **No Standard Library**: Works in `no_std` environments
-- 📄 **ELF Support**: Parse, map, and launch ELF64 images according to the GABI
-- 🔗 **ELF Interpreters**: Load `PT_INTERP` dynamic linkers and prepare Linux startup state
-- 🧠 **Memory Management**: Stack manipulation and memory allocation utilities
-
-## 🔍 Project Structure
-
-```
-userspace/
-├── src/
-│   ├── file/         # File format handling
-│   ├── macros/       # Utility macros
-│   ├── memory/       # Memory management
-│   │   ├── alloc/    # Allocation functionality
-│   │   ├── page/     # Page management
-│   │   └── stack/    # Stack handling
-│   ├── target/       # Architecture abstractions
-│   │   ├── architecture/   # CPU architecture specifics
-│   │   └── operating_system/  # OS abstractions
-│   ├── traits/       # Common interfaces
-│   ├── types/        # Library-specific types
-│   ├── entry.rs      # Binary entry point
-│   ├── library.rs    # Main library definition
-│   ├── panic.rs      # Panic handler
-│   └── result.rs     # Error handling
-├── Cargo.toml        # Project configuration
-└── build.rs         # Build script
+```bash
+cargo add userspace
 ```
 
-## 🚀 Getting Started
+The default configuration is `no_std`. A `with_std` feature exists for host/build-side contexts where the standard library is intentionally available.
 
-### Prerequisites
-
-- Rust 2024 Edition or newer
-- Cargo and Rustup
-
-### Usage
-
-```sh
-rustup toolchain install nightly
-cargo new usespace_sample
-cd userspace_sample
-rustup override set nightly
-```
-
-#### With standard library 
-
-Add this to your `Cargo.toml`:
-
-```toml
-[dependencies]
-userspace = { version="*", features=["with_std"] }
-```
-
-##### Usage Example
-
-```rust
-use userspace;
-
-fn main() {
-    userspace::info!("Hello, world!\n");
-    userspace::file::print(file!());
-}
-```
-
-## 🛠️ Architecture
-
-Userspace is designed with a layered architecture:
-
-1. **Core Layer**: Basic types, traits and utilities
-2. **Target Layer**: Architecture and OS abstractions
-3. **Memory Layer**: Stack, pages, and allocation
-4. **File Layer**: File format parsing and manipulation
-
-Each layer builds upon the previous ones, providing increasingly higher-level abstractions while maintaining safety and performance.
-
-### Memory Management
-
-The memory subsystem provides:
-
-- Safe stack traversal and argument extraction
-- Page allocation primitives
-- Basic heap allocation in no_std environments
-
-### ELF Loading
-
-The ELF loader currently targets Linux x86_64 and follows the GABI program-header view:
-
-- Maps `PT_LOAD` segments with their file and memory sizes.
-- Applies load bias to `ET_DYN`/PIE images.
-- Preserves segment permissions from `p_flags`.
-- Detects `PT_INTERP` and transfers control to the system dynamic linker.
-- Executes static `ET_EXEC` and relocation-free `ET_DYN` images directly, while requiring an interpreter for relocation/dependency-bearing dynamic images.
-- Builds the initial interpreter stack and updates the core auxiliary-vector entries.
-
-The current loader uses a fixed `0x100000` link address for the `userspace` executable. `ET_EXEC` images linked into that range are intentionally rejected by `MAP_FIXED_NOREPLACE`; conventional `ET_EXEC` images near `0x400000` do not collide with the loader. The rebuilt initial stack is a 16 MiB writable mapping preceded by a `PROT_NONE` guard page. `argv`, `envp`, `AT_EXECFN`, fresh `AT_RANDOM`, `AT_PLATFORM`, and `AT_BASE_PLATFORM` data are copied into the new stack; `AT_SYSINFO_EHDR` remains a pointer to the existing vDSO mapping. Required loader auxv entries are synthesized when absent, and newly created image mappings are rolled back when segment loading or permission application fails.
-
-See `tests/elf_fixtures/build.sh` for reproducible static, PIE, dynamic, large-BSS, and address-collision ELF fixtures. Run `sh tests/host/run.sh` for host-side macro-layout, auxv, and loader regression tests.
-
-### Architecture Abstraction
-
-The target subsystem abstracts architecture details:
-
-- Pointer types and operations
-- Register access patterns
-- CPU-specific features
-- OS-specific functionality
-
-Currently focused on x86_64, but designed to be extensible to other architectures.
-
-## 🧪 Experimental Features
-
-Userspace uses several experimental Rust features:
-
-```rust
-#![feature(generic_const_exprs)]
-#![feature(generic_const_items)]
-```
-
-These enable advanced type-level programming required for zero-cost abstractions across architectures.
-
-## 📚 Documentation
-
-For more detailed documentation:
+For local API documentation:
 
 ```bash
 cargo doc --open
 ```
 
-## 🤝 Contributing
+## Development
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Host-side loader fixtures and regression tests live under `tests/`. The repository also contains its own linker/build configuration for freestanding execution.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -am 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Ecosystem
 
-## 📜 License
+- Ecosystem: https://userspace.party
+- Crate homepage: https://userspace.party/userspace
+- API documentation: https://docs.rs/userspace
+- crates.io: https://crates.io/crates/userspace
+- Source: https://github.com/ze-gois/rust_userspace
+- Workspace hub: https://github.com/ze-gois/rust_userspace_hub
 
-This project is licensed under the terms found in the [LICENSE](LICENSE) file.
+`userspace` is developed independently and published in dependency order as part of the coordinated hub release.
 
-## 🔮 Future Work
+## Status
 
-- Expand the fixed initial stack and add a growth policy
-- Transactional mapping ownership and rollback
-- Complete auxiliary-vector semantic classification and regeneration
-- Validate source stack ranges before copying pointed data
-- Support for additional architectures (ARM, RISC-V)
-- Enhanced file system abstractions
-- Networking capabilities
-- Threading and concurrency primitives
-- Comprehensive test suite
+Experimental. The project is suitable for systems research and active development; interfaces should not yet be treated as stable.
 
----
+## License
 
-<div align="center">
-  <sub>
-    Built for research purposes at the Federal University of Rio Grande do Norte (UFRN)<br>
-    © 2023-2024 José Gois - https://userspace.zegois.com
-  </sub>
-</div>
+See [LICENSE](LICENSE).
