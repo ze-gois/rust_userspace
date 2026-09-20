@@ -1,4 +1,4 @@
 pub trait Trait {
     type Inner;
-    const LABEL : &'static str;
+    const LABEL: &'static str;
 }
