@@ -1,20 +1,15 @@
-type Filepath = *const u8;
-
 ample::result!(
     Ok;
-    "Human Ok";
+    "File Ok";
     usize;
     [
-        [1; USERSPACE_FILE_DEFAULT_OK; Default; usize; "ZE"; "Entry to ze"],
-        [2; USERSPACE_FILE_FILEPATH_OK; Filepath; Filepath; "ZE"; "Entry to ze"],
-        [3; USERSPACE_FILE_FORMAT_OK; Format; crate::file::format::Ok; "ZE"; "Entry to ze"],
+        [1; USERSPACE_FILE_DEFAULT_OK; Default; usize; "Ok"; "Default file result"],
     ];
     Error;
-    "Human error";
+    "File Error";
     usize;
     [
-        [1; USERSPACE_FILE_DEFAULT_ERROR; Default; usize; "ZE"; "Entry to ze"],
-        [3; USERSPACE_FILE_FORMAT_ERROR; Format; crate::file::format::Error; "ZE"; "Entry to ze"],
+        [1; USERSPACE_FILE_DEFAULT_ERROR; Default; usize; "Error"; "Default file error"],
     ]
 );
 
