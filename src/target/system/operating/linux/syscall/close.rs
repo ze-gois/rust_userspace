@@ -4,8 +4,8 @@ use crate::target::architecture::x86::bit64::syscall;
 pub const NUMBER: usize = super::number::x86::bit64::CLOSE;
 
 #[inline(always)]
-pub fn close(fd: isize) -> crate::Result {
-    let raw_return = syscall::syscall1(NUMBER, fd as usize);
+pub fn close(file_descriptor: isize) -> crate::Result {
+    let raw_return = unsafe { syscall::syscall1(NUMBER, file_descriptor as usize) };
     handle_result(raw_return)
 }
 
