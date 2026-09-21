@@ -1,10 +1,7 @@
 use core::alloc::Layout;
 
-ample::r#struct!(
-    #[derive(Debug)]
-    pub struct Allocator {}
-);
-
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Allocator;
 
 unsafe impl ample::traits::Allocating for Allocator {
     fn allocate(layout: Layout) -> *mut u8 {
