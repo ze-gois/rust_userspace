@@ -1,4 +1,4 @@
-use crate::target::arch::{Arch, traits::Callable};
+use crate::target::architecture::{Architecture, traits::Callable};
 
 pub mod flags;
 pub use flags::Flag;
@@ -9,7 +9,7 @@ pub use mode::Mode;
 hooking!(OPEN);
 
 pub fn open(file_pathname: *const u8, flags: i32, mode: i32) -> crate::Result {
-    let syscall_result = Arch::syscall3(
+    let syscall_result = Architecture::syscall3(
         NUMBER,
         file_pathname as usize,
         flags as usize,
@@ -21,7 +21,7 @@ pub fn open(file_pathname: *const u8, flags: i32, mode: i32) -> crate::Result {
 
 pub mod ok {
 
-    ample::result!( Ok; "MUnMap Ok"; usize; [
+    ample::result!( Ok; "Open Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
     ]);
 
@@ -33,7 +33,7 @@ pub mod ok {
 }
 
 pub mod error {
-    ample::result!(Error; "MUnMap error"; usize; [
+    ample::result!(Error; "Open Error"; usize; [
         [1;  ERROR;         Default;              usize;  "Error"; "Something wicked this way comes"],
         [2;  ENOENT;        FileNotFound;       usize;  "ENOENT";       "File not found"],
         [13; EACCES;        PermissionDenied;   usize;  "EACCES";       "Permission denied"],
@@ -62,20 +62,39 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
     // Err(crate::Error::Default(1))
     match result {
         crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::arch::Ok::X86_64Syscall(
-                crate::target::arch::syscall::Ok::X86_64Syscall3(
-                    crate::target::arch::syscall::syscall3::Ok::Default(m),
+            crate::target::architecture::Ok::Syscall(
+                crate::target::architecture::syscall::Ok::Syscall3(
+                    crate::target::architecture::syscall::syscall3::Ok::Default(m),
                 ),
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
-            crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::Open(
-                crate::target::os::syscall::open::Ok::Default(m),
+            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::Open(
+                crate::target::system::operating::linux::syscall::open::Ok::Default(m),
             )),
         ))),
-        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            crate::target::os::Error::Syscall(crate::target::os::syscall::Error::Open(
-                Error::Default(3),
-            )),
-        ))),
+        crate::Result::Err(crate::Error::Target(crate::target::Error::Architecture(
+            crate::target::architecture::Error::Syscall(
+                crate::target::architecture::syscall::Error::Syscall3(
+                    crate::target::architecture::syscall::syscall3::Error::Default(raw),
+                ),
+            ),
+        ))) => core::result::Result::Err(crate::Error::Target(
+            crate::target::Error::OperatingSystem(
+                crate::target::system::operating::linux::Error::Syscall(
+                    crate::target::system::operating::linux::syscall::Error::Open(
+                        Error::Default(raw),
+                    ),
+                ),
+            ),
+        )),
+        _ => core::result::Result::Err(crate::Error::Target(
+            crate::target::Error::OperatingSystem(
+                crate::target::system::operating::linux::Error::Syscall(
+                    crate::target::system::operating::linux::syscall::Error::Open(
+                        Error::Default(usize::MAX),
+                    ),
+                ),
+            ),
+        )),
     }
 }
