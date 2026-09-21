@@ -1,4 +1,4 @@
-use crate::target::architecture::{Architecture, traits::Callable};
+use crate::target::architecture::Architecture;
 
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::WRITE;
