@@ -9,13 +9,18 @@ pub use mode::Mode;
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::OPEN;
 
-pub fn open(file_pathname: *const u8, flags: i32, mode: i32) -> crate::Result {
-    let raw_return = syscall::syscall3(
-        NUMBER,
-        file_pathname as usize,
-        flags as usize,
-        mode as usize,
-    );
+/// # Safety
+///
+/// `file_pathname` must point to a readable NUL-terminated pathname.
+pub unsafe fn open(file_pathname: *const u8, flags: i32, mode: i32) -> crate::Result {
+    let raw_return = unsafe {
+        syscall::syscall3(
+            NUMBER,
+            file_pathname as usize,
+            flags as usize,
+            mode as usize,
+        )
+    };
 
     handle_result(raw_return)
 }
