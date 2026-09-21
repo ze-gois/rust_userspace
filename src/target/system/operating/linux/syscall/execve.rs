@@ -1,6 +1,7 @@
 use crate::target::architecture::{Architecture, traits::Callable};
 
-hooking!(EXECVE);
+#[cfg(target_arch = "x86_64")]
+pub const NUMBER: usize = super::number::x86::bit64::EXECVE;
 
 /// Replace the current process image using Linux's `execve(2)` system call.
 ///
