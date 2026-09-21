@@ -1,4 +1,4 @@
-pub use crate::target::architecture::page::BASE_BASE_SIZE;
+pub use crate::target::architecture::page::BASE_SIZE;
 
 const MASK: usize = !(BASE_SIZE - 1);
 
