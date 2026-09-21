@@ -63,13 +63,13 @@ pub fn handle_result(result: usize) -> crate::Result {
     if (result as isize) < 0 {
         core::result::Result::Err(crate::Error::Target(crate::target::Error::Architecture(
             crate::target::architecture::Error::Syscall(
-                crate::target::architecture::syscall::Error::Syscall5(Error::Default(result)),
+                crate::target::architecture::x86::bit64::syscall::Error::Syscall5(Error::Default(result)),
             ),
         )))
     } else {
         core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
             crate::target::architecture::Ok::Syscall(
-                crate::target::architecture::syscall::Ok::Syscall5(Ok::Default(result)),
+                crate::target::architecture::x86::bit64::syscall::Ok::Syscall5(Ok::Default(result)),
             ),
         )))
     }
