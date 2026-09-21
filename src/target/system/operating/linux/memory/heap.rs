@@ -16,8 +16,8 @@ unsafe impl ample::traits::Allocating for crate::memory::heap::Allocator {
                 layout.size(),
                 (crate::target::system::operating::linux::syscall::mmap::Protection::READ
                     | crate::target::system::operating::linux::syscall::mmap::Protection::WRITE),
-                (crate::target::system::operating::linux::syscall::mmap::Flags::ANONYMOUS
-                    | crate::target::system::operating::linux::syscall::mmap::Flags::PRIVATE),
+                crate::target::system::operating::linux::syscall::mmap::Sharing::PRIVATE,
+                crate::target::system::operating::linux::syscall::mmap::Flags::ANONYMOUS,
                 -1,
                 0,
             )
