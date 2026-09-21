@@ -12,4 +12,7 @@ pub mod linux;
 #[cfg(not(target_os = "linux"))]
 pub use linux::*;
 
-pub struct Os;
+#[derive(Debug, Clone, Copy, Default)]
+pub struct OperatingSystem;
+
+pub type Os = OperatingSystem;
