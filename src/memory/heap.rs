@@ -16,8 +16,8 @@ unsafe impl ample::traits::Allocating for Allocator {
         match crate::target::os::syscall::mmap(
             core::ptr::null_mut(),
             layout.size(),
-            (crate::target::os::syscall::mmap::Prot::Read
-                | crate::target::os::syscall::mmap::Prot::Write) as i32,
+            (crate::target::os::syscall::mmap::Protection::Read
+                | crate::target::os::syscall::mmap::Protection::Write) as i32,
             (crate::target::os::syscall::mmap::Flag::Anonymous
                 | crate::target::os::syscall::mmap::Flag::Private) as i32,
             -1,
