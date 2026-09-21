@@ -1,23 +1,23 @@
 pub mod ok {
     ample::result!(
         Ok;
-        "Human Ok";
+        "Architecture syscall Ok";
         usize;
         [
-            [0; X86_64_SYSCALL_DEFAULT_OK; X86_64Syscall; usize; "ZE"; "Entry to ze"],
-            [1; X86_64_SYSCALL0_OK; X86_64Syscall0; super::super::syscall0::Ok; "ZE"; "Entry to ze"],
-            [2; X86_64_SYSCALL1_OK; X86_64Syscall1; super::super::syscall1::Ok; "ZE"; "Entry to ze"],
-            [3; X86_64_SYSCALL2_OK; X86_64Syscall2; super::super::syscall2::Ok; "ZE"; "Entry to ze"],
-            [4; X86_64_SYSCALL3_OK; X86_64Syscall3; super::super::syscall3::Ok; "ZE"; "Entry to ze"],
-            [5; X86_64_SYSCALL4_OK; X86_64Syscall4; super::super::syscall4::Ok; "ZE"; "Entry to ze"],
-            [6; X86_64_SYSCALL5_OK; X86_64Syscall5; super::super::syscall5::Ok; "ZE"; "Entry to ze"],
-            [7; X86_64_SYSCALL6_OK; X86_64Syscall6; super::super::syscall6::Ok; "ZE"; "Entry to ze"],
+            [0; SYSCALL_DEFAULT_OK; Syscall; usize; "ZE"; "Entry to ze"],
+            [1; SYSCALL0_OK; Syscall0; super::super::syscall0::Ok; "ZE"; "Entry to ze"],
+            [2; SYSCALL1_OK; Syscall1; super::super::syscall1::Ok; "ZE"; "Entry to ze"],
+            [3; SYSCALL2_OK; Syscall2; super::super::syscall2::Ok; "ZE"; "Entry to ze"],
+            [4; SYSCALL3_OK; Syscall3; super::super::syscall3::Ok; "ZE"; "Entry to ze"],
+            [5; SYSCALL4_OK; Syscall4; super::super::syscall4::Ok; "ZE"; "Entry to ze"],
+            [6; SYSCALL5_OK; Syscall5; super::super::syscall5::Ok; "ZE"; "Entry to ze"],
+            [7; SYSCALL6_OK; Syscall6; super::super::syscall6::Ok; "ZE"; "Entry to ze"],
         ]
     );
 
     impl Ok {
         pub fn from_no(no: usize) -> Self {
-            Ok::X86_64Syscall(no)
+            Ok::Syscall(no)
         }
     }
 }
@@ -25,23 +25,23 @@ pub mod ok {
 pub mod error {
     ample::result!(
         Error;
-        "Human error";
+        "Architecture syscall Error";
         usize;
         [
-            [0; X86_64_SYSCALL_DEFAULT_ERROR; X86_64Syscall; usize; "ZE"; "Entry to ze"],
-            [1; X86_64_SYSCALL0_ERROR; X86_64Syscall0; super::super::syscall0::Error; "ZE"; "Entry to ze"],
-            [2; X86_64_SYSCALL1_ERROR; X86_64Syscall1; super::super::syscall1::Error; "ZE"; "Entry to ze"],
-            [3; X86_64_SYSCALL2_ERROR; X86_64Syscall2; super::super::syscall2::Error; "ZE"; "Entry to ze"],
-            [4; X86_64_SYSCALL3_ERROR; X86_64Syscall3; super::super::syscall3::Error; "ZE"; "Entry to ze"],
-            [5; X86_64_SYSCALL4_ERROR; X86_64Syscall4; super::super::syscall4::Error; "ZE"; "Entry to ze"],
-            [6; X86_64_SYSCALL5_ERROR; X86_64Syscall5; super::super::syscall5::Error; "ZE"; "Entry to ze"],
-            [7; X86_64_SYSCALL6_ERROR; X86_64Syscall6; super::super::syscall6::Error; "ZE"; "Entry to ze"],
+            [0; SYSCALL_DEFAULT_ERROR; Syscall; usize; "ZE"; "Entry to ze"],
+            [1; SYSCALL0_ERROR; Syscall0; super::super::syscall0::Error; "ZE"; "Entry to ze"],
+            [2; SYSCALL1_ERROR; Syscall1; super::super::syscall1::Error; "ZE"; "Entry to ze"],
+            [3; SYSCALL2_ERROR; Syscall2; super::super::syscall2::Error; "ZE"; "Entry to ze"],
+            [4; SYSCALL3_ERROR; Syscall3; super::super::syscall3::Error; "ZE"; "Entry to ze"],
+            [5; SYSCALL4_ERROR; Syscall4; super::super::syscall4::Error; "ZE"; "Entry to ze"],
+            [6; SYSCALL5_ERROR; Syscall5; super::super::syscall5::Error; "ZE"; "Entry to ze"],
+            [7; SYSCALL6_ERROR; Syscall6; super::super::syscall6::Error; "ZE"; "Entry to ze"],
         ]
     );
 
     impl Error {
         pub fn from_no(no: usize) -> Self {
-            Error::X86_64Syscall(no)
+            Error::Syscall(no)
         }
     }
 }
@@ -54,11 +54,11 @@ pub type Result = core::result::Result<Ok, Error>;
 pub fn handle_result(result: usize) -> crate::Result {
     if (result as isize) < 0 {
         core::result::Result::Err(crate::Error::Target(crate::target::Error::Architecture(
-            crate::target::arch::Error::X86_64Syscall(Error::from_no(result)),
+            crate::target::arch::Error::Syscall(Error::from_no(result)),
         )))
     } else {
         core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::arch::Ok::X86_64Syscall(Ok::from_no(result)),
+            crate::target::arch::Ok::Syscall(Ok::from_no(result)),
         )))
     }
 }
