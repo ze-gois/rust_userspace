@@ -4,14 +4,14 @@ use crate::target::architecture::x86::bit64::syscall;
 pub const NUMBER: usize = super::number::x86::bit64::READ;
 
 pub fn read(file_descriptor: isize, byte_buffer: *const u8, byte_length: usize) -> crate::Result {
-    let arch_result = syscall::syscall3(
+    let raw_return = syscall::syscall3(
         NUMBER,
         file_descriptor as usize,
         byte_buffer as usize,
         byte_length as usize,
     );
 
-    handle_result(arch_result)
+    handle_result(raw_return)
 }
 
 pub mod ok {
@@ -50,43 +50,28 @@ pub use ok::Ok;
 
 pub type Result = core::result::Result<Ok, Error>;
 
-pub fn handle_result(result: crate::Result) -> crate::Result {
-    // Err(crate::Error::Default(1))
-    match result {
-        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::architecture::Ok::Syscall(
-                crate::target::architecture::x86::bit64::syscall::Ok::Syscall3(
-                    crate::target::architecture::x86::bit64::syscall::syscall3::Ok::Default(m),
-                ),
-            ),
-        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
-            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::Read(
-                crate::target::system::operating::linux::syscall::read::Ok::Default(m),
-            )),
-        ))),
-        crate::Result::Err(crate::Error::Target(crate::target::Error::Architecture(
-            crate::target::architecture::Error::Syscall(
-                crate::target::architecture::x86::bit64::syscall::Error::Syscall3(
-                    crate::target::architecture::x86::bit64::syscall::syscall3::Error::Default(raw),
-                ),
-            ),
-        ))) => core::result::Result::Err(crate::Error::Target(
+pub fn handle_result(raw: usize) -> crate::Result {
+    let result = super::Return::new(raw);
+
+    if result.is_error() {
+        core::result::Result::Err(crate::Error::Target(
             crate::target::Error::OperatingSystem(
                 crate::target::system::operating::linux::Error::Syscall(
                     crate::target::system::operating::linux::syscall::Error::Read(
-                        Error::Default(raw),
+                        Error::Default(result.raw()),
                     ),
                 ),
             ),
-        )),
-        _ => core::result::Result::Err(crate::Error::Target(
-            crate::target::Error::OperatingSystem(
-                crate::target::system::operating::linux::Error::Syscall(
-                    crate::target::system::operating::linux::syscall::Error::Read(
-                        Error::Default(usize::MAX),
+        ))
+    } else {
+        core::result::Result::Ok(crate::Ok::Target(
+            crate::target::Ok::OperatingSystem(
+                crate::target::system::operating::linux::Ok::Syscall(
+                    crate::target::system::operating::linux::syscall::Ok::Read(
+                        Ok::Default(result.raw()),
                     ),
                 ),
             ),
-        )),
+        ))
     }
 }
