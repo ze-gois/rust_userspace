@@ -8,13 +8,26 @@ pub const NUMBER: usize = super::number::x86::bit64::EXECVE;
 /// `filename`, `argv`, and `envp` must point to NUL-terminated strings and
 /// NUL-terminated pointer arrays respectively. The call returns only when
 /// replacing the process image fails.
+/// # Safety
+///
+/// `file_pathname` must point to a readable NUL-terminated pathname.
+/// `argument_vector` and `environment_vector` must point to readable,
+/// NUL-terminated pointer arrays whose non-null entries point to readable
+/// NUL-terminated strings.
 #[inline(always)]
-pub fn execve(
-    filename: *const u8,
-    argv: *const *const u8,
-    envp: *const *const u8,
+pub unsafe fn execve(
+    file_pathname: *const u8,
+    argument_vector: *const *const u8,
+    environment_vector: *const *const u8,
 ) -> crate::Result {
-    let raw_return = syscall::syscall3(NUMBER, filename as usize, argv as usize, envp as usize);
+    let raw_return = unsafe {
+        syscall::syscall3(
+            NUMBER,
+            file_pathname as usize,
+            argument_vector as usize,
+            environment_vector as usize,
+        )
+    };
     handle_result(raw_return)
 }
 
