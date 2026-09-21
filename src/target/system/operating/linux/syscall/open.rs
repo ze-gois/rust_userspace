@@ -6,7 +6,8 @@ pub use flags::Flag;
 pub mod mode;
 pub use mode::Mode;
 
-hooking!(OPEN);
+#[cfg(target_arch = "x86_64")]
+pub const NUMBER: usize = super::number::x86::bit64::OPEN;
 
 pub fn open(file_pathname: *const u8, flags: i32, mode: i32) -> crate::Result {
     let syscall_result = Architecture::syscall3(
