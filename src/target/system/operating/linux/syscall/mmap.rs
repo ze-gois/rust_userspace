@@ -2,9 +2,11 @@ use crate::target::architecture::x86::bit64::syscall;
 
 pub mod flags;
 pub mod protection;
+pub mod sharing;
 
 pub use flags::Flags;
 pub use protection::Protection;
+pub use sharing::Sharing;
 
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::MMAP;
@@ -19,6 +21,7 @@ pub unsafe fn mmap(
     address: *mut u8,
     length: usize,
     protection: Protection,
+    sharing: Sharing,
     flags: Flags,
     file_descriptor: i32,
     offset: i64,
@@ -29,7 +32,7 @@ pub unsafe fn mmap(
             address as usize,
             length,
             protection.bits() as usize,
-            flags.bits() as usize,
+            (sharing.raw() | flags.bits()) as usize,
             file_descriptor as usize,
             offset as usize,
         )
