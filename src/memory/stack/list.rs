@@ -1,4 +1,4 @@
-use crate::memory::heap::Allocating;
+use crate::memory::heap::Allocator;
 
 pub trait LinkedEntry {
     fn set_links(&mut self, previous: *mut Self, next: *mut Self);
@@ -25,14 +25,14 @@ impl<T> Default for List<T> {
 impl<T> List<T> {
     pub fn from_values<F>(counter: usize, mut value_at: F) -> Self
     where
-        T: Allocating<T> + LinkedEntry,
+        T: LinkedEntry,
         F: FnMut(usize) -> T,
     {
         if counter == 0 {
             return Self::default();
         }
 
-        let pointer = T::allocate(counter);
+        let pointer = Allocator::allocate::<T>(counter);
         if pointer.is_null() {
             return Self::default();
         }
@@ -134,10 +134,7 @@ impl<T> Drop for List<T> {
                 core::ptr::drop_in_place(self.former.add(index));
             }
 
-            let total_size = core::mem::size_of::<T>() * self.counter;
-            let aligned_size =
-                (total_size + crate::memory::page::SIZE - 1) & !(crate::memory::page::SIZE - 1);
-            let _ = crate::target::os::syscall::munmap(self.former as *mut u8, aligned_size);
+            let _ = Allocator::deallocate::<T>(self.former, self.counter);
         }
 
         self.former = core::ptr::null_mut();
