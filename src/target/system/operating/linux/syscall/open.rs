@@ -1,4 +1,4 @@
-use crate::target::architecture::{Architecture, traits::Callable};
+use crate::target::architecture::Architecture;
 
 pub mod flags;
 pub use flags::Flag;
