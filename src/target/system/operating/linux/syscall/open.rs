@@ -3,9 +3,6 @@ use crate::target::arch::{Arch, traits::Callable};
 pub mod flags;
 pub use flags::Flag;
 
-pub mod at_flags;
-pub use at_flags::AtFlag;
-
 pub mod mode;
 pub use mode::Mode;
 
@@ -26,8 +23,6 @@ pub mod ok {
 
     ample::result!( Ok; "MUnMap Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
-        [98; OPENAT;  OPENAT; usize; "OPENAT"; "WAITING"],
-        [99; OPENAT4;  OPENAT4; usize; "OPENAT"; "WAITING"],
     ]);
 
     impl Ok {
@@ -49,8 +44,6 @@ pub mod error {
         [17; EEXIST;        FileExists;         usize;  "EEXIST";       "File exists"],
         [24; EMFILE;        TooManyOpenFiles;   usize;  "EMFILE";       "Too many open files"],
         [28; ENOSPC;        NoSpace;            usize;  "ENOSPC";       "No space left on device"],
-        [98; OPENAT;  OPENAT; usize; "OPENAT"; "WAITING"],
-        [99; OPENAT4;  OPENAT4; usize; "OPENAT"; "WAITING"],
     ]);
 
     impl Error {
