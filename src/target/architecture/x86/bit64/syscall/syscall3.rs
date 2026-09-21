@@ -1,5 +1,5 @@
 #[inline(always)]
-pub fn syscall3(number: usize, argument1: usize, argument2: usize, argument3: usize) -> usize {
+pub unsafe fn syscall3(number: usize, argument1: usize, argument2: usize, argument3: usize) -> usize {
     let result: usize;
     unsafe {
         core::arch::asm!(
