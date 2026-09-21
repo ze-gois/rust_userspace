@@ -25,7 +25,7 @@ unsafe impl ample::traits::Allocating for crate::memory::heap::Allocator {
             core::result::Result::Ok(crate::Ok::Target(
                 crate::target::Ok::OperatingSystem(
                     crate::target::system::operating::linux::Ok::Syscall(
-                        crate::target::system::operating::linux::syscall::Ok::MMap(
+                        crate::target::system::operating::linux::syscall::Ok::Mmap(
                             crate::target::system::operating::linux::syscall::mmap::Ok::Default(
                                 pointer,
                             ),
