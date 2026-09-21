@@ -1,4 +1,4 @@
-use crate::target::architecture::Architecture;
+use crate::target::architecture::x86::bit64::syscall;
 
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::FORK;
@@ -9,7 +9,7 @@ pub const NUMBER: usize = super::number::x86::bit64::FORK;
 /// parent process. On failure, the result contains the kernel error value.
 #[inline(always)]
 pub fn fork() -> crate::Result {
-    let arch_result = Architecture::syscall0(NUMBER);
+    let arch_result = syscall::syscall0(NUMBER);
     handle_result(arch_result)
 }
 
