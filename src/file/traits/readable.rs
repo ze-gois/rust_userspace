@@ -1,9 +1,10 @@
+use crate::memory::heap::Allocator;
+
 pub trait Readable<Origin>
 where
     Self: Copy,
     Self: Sized,
     Self: ample::traits::Bytes<Self::Origin, Self::Origin>,
-    Self: crate::memory::heap::Allocating<Self>,
 {
     type Origin = Origin;
     fn read_from_path(path: &str, offset: usize, endianness: bool) -> (Self, isize, usize) {
@@ -19,8 +20,10 @@ where
     ) -> (Self, usize) {
         let _ = crate::file::seek(file_descriptor, offset as i64);
         let size = <Self as ample::traits::Bytes<Self::Origin, Self::Origin>>::REPRESENTATION_SIZE;
-        use crate::memory::heap::Allocating;
-        let bytes = u8::allocate(size);
+        let bytes = Allocator::allocate::<u8>(size);
+        if bytes.is_null() {
+            panic!("failed to allocate representation buffer");
+        }
         let _ = crate::target::os::syscall::read(file_descriptor, bytes, size);
         Self::read_from_pointer(bytes, 0, endianness)
     }
@@ -48,11 +51,16 @@ where
         offsets: &[usize],
         endianness: bool,
     ) -> (&'static mut [Self], isize) {
-        use crate::memory::heap::Allocating;
+        let bytes_pointer = Allocator::allocate::<u8>(Self::REPRESENTATION_SIZE);
+        if bytes_pointer.is_null() {
+            panic!("failed to allocate representation buffer");
+        }
 
-        let bytes_pointer = u8::allocate(Self::REPRESENTATION_SIZE);
-
-        let values = Self::allocate_slice(offsets.len());
+        let values_pointer = Allocator::allocate::<Self>(offsets.len());
+        if values_pointer.is_null() && !offsets.is_empty() {
+            panic!("failed to allocate value buffer");
+        }
+        let values = unsafe { core::slice::from_raw_parts_mut(values_pointer, offsets.len()) };
         for (o, offset) in offsets.iter().enumerate() {
             let _ = crate::file::seek(file_descriptor, *offset as i64);
             let _ =
@@ -67,7 +75,11 @@ where
         offsets: &[usize],
         endianness: bool,
     ) -> &'static mut [Self] {
-        let values = Self::allocate_slice(offsets.len());
+        let values_pointer = Allocator::allocate::<Self>(offsets.len());
+        if values_pointer.is_null() && !offsets.is_empty() {
+            panic!("failed to allocate value buffer");
+        }
+        let values = unsafe { core::slice::from_raw_parts_mut(values_pointer, offsets.len()) };
         for (o, offset) in offsets.iter().enumerate() {
             values[o] = Self::from_bytes_pointer(unsafe { bytes_pointer.add(*offset) }, endianness);
         }
@@ -79,7 +91,6 @@ impl<U> Readable<crate::Origin> for U
 where
     Self: Copy,
     Self: ample::traits::BytesDefault<crate::Origin>,
-    Self: crate::memory::heap::Allocating<Self>,
 {
     type Origin = crate::Origin;
 }
@@ -87,7 +98,6 @@ where
 // impl<A> Readable<ample::Origin> for A
 // where
 //     Self: ample::traits::Bytes<ample::Origin, ample::Origin>,
-//     Self: crate::memory::heap::Allocating<Self>,
-// {
+//     // {
 //     type Origin = ample::Origin;
 // }
