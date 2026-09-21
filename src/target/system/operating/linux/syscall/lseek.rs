@@ -7,8 +7,8 @@ pub use whence::Whence;
 pub const NUMBER: usize = super::number::x86::bit64::LSEEK;
 
 #[inline(always)]
-pub fn lseek(fd: i32, offset: i64, whence: i32) -> crate::Result {
-    let raw_return = syscall::syscall3(NUMBER, fd as usize, offset as usize, whence as usize);
+pub fn lseek(file_descriptor: i32, offset: i64, whence: i32) -> crate::Result {
+    let raw_return = unsafe { syscall::syscall3(NUMBER, file_descriptor as usize, offset as usize, whence as usize);
 
     handle_result(raw_return)
 }
