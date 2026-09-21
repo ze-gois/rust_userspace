@@ -1,6 +1,6 @@
 use super::syscall::*;
 
-impl crate::target::architecture::traits::Callable for crate::target::Arch {
+impl crate::target::architecture::traits::Callable for crate::target::architecture::Architecture {
     fn _syscall0(n: usize) -> crate::Result {
         crate::info!(X "Syscall Input: 0x{:x}", n);
         let syscall_result = syscall0(n);
