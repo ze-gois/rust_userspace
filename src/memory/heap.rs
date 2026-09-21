@@ -51,13 +51,20 @@ pub trait Allocating<T> {
     fn deallocate_slice(slice: &mut [T]) -> bool;
 }
 
-impl<T> Allocating<T> for T
-where
-    T: ample::traits::Bytes<Origin, Origin>,
-    // T: Default,
-{
+impl<T> Allocating<T> for T {
     fn allocate(numerosity: usize) -> *mut T {
-        let numerosity_of_bytes = numerosity * T::BYTES_SIZE + T::BYTES_ALIGN;
+        if numerosity == 0 || core::mem::size_of::<T>() == 0 {
+            return core::ptr::NonNull::<T>::dangling().as_ptr();
+        }
+
+        if core::mem::align_of::<T>() > crate::memory::page::SIZE {
+            return core::ptr::null_mut();
+        }
+
+        let Some(numerosity_of_bytes) = numerosity.checked_mul(core::mem::size_of::<T>()) else {
+            return core::ptr::null_mut();
+        };
+
         match <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity_of_bytes) {
             Ok(m) => m.as_ptr() as *mut T,
             _ => core::ptr::null_mut(),
@@ -66,7 +73,13 @@ where
 
     /// Deallocate an array previously allocated with allocate_array
     fn deallocate(ptr: *mut T, numerosity: usize) -> bool {
-        let total_size = numerosity * T::BYTES_SIZE + T::BYTES_ALIGN;
+        if numerosity == 0 || core::mem::size_of::<T>() == 0 {
+            return true;
+        }
+
+        let Some(total_size) = numerosity.checked_mul(core::mem::size_of::<T>()) else {
+            return false;
+        };
 
         let aligned_size =
             (total_size + crate::memory::page::SIZE - 1) & !(crate::memory::page::SIZE - 1);
@@ -100,15 +113,21 @@ where
     }
 }
 
-impl<T> Allocating<T> for &[T]
-where
-    T: ample::traits::Bytes<Origin, Origin>,
-    // T: Default,
-{
+impl<T> Allocating<T> for &[T] {
     fn allocate(numerosity: usize) -> *mut T {
-        match <Allocator as ample::traits::Allocatable<Origin>>::allocate(
-            numerosity * T::BYTES_SIZE,
-        ) {
+        if numerosity == 0 || core::mem::size_of::<T>() == 0 {
+            return core::ptr::NonNull::<T>::dangling().as_ptr();
+        }
+
+        if core::mem::align_of::<T>() > crate::memory::page::SIZE {
+            return core::ptr::null_mut();
+        }
+
+        let Some(numerosity_of_bytes) = numerosity.checked_mul(core::mem::size_of::<T>()) else {
+            return core::ptr::null_mut();
+        };
+
+        match <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity_of_bytes) {
             Ok(ptr) => ptr.as_ptr() as *mut T,
             Err(_) => core::ptr::null_mut(),
         }
@@ -116,9 +135,20 @@ where
 
     /// Deallocate an array previously allocated with allocate_array
     fn deallocate(ptr: *mut T, numerosity: usize) -> bool {
+        if numerosity == 0 || core::mem::size_of::<T>() == 0 {
+            return true;
+        }
+
+        let Some(total_size) = numerosity.checked_mul(core::mem::size_of::<T>()) else {
+            return false;
+        };
+
+        let aligned_size =
+            (total_size + crate::memory::page::SIZE - 1) & !(crate::memory::page::SIZE - 1);
+
         match <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
             ptr as *mut Allocator,
-            numerosity,
+            aligned_size,
         ) {
             Ok(_) => true,
             Err(_) => false,
@@ -127,10 +157,7 @@ where
 
     /// Allocate and initialize a slice
     fn allocate_slice(numerosity: usize) -> &'static mut [T] {
-        let ptr = match <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity) {
-            Ok(ptr) => ptr.as_ptr() as *mut T,
-            Err(_) => core::ptr::null_mut(),
-        };
+        let ptr = <Self as Allocating<T>>::allocate(numerosity);
 
         // for i in 0..numerosity {
         //     unsafe {
@@ -142,13 +169,7 @@ where
     }
 
     fn deallocate_slice(slice: &mut [T]) -> bool {
-        match <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
-            slice.as_mut_ptr() as *mut Allocator,
-            slice.len(),
-        ) {
-            Ok(_) => true,
-            Err(_) => false,
-        }
+        <Self as Allocating<T>>::deallocate(slice.as_mut_ptr(), slice.len())
     }
 }
 
