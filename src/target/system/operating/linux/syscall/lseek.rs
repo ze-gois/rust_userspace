@@ -52,12 +52,12 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
                 ),
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
-            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::LSeek(
+            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::Lseek(
                 crate::target::system::operating::linux::syscall::lseek::Ok::Default(m),
             )),
         ))),
         _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::LSeek(
+            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::Lseek(
                 Error::Default(3),
             )),
         ))),
