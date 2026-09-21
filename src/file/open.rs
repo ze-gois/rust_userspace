@@ -1,14 +1,10 @@
 pub fn open(file_path: &str) -> isize {
-    use ample::traits::AllocatableResult;
     let file_path =
-        ample::string::terminate::<crate::Origin, crate::Origin, crate::memory::heap::Allocator>(
-            file_path,
-        );
+        ample::string::terminate::<crate::memory::heap::Allocator>(file_path);
 
-    let file_path = match file_path {
-        core::result::Result::Ok(a) => a.as_ptr(),
-        _ => return -1,
-    };
+    if file_path.is_null() {
+        return -1;
+    }
 
     match crate::target::os::syscall::openat(
         crate::target::os::syscall::open::AtFlag::FDCWD.to(),
