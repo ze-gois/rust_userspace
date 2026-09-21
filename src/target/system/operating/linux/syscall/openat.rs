@@ -5,7 +5,8 @@ pub use super::open::{Error, Ok, Result};
 pub const CURRENT_WORKING_DIRECTORY: isize = -100;
 pub const AT_FDCWD: isize = CURRENT_WORKING_DIRECTORY;
 
-hooking!(OPENAT);
+#[cfg(target_arch = "x86_64")]
+pub const NUMBER: usize = super::number::x86::bit64::OPENAT;
 
 pub fn openat(
     directory_file_descriptor: isize,
