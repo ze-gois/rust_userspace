@@ -27,9 +27,6 @@ bss_zero_loop:
        jb      bss_zero_loop
 
 bss_init_done:
-       # Run optional process initialization before handing off to Rust.
-       call    flag_license
-
        # Pass the untouched Linux initial stack to the application entry point.
        mov     %r12, %rdi
        call    entry
