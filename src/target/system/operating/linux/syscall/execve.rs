@@ -1,4 +1,4 @@
-use crate::target::architecture::Architecture;
+use crate::target::architecture::x86::bit64::syscall;
 
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::EXECVE;
@@ -14,7 +14,7 @@ pub fn execve(
     argv: *const *const u8,
     envp: *const *const u8,
 ) -> crate::Result {
-    let arch_result = Architecture::syscall3(NUMBER, filename as usize, argv as usize, envp as usize);
+    let arch_result = syscall::syscall3(NUMBER, filename as usize, argv as usize, envp as usize);
     handle_result(arch_result)
 }
 
