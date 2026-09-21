@@ -24,19 +24,19 @@ pub use result::{Error, Ok, Result};
 // impl<F: traits::Bytes<crate::target::Origin, crate::target::Origin>>
 //     traits::Bytes<crate::Origin, crate::Origin> for F
 // {
-//     const BYTES_SIZE: usize =
-//         <Self as traits::Bytes<crate::target::Origin, crate::target::Origin>>::BYTES_SIZE;
+//     const REPRESENTATION_SIZE: usize =
+//         <Self as traits::Bytes<crate::target::Origin, crate::target::Origin>>::REPRESENTATION_SIZE;
 
-//     fn from_bytes(bytes: [u8; Self::BYTES_SIZE], endianness: bool) -> Self
+//     fn from_bytes(bytes: [u8; Self::REPRESENTATION_SIZE], endianness: bool) -> Self
 //     where
-//         [(); Self::BYTES_SIZE]:,
+//         [(); Self::REPRESENTATION_SIZE]:,
 //     {
 //         <Self as traits::Bytes<crate::target::Origin, crate::target::Origin>>::from_bytes(bytes, endianness)
 //     }
 
-//     fn to_bytes(&self, endianness: bool) -> [u8; Self::BYTES_SIZE]
+//     fn to_bytes(&self, endianness: bool) -> [u8; Self::REPRESENTATION_SIZE]
 //     where
-//         [(); Self::BYTES_SIZE]:,
+//         [(); Self::REPRESENTATION_SIZE]:,
 //     {
 //         <Self as traits::Bytes<crate::target::Origin, crate::target::Origin>>::to_bytes(self, endianness)
 //     }
