@@ -1,9 +1,9 @@
-use crate::target::arch::{Arch, traits::Callable};
+use crate::target::architecture::{Architecture, traits::Callable};
 
 hooking!(GETRANDOM);
 
 pub fn getrandom(byte_buffer: *mut u8, byte_length: usize, flags: u32) -> crate::Result {
-    let arch_result = Arch::syscall3(NUMBER, byte_buffer as usize, byte_length, flags as usize);
+    let arch_result = Architecture::syscall3(NUMBER, byte_buffer as usize, byte_length, flags as usize);
 
     handle_result(arch_result)
 }
@@ -45,9 +45,9 @@ pub type Result = core::result::Result<Ok, Error>;
 pub fn handle_result(result: crate::Result) -> crate::Result {
     match result {
         crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::arch::Ok::X86_64Syscall(
-                crate::target::arch::syscall::Ok::X86_64Syscall3(
-                    crate::target::arch::syscall::syscall3::Ok::Default(m),
+            crate::target::architecture::Ok::Syscall(
+                crate::target::architecture::syscall::Ok::Syscall3(
+                    crate::target::architecture::syscall::syscall3::Ok::Default(m),
                 ),
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
