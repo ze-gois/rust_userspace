@@ -6,8 +6,8 @@ pub mod ok {
         [
             [1; TARGET_DEFAULT_OK; Default; usize; "ZE"; "Entry to ze"],
             [2; TARGET_INFO_OK; Info; usize; "ZE"; "Entry to ze"],
-            [3; TARGET_OS_OK; Os; crate::target::os::Ok; "ZE"; "Entry to ze"],
-            [4; TARGET_ARCH_OK; Arch; crate::target::arch::Ok; "ZE"; "Entry to ze"],
+            [3; TARGET_OPERATING_SYSTEM_OK; OperatingSystem; crate::target::os::Ok; "ZE"; "Entry to ze"],
+            [4; TARGET_ARCHITECTURE_OK; Architecture; crate::target::arch::Ok; "ZE"; "Entry to ze"],
         ]
     );
 
@@ -26,8 +26,8 @@ pub mod error {
         [
             [1; TARGET_DEFAULT_ERROR; Default; usize; "ZE"; "Entry to ze"],
             [2; TARGET_INFO_ERROR; Info; usize; "ZE"; "Entry to ze"],
-            [3; TARGET_OS_ERROR; Os; crate::target::os::Error; "ZE"; "Entry to ze"],
-            [4; TARGET_ARCH_ERROR; Arch; crate::target::arch::Error; "ZE"; "Entry to ze"],
+            [3; TARGET_OPERATING_SYSTEM_ERROR; OperatingSystem; crate::target::os::Error; "ZE"; "Entry to ze"],
+            [4; TARGET_ARCHITECTURE_ERROR; Architecture; crate::target::arch::Error; "ZE"; "Entry to ze"],
         ]
     );
 
