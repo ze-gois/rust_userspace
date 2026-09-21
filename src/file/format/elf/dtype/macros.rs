@@ -44,13 +44,13 @@ macro_rules! file_format_elf_dtype_class {
             // impl $name {
             //     pub fn read(fd: isize, endianness: bool) -> core::result::Result<$name,$crate::Error>
             //     where
-            //         [u8; <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::BYTES_SIZE]:,
+            //         [u8; <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::REPRESENTATION_SIZE]:,
             //     {
-            //         let mut bytes = [0u8; <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::BYTES_SIZE];
+            //         let mut bytes = [0u8; <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::REPRESENTATION_SIZE];
 
-            //         match $crate::target::os::syscall::read(fd, bytes.as_mut_ptr(), <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::BYTES_SIZE) {
+            //         match $crate::target::os::syscall::read(fd, bytes.as_mut_ptr(), <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::REPRESENTATION_SIZE) {
             //             core::result::Result::Ok($crate::Ok::Target($crate::target::Ok::Os($crate::target::os::Ok::Syscall($crate::target::os::syscall::Ok::Write($crate::target::os::syscall::write::Ok::Default(value)))))) => {
-            //                 if value != <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::BYTES_SIZE {
+            //                 if value != <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::REPRESENTATION_SIZE {
             //                     return core::result::Result::Err($crate::Error::File($crate::file::Error::Format($crate::file::format::Error::Elf($crate::file::format::elf::Error::DType($crate::file::format::elf::dtype::Error::$class_ident($crate::file::format::elf::dtype::$class::Error::Null(Null(value))))))));
             //                 }
 
@@ -67,13 +67,13 @@ macro_rules! file_format_elf_dtype_class {
 
             //     pub fn read_to_crate(fd: isize, endianness: bool) -> $crate::Result
             //     where
-            //         [u8; <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::BYTES_SIZE]:,
+            //         [u8; <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::REPRESENTATION_SIZE]:,
             //     {
-            //         let mut bytes = [0u8; <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::BYTES_SIZE];
+            //         let mut bytes = [0u8; <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::REPRESENTATION_SIZE];
 
-            //         match $crate::target::os::syscall::read(fd, bytes.as_mut_ptr(), <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::BYTES_SIZE) {
+            //         match $crate::target::os::syscall::read(fd, bytes.as_mut_ptr(), <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::REPRESENTATION_SIZE) {
             //             core::result::Result::Ok($crate::Ok::Target($crate::target::Ok::Os($crate::target::os::Ok::Syscall($crate::target::os::syscall::Ok::Write($crate::target::os::syscall::write::Ok::Default(value)))))) => {
-            //                 if value != <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::BYTES_SIZE {
+            //                 if value != <$name as ample::traits::Bytes<$crate::Origin, $crate::Origin>>::REPRESENTATION_SIZE {
             //                     return core::result::Result::Err($crate::Error::File($crate::file::Error::Format($crate::file::format::Error::Elf($crate::file::format::elf::Error::DType($crate::file::format::elf::dtype::Error::$class_ident($crate::file::format::elf::dtype::$class::Error::Null(Null(value))))))));
             //                 }
 
