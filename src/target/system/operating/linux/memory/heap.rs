@@ -14,12 +14,10 @@ unsafe impl ample::traits::Allocating for crate::memory::heap::Allocator {
             crate::target::system::operating::linux::syscall::mmap(
                 core::ptr::null_mut(),
                 layout.size(),
-                (crate::target::system::operating::linux::syscall::mmap::Protection::Read
-                    | crate::target::system::operating::linux::syscall::mmap::Protection::Write)
-                    as i32,
-                (crate::target::system::operating::linux::syscall::mmap::Flag::Anonymous
-                    | crate::target::system::operating::linux::syscall::mmap::Flag::Private)
-                    as i32,
+                (crate::target::system::operating::linux::syscall::mmap::Protection::READ
+                    | crate::target::system::operating::linux::syscall::mmap::Protection::WRITE),
+                (crate::target::system::operating::linux::syscall::mmap::Flags::ANONYMOUS
+                    | crate::target::system::operating::linux::syscall::mmap::Flags::PRIVATE),
                 -1,
                 0,
             )
