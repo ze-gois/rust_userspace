@@ -1,6 +1,7 @@
 use crate::target::architecture::{Architecture, traits::Callable};
 
-hooking!(MUNMAP);
+#[cfg(target_arch = "x86_64")]
+pub const NUMBER: usize = super::number::x86::bit64::MUNMAP;
 
 #[inline(always)]
 pub fn munmap(addr: *mut u8, length: usize) -> crate::Result {
