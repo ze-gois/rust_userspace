@@ -1,11 +1,11 @@
-use crate::target::architecture::Architecture;
+use crate::target::architecture::x86::bit64::syscall;
 
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::CLOSE;
 
 #[inline(always)]
 pub fn close(fd: isize) -> crate::Result {
-    let arch_result = Architecture::syscall1(NUMBER, fd as usize);
+    let arch_result = syscall::syscall1(NUMBER, fd as usize);
     handle_result(arch_result)
 }
 
