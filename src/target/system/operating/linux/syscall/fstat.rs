@@ -6,9 +6,15 @@ pub use stat::Stat;
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::FSTAT;
 
+/// # Safety
+///
+/// `status` must designate writable storage large enough for one Linux
+/// `struct stat` value for the active ABI.
 #[inline(always)]
-pub fn fstat(fd: isize, stat: *const Stat) -> crate::Result {
-    let raw_return = syscall::syscall2(NUMBER, fd as usize, stat as usize);
+pub unsafe fn fstat(file_descriptor: isize, status: *mut Stat) -> crate::Result {
+    let raw_return = unsafe {
+        syscall::syscall2(NUMBER, file_descriptor as usize, status as usize)
+    };
     handle_result(raw_return)
 }
 
