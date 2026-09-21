@@ -2,9 +2,6 @@ ample::flags!(
     i32;
     "Open flags";
     pub struct Flags {
-        [0o0;       READ_ONLY;              O_RDONLY;   "O_RDONLY";   "Open for reading only"],
-        [0o1;       WRITE_ONLY;             O_WRONLY;   "O_WRONLY";   "Open for writing only"],
-        [0o2;       READ_WRITE;             O_RDWR;     "O_RDWR";     "Open for reading and writing"],
         [0o100;     CREATE;                 O_CREAT;    "O_CREAT";    "Create file if it does not exist"],
         [0o200;     EXCLUSIVE;              O_EXCL;     "O_EXCL";     "Require exclusive creation"],
         [0o400;     NO_CONTROLLING_TERMINAL;O_NOCTTY;   "O_NOCTTY";   "Do not assign a controlling terminal"],
