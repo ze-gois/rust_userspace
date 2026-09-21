@@ -1,4 +1,4 @@
-use crate::target::architecture::Architecture;
+use crate::target::architecture::x86::bit64::syscall;
 
 pub use super::mmap::{Prot, prot};
 
@@ -7,7 +7,7 @@ pub const NUMBER: usize = super::number::x86::bit64::MPROTECT;
 
 #[inline(always)]
 pub fn mprotect(addr: *mut u8, len: usize, prot: i32) -> crate::Result {
-    let arch_result = Architecture::syscall3(NUMBER, addr as usize, len, prot as usize);
+    let arch_result = syscall::syscall3(NUMBER, addr as usize, len, prot as usize);
     handle_result(arch_result)
 }
 
