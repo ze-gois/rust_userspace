@@ -26,7 +26,7 @@ pub fn mmap(addr: *mut u8, length: usize, protection: i32, flags: i32, fd: i32, 
 
 pub mod ok {
 
-    ample::result!( Ok; "Mmap Ok"; usize; [
+    ample::result!( Ok; "Linux syscall Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
     ]);
 
@@ -64,7 +64,7 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
                 ),
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
-            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::MMap(
+            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::Mmap(
                 crate::target::system::operating::linux::syscall::mmap::Ok::Default(m),
             )),
         ))),
@@ -75,12 +75,12 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
                 ),
             ),
         ))) => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::MMap(
+            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::Mmap(
                 Error::Default(errno),
             )),
         ))),
         _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::MMap(
+            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::Mmap(
                 Error::Default(3),
             )),
         ))),
