@@ -1,6 +1,6 @@
 use crate::target::architecture::x86::bit64::syscall;
 
-pub use super::open::{Error, Ok, Result};
+pub use super::open::{Error, Flags, Mode, Ok, Result};
 
 pub const CURRENT_WORKING_DIRECTORY: isize = -100;
 pub const AT_FDCWD: isize = CURRENT_WORKING_DIRECTORY;
@@ -14,16 +14,16 @@ pub const NUMBER: usize = super::number::x86::bit64::OPENAT;
 pub unsafe fn openat(
     directory_file_descriptor: isize,
     file_pathname: *const u8,
-    flags: i32,
-    mode: i32,
+    flags: Flags,
+    mode: Mode,
 ) -> crate::Result {
     let raw_return = unsafe {
         syscall::syscall4(
             NUMBER,
             directory_file_descriptor as usize,
             file_pathname as usize,
-            flags as usize,
-            mode as usize,
+            flags.bits() as usize,
+            mode.bits() as usize,
         )
     };
 
