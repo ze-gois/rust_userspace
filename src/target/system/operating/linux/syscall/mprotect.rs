@@ -1,13 +1,23 @@
 use crate::target::architecture::x86::bit64::syscall;
 
-pub use super::mmap::{Prot, prot};
+pub use super::mmap::Protection;
 
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::MPROTECT;
 
+/// # Safety
+///
+/// The caller must ensure that changing protection for the region does not
+/// invalidate live references or executing code assumptions.
 #[inline(always)]
-pub fn mprotect(addr: *mut u8, len: usize, prot: i32) -> crate::Result {
-    let raw_return = syscall::syscall3(NUMBER, addr as usize, len, prot as usize);
+pub unsafe fn mprotect(
+    address: *mut u8,
+    length: usize,
+    protection: i32,
+) -> crate::Result {
+    let raw_return = unsafe {
+        syscall::syscall3(NUMBER, address as usize, length, protection as usize)
+    };
     handle_result(raw_return)
 }
 
