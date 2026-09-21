@@ -6,5 +6,3 @@ pub mod stack;
 
 pub use result::{Error, Ok};
 pub use stack::Stack;
-
-pub struct Origin {}
