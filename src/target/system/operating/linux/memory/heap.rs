@@ -6,7 +6,7 @@ unsafe impl ample::traits::Allocating for crate::memory::heap::Allocator {
             return layout.align() as *mut u8;
         }
 
-        if layout.align() > crate::memory::page::SIZE {
+        if layout.align() > crate::memory::page::BASE_SIZE {
             return core::ptr::null_mut();
         }
 
