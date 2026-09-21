@@ -12,7 +12,7 @@ pub const NUMBER: usize = super::number::x86::bit64::MMAP;
 #[inline(always)]
 #[rustfmt::skip]
 pub fn mmap(addr: *mut u8, length: usize, protection: i32, flags: i32, fd: i32, offset: i64) -> crate::Result {
-    let arch_result = syscall::syscall6(
+    let raw_return = syscall::syscall6(
         NUMBER,
         addr as usize,
         length,
@@ -22,7 +22,7 @@ pub fn mmap(addr: *mut u8, length: usize, protection: i32, flags: i32, fd: i32, 
         offset as usize,
     );
 
-    handle_result(arch_result)
+    handle_result(raw_return)
 }
 
 pub mod ok {
@@ -55,35 +55,28 @@ pub use ok::Ok;
 
 pub type Result = core::result::Result<Ok, Error>;
 
-pub fn handle_result(result: crate::Result) -> crate::Result {
-    // Err(crate::Error::Default(1))
-    match result {
-        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::architecture::Ok::Syscall(
-                crate::target::architecture::x86::bit64::syscall::Ok::Syscall6(
-                    crate::target::architecture::x86::bit64::syscall::syscall6::Ok::Default(m),
+pub fn handle_result(raw: usize) -> crate::Result {
+    let result = super::Return::new(raw);
+
+    if result.is_error() {
+        core::result::Result::Err(crate::Error::Target(
+            crate::target::Error::OperatingSystem(
+                crate::target::system::operating::linux::Error::Syscall(
+                    crate::target::system::operating::linux::syscall::Error::Mmap(
+                        Error::Default(result.raw()),
+                    ),
                 ),
             ),
-        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
-            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::Mmap(
-                crate::target::system::operating::linux::syscall::mmap::Ok::Default(m),
-            )),
-        ))),
-        crate::Result::Err(crate::Error::Target(crate::target::Error::Architecture(
-            crate::target::architecture::Error::Syscall(
-                crate::target::architecture::x86::bit64::syscall::Error::Syscall6(
-                    crate::target::architecture::x86::bit64::syscall::syscall6::Error::Default(errno),
+        ))
+    } else {
+        core::result::Result::Ok(crate::Ok::Target(
+            crate::target::Ok::OperatingSystem(
+                crate::target::system::operating::linux::Ok::Syscall(
+                    crate::target::system::operating::linux::syscall::Ok::Mmap(
+                        Ok::Default(result.raw()),
+                    ),
                 ),
             ),
-        ))) => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::Mmap(
-                Error::Default(errno),
-            )),
-        ))),
-        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::Mmap(
-                Error::Default(3),
-            )),
-        ))),
+        ))
     }
 }
