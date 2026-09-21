@@ -34,7 +34,7 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(
             crate::target::Ok::OperatingSystem(crate::target::system::operating::linux::Ok::Syscall(
-                crate::target::system::operating::linux::syscall::Ok::OpenAt(Ok::Default(value)),
+                crate::target::system::operating::linux::syscall::Ok::Openat(Ok::Default(value)),
             )),
         )),
         crate::Result::Err(crate::Error::Target(crate::target::Error::Architecture(
@@ -46,7 +46,7 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
         ))) => core::result::Result::Err(crate::Error::Target(
             crate::target::Error::OperatingSystem(
                 crate::target::system::operating::linux::Error::Syscall(
-                    crate::target::system::operating::linux::syscall::Error::OpenAt(
+                    crate::target::system::operating::linux::syscall::Error::Openat(
                         Error::Default(raw),
                     ),
                 ),
@@ -55,7 +55,7 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
         _ => core::result::Result::Err(crate::Error::Target(
             crate::target::Error::OperatingSystem(
                 crate::target::system::operating::linux::Error::Syscall(
-                    crate::target::system::operating::linux::syscall::Error::OpenAt(
+                    crate::target::system::operating::linux::syscall::Error::Openat(
                         Error::Default(usize::MAX),
                     ),
                 ),
