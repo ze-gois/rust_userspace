@@ -1,6 +1,7 @@
 use crate::target::architecture::{Architecture, traits::Callable};
 
-hooking!(FORK);
+#[cfg(target_arch = "x86_64")]
+pub const NUMBER: usize = super::number::x86::bit64::FORK;
 
 /// Create a new process using Linux's `fork(2)` system call.
 ///
