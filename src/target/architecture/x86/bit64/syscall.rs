@@ -1,5 +1,3 @@
-pub mod result;
-pub use result::*;
 
 pub mod syscall0;
 pub mod syscall1;
