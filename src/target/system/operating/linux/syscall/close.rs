@@ -1,6 +1,7 @@
 use crate::target::architecture::{Architecture, traits::Callable};
 
-hooking!(CLOSE);
+#[cfg(target_arch = "x86_64")]
+pub const NUMBER: usize = super::number::x86::bit64::CLOSE;
 
 #[inline(always)]
 pub fn close(fd: isize) -> crate::Result {
