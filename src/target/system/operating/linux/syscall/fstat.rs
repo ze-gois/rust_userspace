@@ -3,7 +3,8 @@ use crate::target::architecture::{Architecture, traits::Callable};
 pub mod stat;
 pub use stat::Stat;
 
-hooking!(FSTAT);
+#[cfg(target_arch = "x86_64")]
+pub const NUMBER: usize = super::number::x86::bit64::FSTAT;
 
 #[inline(always)]
 pub fn fstat(fd: isize, stat: *const Stat) -> crate::Result {
