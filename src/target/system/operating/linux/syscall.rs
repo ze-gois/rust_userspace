@@ -1,19 +1,83 @@
 pub mod result;
 pub use result::*;
 
-syscall_modules!(
-    [0;   read;     READ;     Syscall3;  "Read"],
-    [1;   write;    WRITE;    Syscall3;  "Write"],
-    [2;   open;     OPEN;     Syscall3;  "Open"],
-    [3;   close;    CLOSE;    Syscall1;  "Close"],
-    [5;   fstat;    FSTAT;    Syscall2;  "Fstat"],
-    [8;   lseek;    LSEEK;    Syscall3;  "Lseek"],
-    [57;  fork;     FORK;     Syscall0;  "Fork"],
-    [59;  execve;   EXECVE;   Syscall3;  "Execve"],
-    [9;   mmap;     MMAP;     Syscall6;  "Mmap"],
-    [10;  mprotect; MPROTECT; Syscall3;  "Mprotect"],
-    [11;  munmap;   MUNMAP;   Syscall2;  "Munmap"],
-    [60;  exit;     EXIT;     Syscall1;  "Exit"],
-    [257; openat;   OPENAT;   Syscall4;  "Openat"],
-    [318; getrandom; GETRANDOM; Syscall3; "Getrandom"]
+pub mod number;
+
+macro_rules! syscalls {
+    (
+        $(
+            $module:ident => $variant:ident
+        ),* $(,)?
+    ) => {
+        $(
+            pub mod $module;
+            pub use $module::$module;
+        )*
+
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        pub enum Syscall {
+            $(
+                $variant,
+            )*
+            Unknown(usize),
+        }
+
+        impl Syscall {
+            pub const fn number(self) -> usize {
+                match self {
+                    $(
+                        Self::$variant => $module::NUMBER,
+                    )*
+                    Self::Unknown(number) => number,
+                }
+            }
+
+            pub const fn from_number(number: usize) -> Self {
+                match number {
+                    $(
+                        $module::NUMBER => Self::$variant,
+                    )*
+                    _ => Self::Unknown(number),
+                }
+            }
+
+            pub const fn name(self) -> &'static str {
+                match self {
+                    $(
+                        Self::$variant => stringify!($module),
+                    )*
+                    Self::Unknown(_) => "unknown",
+                }
+            }
+        }
+
+        impl From<Syscall> for usize {
+            fn from(syscall: Syscall) -> Self {
+                syscall.number()
+            }
+        }
+
+        impl From<usize> for Syscall {
+            fn from(number: usize) -> Self {
+                Self::from_number(number)
+            }
+        }
+    };
+}
+
+syscalls!(
+    read => Read,
+    write => Write,
+    open => Open,
+    close => Close,
+    fstat => Fstat,
+    lseek => Lseek,
+    mmap => Mmap,
+    mprotect => Mprotect,
+    munmap => Munmap,
+    fork => Fork,
+    execve => Execve,
+    exit => Exit,
+    openat => Openat,
+    getrandom => Getrandom,
 );
