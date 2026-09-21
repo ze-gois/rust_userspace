@@ -1,6 +1,3 @@
-use ample::traits::AllocatableResult;
-
-use crate::Origin;
 use core::alloc::Layout;
 
 ample::r#struct!(
@@ -9,41 +6,6 @@ ample::r#struct!(
 );
 
 pub type AllocatorPointer = *mut Allocator;
-
-impl ample::traits::Allocatable<Origin> for Allocator {
-    type Ok = crate::Ok;
-    type Error = crate::Error;
-    fn allocate(numerosity_of_bytes: usize) -> crate::Result {
-        match crate::target::os::syscall::mmap(
-            core::ptr::null_mut(),
-            numerosity_of_bytes,
-            (crate::target::os::syscall::mmap::Prot::Read
-                | crate::target::os::syscall::mmap::Prot::Write) as i32,
-            (crate::target::os::syscall::mmap::Flag::Anonymous
-                | crate::target::os::syscall::mmap::Flag::Private) as i32,
-            -1,
-            0,
-        ) {
-            core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
-                crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::MMap(
-                    crate::target::os::syscall::mmap::Ok::Default(m),
-                )),
-            ))) => core::result::Result::Ok(crate::Ok::Memory(crate::memory::Ok::HeapAllocate(
-                m as *mut Self,
-            ))),
-            _ => panic!("Failed to allocate memory"),
-        }
-    }
-
-    fn deallocate(ptr: *mut Self, numerosity_of_bytes: usize) -> crate::Result {
-        match crate::target::os::syscall::munmap(ptr as *mut u8, numerosity_of_bytes) {
-            _ => true,
-        };
-        core::result::Result::Ok(crate::Ok::Memory(crate::memory::Ok::HeapAllocate(
-            ptr as *mut Self,
-        )))
-    }
-}
 
 unsafe impl ample::traits::Allocating for Allocator {
     fn allocate(layout: Layout) -> *mut u8 {
@@ -55,9 +17,22 @@ unsafe impl ample::traits::Allocating for Allocator {
             return core::ptr::null_mut();
         }
 
-        match <Allocator as ample::traits::Allocatable<Origin>>::allocate(layout.size()) {
-            Ok(result) => result.as_ptr(),
-            Err(_) => core::ptr::null_mut(),
+        match crate::target::os::syscall::mmap(
+            core::ptr::null_mut(),
+            layout.size(),
+            (crate::target::os::syscall::mmap::Prot::Read
+                | crate::target::os::syscall::mmap::Prot::Write) as i32,
+            (crate::target::os::syscall::mmap::Flag::Anonymous
+                | crate::target::os::syscall::mmap::Flag::Private) as i32,
+            -1,
+            0,
+        ) {
+            core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
+                crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::MMap(
+                    crate::target::os::syscall::mmap::Ok::Default(pointer),
+                )),
+            ))) => pointer as *mut u8,
+            _ => core::ptr::null_mut(),
         }
     }
 
@@ -70,12 +45,9 @@ unsafe impl ample::traits::Allocating for Allocator {
             return false;
         }
 
-        match <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
-            pointer as *mut Allocator,
-            layout.size(),
-        ) {
-            Ok(_) => true,
-            Err(_) => false,
+        match crate::target::os::syscall::munmap(pointer, layout.size()) {
+            core::result::Result::Ok(_) => true,
+            core::result::Result::Err(_) => false,
         }
     }
 }
@@ -101,63 +73,5 @@ impl Allocator {
         unsafe {
             <Self as ample::traits::Allocating>::deallocate(pointer as *mut u8, layout)
         }
-    }
-}
-
-// pub type StringAllocator = *const u8;
-
-// ample::result!(
-//     Ok;
-//     "Allocate Ok";
-//     usize;
-//     [
-//         [1; USERSPACE_MEMORY_ALLOCATION_HEAP_DEFAULT_OK; Default; AllocatorPointer; "ZE"; "Entry to ze"],
-//         [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATOR_DEFAULT_OK; Allocator; AllocatorPointer; "ZE"; "Entry to ze"],
-//         [3; USERSPACE_MEMORY_ALLOCATION_HEAP_DEALLOCATOR_DEFAULT_OK; Deallocator; AllocatorPointer; "ZE"; "Entry to ze"],
-//         [4; USERSPACE_MEMORY_ALLOCATION_HEAP_STRING_DEFAULT_OK; String; StringAllocator; "ZE"; "Entry to ze"],
-//         // [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATING_OK; Allocator; crate::memory::Ok; "ZE"; "Entry to ze"],
-//     ];
-//     Error;
-//     "Allocator Ok";
-//     usize;
-//     [
-//         [1; USERSPACE_MEMORY_ALLOCATION_HEAP_DEFAULT_ERROR; Default; AllocatorPointer; "ZE"; "Entry to ze"],
-//         [2; USERSPACE_MEMORY_ALLOCATION_HEAP_ALLOCATOR_DEFAULT_ERROR; Allocator; AllocatorPointer; "ZE"; "Entry to ze"],
-//         [3; USERSPACE_MEMORY_ALLOCATION_HEAP_DEALLOCATOR_DEFAULT_ERROR; Deallocator; AllocatorPointer; "ZE"; "Entry to ze"],
-//     ]
-// );
-
-impl ample::traits::AllocatableResult for crate::Ok {
-    fn as_ptr(&self) -> *mut u8 {
-        match self {
-            crate::Ok::Memory(crate::memory::Ok::HeapAllocate(m)) => *m as *mut u8,
-            _ => core::ptr::null_mut(),
-        }
-    }
-
-    fn from_raw(raw: *mut u8) -> Self {
-        crate::Ok::Memory(crate::memory::Ok::HeapAllocate(raw as *mut Allocator))
-    }
-}
-
-impl ample::traits::AllocatableResult for crate::Error {
-    fn as_ptr(&self) -> *mut u8 {
-        match self {
-            _ => core::ptr::null_mut(),
-            // core::result::Result::Err(crate::Error::Memory(crate::memory::Error::Allocate(
-            //     crate::memory::heap::Error::Allocate(
-            //         crate::memory::Error::Default(m),
-            //     ),
-            // ))) => *m as *mut u8,
-        }
-    }
-
-    fn from_raw(_raw: *mut u8) -> Self {
-        crate::Error::Error(3)
-        // crate::Error::Memory(crate::memory::Error::Allocate(
-        //     crate::memory::heap::Error::Allocate(
-        //         crate::memory::Error::Default(core::ptr::null_mut()),
-        //     ),
-        // ))
     }
 }
