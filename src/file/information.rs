@@ -4,7 +4,7 @@ pub fn from_fd(fd: isize) -> syscall::fstat::Stat {
     let p = match syscall::mmap(
         core::ptr::null_mut(),
         core::mem::size_of::<syscall::fstat::Stat>(),
-        (syscall::mmap::Prot::Read | syscall::mmap::Prot::Write) as i32,
+        (syscall::mmap::Protection::Read | syscall::mmap::Protection::Write) as i32,
         (syscall::mmap::Flag::Anonymous | syscall::mmap::Flag::Shared) as i32,
         -1,
         0,
