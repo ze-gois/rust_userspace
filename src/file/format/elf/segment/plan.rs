@@ -21,7 +21,7 @@ fn read_program_header(
     endianness: bool,
 ) -> Result<ProgramHeader64, Error> {
     let bytes = read_at::<
-        { <ProgramHeader64 as ample::traits::Bytes<crate::Origin, crate::Origin>>::BYTES_SIZE },
+        { <ProgramHeader64 as ample::traits::Bytes<crate::Origin, crate::Origin>>::REPRESENTATION_SIZE },
     >(file_descriptor, offset)?;
     Ok(ProgramHeader64::read_from_pointer(bytes.as_ptr(), 0, endianness).0)
 }
@@ -167,7 +167,7 @@ pub(super) fn build_plan(
     if phnum == 0
         || phnum > 32
         || phent
-            != <ProgramHeader64 as ample::traits::Bytes<crate::Origin, crate::Origin>>::BYTES_SIZE
+            != <ProgramHeader64 as ample::traits::Bytes<crate::Origin, crate::Origin>>::REPRESENTATION_SIZE
     {
         return Err(Error::InvalidProgramHeaderTable);
     }
