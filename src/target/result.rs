@@ -6,7 +6,7 @@ pub mod ok {
         [
             [1; TARGET_DEFAULT_OK; Default; usize; "Target"; "Target result"],
             [2; TARGET_INFO_OK; Info; usize; "Target"; "Target result"],
-            [3; TARGET_OPERATING_SYSTEM_OK; OperatingSystem; crate::target::system::operating::linux::Ok; "Target"; "Target result"],
+            [3; TARGET_OPERATING_SYSTEM_OK; OperatingSystem; crate::target::system::operating::Ok; "Target"; "Target result"],
             [4; TARGET_ARCHITECTURE_OK; Architecture; crate::target::architecture::Ok; "Target"; "Target result"],
         ]
     );
@@ -26,7 +26,7 @@ pub mod error {
         [
             [1; TARGET_DEFAULT_ERROR; Default; usize; "Target"; "Target result"],
             [2; TARGET_INFO_ERROR; Info; usize; "Target"; "Target result"],
-            [3; TARGET_OPERATING_SYSTEM_ERROR; OperatingSystem; crate::target::system::operating::linux::Error; "Target"; "Target result"],
+            [3; TARGET_OPERATING_SYSTEM_ERROR; OperatingSystem; crate::target::system::operating::Error; "Target"; "Target result"],
             [4; TARGET_ARCHITECTURE_ERROR; Architecture; crate::target::architecture::Error; "Target"; "Target result"],
         ]
     );
