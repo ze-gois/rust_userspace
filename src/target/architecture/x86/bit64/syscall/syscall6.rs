@@ -26,10 +26,10 @@ pub fn syscall6(n: usize, a1: usize, a2: usize, a3: usize, a4: usize, a5: usize,
 pub mod ok {
     ample::result!(
         Ok;
-        "Human Ok";
+        "Architecture syscall Ok";
         usize;
         [
-            [0; X86_64_SYSCALL1_OK; Default; usize; "ZE"; "Entry to ze"],
+            [0; SYSCALL6_OK; Default; usize; "ZE"; "Entry to ze"],
         ]
     );
 
@@ -43,10 +43,10 @@ pub mod ok {
 pub mod error {
     ample::result!(
         Error;
-        "Human error";
+        "Architecture syscall Error";
         usize;
         [
-            [0; X86_64_SYSCALL1_ERROR; Default; usize; "ZE"; "Entry to ze"],
+            [0; SYSCALL6_ERROR; Default; usize; "ZE"; "Entry to ze"],
         ]
     );
 
@@ -65,14 +65,14 @@ pub type Result = core::result::Result<Ok, Error>;
 pub fn handle_result(result: usize) -> crate::Result {
     if (result as isize) < 0 {
         core::result::Result::Err(crate::Error::Target(crate::target::Error::Architecture(
-            crate::target::arch::Error::X86_64Syscall(
-                crate::target::arch::syscall::Error::X86_64Syscall6(Error::Default(result)),
+            crate::target::arch::Error::Syscall(
+                crate::target::arch::syscall::Error::Syscall6(Error::Default(result)),
             ),
         )))
     } else {
         core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::arch::Ok::X86_64Syscall(
-                crate::target::arch::syscall::Ok::X86_64Syscall6(Ok::Default(result)),
+            crate::target::arch::Ok::Syscall(
+                crate::target::arch::syscall::Ok::Syscall6(Ok::Default(result)),
             ),
         )))
     }
