@@ -2,7 +2,8 @@ use crate::target::architecture::{Architecture, traits::Callable};
 
 pub use super::mmap::{Prot, prot};
 
-hooking!(MPROTECT);
+#[cfg(target_arch = "x86_64")]
+pub const NUMBER: usize = super::number::x86::bit64::MPROTECT;
 
 #[inline(always)]
 pub fn mprotect(addr: *mut u8, len: usize, prot: i32) -> crate::Result {
