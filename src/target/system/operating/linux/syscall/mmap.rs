@@ -1,21 +1,21 @@
 use crate::target::arch::{Arch, traits::Callable};
 
 pub mod flags;
-pub mod prot;
+pub mod protection;
 
 pub use flags::Flag;
-pub use prot::Prot;
+pub use protection::Protection;
 
 hooking!(MMAP);
 
 #[inline(always)]
 #[rustfmt::skip]
-pub fn mmap(addr: *mut u8, length: usize, prot: i32, flags: i32, fd: i32, offset: i64) -> crate::Result {
+pub fn mmap(addr: *mut u8, length: usize, protection: i32, flags: i32, fd: i32, offset: i64) -> crate::Result {
     let arch_result = Arch::syscall6(
         NUMBER,
         addr as usize,
         length,
-        prot as usize,
+        protection as usize,
         flags as usize,
         fd as usize,
         offset as usize,
