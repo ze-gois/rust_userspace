@@ -22,7 +22,7 @@ pub(super) fn validate_header(header: Header64, endianness: bool) -> Result<(), 
         return Err(Error::UnsupportedMachine);
     }
     if header.e_ehsize.0 as usize
-        != <Header64 as ample::traits::Bytes<crate::Origin, crate::Origin>>::BYTES_SIZE
+        != <Header64 as ample::traits::Bytes<crate::Origin, crate::Origin>>::REPRESENTATION_SIZE
     {
         return Err(Error::InvalidHeader);
     }
@@ -31,7 +31,7 @@ pub(super) fn validate_header(header: Header64, endianness: bool) -> Result<(), 
 
 pub(super) fn read_header(file_descriptor: isize) -> Result<(Header64, bool), Error> {
     let identifier_bytes = read_at::<
-        { <Identifier as ample::traits::Bytes<crate::Origin, crate::Origin>>::BYTES_SIZE },
+        { <Identifier as ample::traits::Bytes<crate::Origin, crate::Origin>>::REPRESENTATION_SIZE },
     >(file_descriptor, 0)?;
     let identifier = Identifier::read_from_pointer(identifier_bytes.as_ptr(), 0, true).0;
     if !identifier.is_magical() {
@@ -42,7 +42,7 @@ pub(super) fn read_header(file_descriptor: isize) -> Result<(Header64, bool), Er
         _ => return Err(Error::UnsupportedEndianness),
     };
     let header_bytes = read_at::<
-        { <Header64 as ample::traits::Bytes<crate::Origin, crate::Origin>>::BYTES_SIZE },
+        { <Header64 as ample::traits::Bytes<crate::Origin, crate::Origin>>::REPRESENTATION_SIZE },
     >(file_descriptor, 0)?;
     let header = Header64::read_from_pointer(header_bytes.as_ptr(), 0, endianness).0;
     Ok((header, endianness))
