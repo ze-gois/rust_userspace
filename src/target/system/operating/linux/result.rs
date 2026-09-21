@@ -1,52 +1,26 @@
 pub mod ok {
     ample::result!(
         Ok;
-        "Linux Ok";
+        "Linux success";
         usize;
         [
-            [0; LINUX_DEFAULT_OK; Default; usize; "Linux"; "Linux result"],
-            [1; LINUX_SYSCALL_OK; Syscall; super::super::syscall::Ok; "Linux"; "Linux result"],
+            [0; LINUX_SYSTEM_CALL_SUCCESS; Syscall; super::super::syscall::Ok; "syscall"; "Linux system call success"]
         ]
     );
-
-    impl Ok {
-        pub fn from_no(no: usize) -> Self {
-            Ok::Default(no)
-        }
-    }
 }
 
 pub mod error {
     ample::result!(
         Error;
-        "Linux Error";
+        "Linux failure";
         usize;
         [
-            [0; LINUX_DEFAULT_ERROR; Default; usize; "Linux"; "Linux result"],
-            [1; LINUX_SYSCALL_ERROR; Syscall; super::super::syscall::Error; "Linux"; "Linux result"],
+            [0; LINUX_SYSTEM_CALL_FAILURE; Syscall; super::super::syscall::Error; "syscall"; "Linux system call failure"]
         ]
     );
-
-    impl Error {
-        pub fn from_no(no: usize) -> Self {
-            Error::Default(no)
-        }
-    }
 }
 
 pub use error::Error;
 pub use ok::Ok;
 
 pub type Result = core::result::Result<Ok, Error>;
-
-pub fn handle_result(result: usize) -> crate::Result {
-    if (result as isize) < 0 {
-        core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            Error::from_no(result),
-        )))
-    } else {
-        core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(Ok::from_no(
-            result,
-        ))))
-    }
-}
