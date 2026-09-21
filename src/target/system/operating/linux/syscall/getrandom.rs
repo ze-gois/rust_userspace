@@ -1,5 +1,8 @@
 use crate::target::architecture::x86::bit64::syscall;
 
+pub mod flags;
+pub use flags::Flags;
+
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::GETRANDOM;
 
@@ -7,9 +10,13 @@ pub const NUMBER: usize = super::number::x86::bit64::GETRANDOM;
 ///
 /// `byte_buffer` must designate writable storage for at least `byte_count`
 /// bytes.
-pub unsafe fn getrandom(byte_buffer: *mut u8, byte_count: usize, flags: u32) -> crate::Result {
+pub unsafe fn getrandom(
+    byte_buffer: *mut u8,
+    byte_count: usize,
+    flags: Flags,
+) -> crate::Result {
     let raw_return = unsafe {
-        syscall::syscall3(NUMBER, byte_buffer as usize, byte_count, flags as usize)
+        syscall::syscall3(NUMBER, byte_buffer as usize, byte_count, flags.bits() as usize)
     };
 
     handle_result(raw_return)
