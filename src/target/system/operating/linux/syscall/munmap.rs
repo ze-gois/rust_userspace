@@ -5,8 +5,8 @@ pub const NUMBER: usize = super::number::x86::bit64::MUNMAP;
 
 #[inline(always)]
 pub fn munmap(addr: *mut u8, length: usize) -> crate::Result {
-    let arch_result = syscall::syscall2(NUMBER, addr as usize, length);
-    handle_result(arch_result)
+    let raw_return = syscall::syscall2(NUMBER, addr as usize, length);
+    handle_result(raw_return)
 }
 
 pub mod ok {
@@ -39,24 +39,28 @@ pub use ok::Ok;
 
 pub type Result = core::result::Result<Ok, Error>;
 
-pub fn handle_result(result: crate::Result) -> crate::Result {
-    // Err(crate::Error::Default(1))
-    match result {
-        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::architecture::Ok::Syscall(
-                crate::target::architecture::x86::bit64::syscall::Ok::Syscall2(
-                    crate::target::architecture::x86::bit64::syscall::syscall2::Ok::Default(m),
+pub fn handle_result(raw: usize) -> crate::Result {
+    let result = super::Return::new(raw);
+
+    if result.is_error() {
+        core::result::Result::Err(crate::Error::Target(
+            crate::target::Error::OperatingSystem(
+                crate::target::system::operating::linux::Error::Syscall(
+                    crate::target::system::operating::linux::syscall::Error::Munmap(
+                        Error::Default(result.raw()),
+                    ),
                 ),
             ),
-        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
-            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::Munmap(
-                crate::target::system::operating::linux::syscall::munmap::Ok::Default(m),
-            )),
-        ))),
-        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::Munmap(
-                Error::Default(3),
-            )),
-        ))),
+        ))
+    } else {
+        core::result::Result::Ok(crate::Ok::Target(
+            crate::target::Ok::OperatingSystem(
+                crate::target::system::operating::linux::Ok::Syscall(
+                    crate::target::system::operating::linux::syscall::Ok::Munmap(
+                        Ok::Default(result.raw()),
+                    ),
+                ),
+            ),
+        ))
     }
 }
