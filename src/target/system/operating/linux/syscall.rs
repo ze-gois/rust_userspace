@@ -13,6 +13,55 @@ pub const MAX_ERRNO: usize = MAXIMUM_ERROR_NUMBER;
 /// The raw register value is preserved even when it encodes an errno.
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ErrorNumber(usize);
+
+/// Conventional community alias for a Linux error number.
+pub type Errno = ErrorNumber;
+
+impl ErrorNumber {
+    pub const fn from_number(number: usize) -> Self {
+        Self(number)
+    }
+
+    pub const fn number(self) -> usize {
+        self.0
+    }
+}
+
+ample::r#struct!(
+    #[repr(transparent)]
+    #[derive(Debug, PartialEq, Eq)]
+    pub struct Success {
+        raw: usize
+    }
+);
+
+impl Success {
+    pub const fn raw(self) -> usize {
+        self.raw
+    }
+}
+
+ample::r#struct!(
+    #[repr(transparent)]
+    #[derive(Debug, PartialEq, Eq)]
+    pub struct Failure {
+        raw: usize
+    }
+);
+
+impl Failure {
+    pub const fn raw(self) -> usize {
+        self.raw
+    }
+
+    pub const fn error_number(self) -> ErrorNumber {
+        ErrorNumber::from_number((-(self.raw as isize)) as usize)
+    }
+}
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Return(usize);
 
 impl Return {
@@ -24,11 +73,11 @@ impl Return {
         self.0
     }
 
-    pub const fn error_number(self) -> Option<usize> {
+    pub const fn error_number(self) -> Option<ErrorNumber> {
         let signed = self.0 as isize;
 
         if signed < 0 && signed >= -(MAXIMUM_ERROR_NUMBER as isize) {
-            Some((-signed) as usize)
+            Some(ErrorNumber::from_number((-signed) as usize))
         } else {
             None
         }
@@ -36,6 +85,14 @@ impl Return {
 
     pub const fn is_error(self) -> bool {
         self.error_number().is_some()
+    }
+
+    pub const fn classify(self) -> core::result::Result<Success, Failure> {
+        if self.is_error() {
+            core::result::Result::Err(Failure { raw: self.0 })
+        } else {
+            core::result::Result::Ok(Success { raw: self.0 })
+        }
     }
 }
 
