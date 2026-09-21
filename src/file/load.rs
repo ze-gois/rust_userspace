@@ -1,4 +1,4 @@
-use crate::memory::heap::Allocating;
+use crate::memory::heap::Allocator;
 use crate::target::os::syscall;
 
 pub fn load(filepath: &str) -> Option<(isize, syscall::fstat::Stat, *const u8)> {
@@ -34,7 +34,7 @@ pub fn load(filepath: &str) -> Option<(isize, syscall::fstat::Stat, *const u8)> 
 
             stat = crate::file::information::from_fd(fd);
 
-            license_mapping = u8::allocate(stat.st_size as usize);
+            license_mapping = Allocator::allocate::<u8>(stat.st_size as usize);
 
             let _ = syscall::read(fd, license_mapping, stat.st_size as usize);
             break 'closing;
