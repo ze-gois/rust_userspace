@@ -51,12 +51,12 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
                 ),
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
-            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::FStat(
+            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::Fstat(
                 crate::target::system::operating::linux::syscall::fstat::Ok::Default(m),
             )),
         ))),
         _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::FStat(
+            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::Fstat(
                 Error::Default(3),
             )),
         ))),
