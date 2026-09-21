@@ -56,8 +56,8 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
     match result {
         crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
             crate::target::architecture::Ok::Syscall(
-                crate::target::architecture::syscall::Ok::Syscall3(
-                    crate::target::architecture::syscall::syscall3::Ok::Default(m),
+                crate::target::architecture::x86::bit64::syscall::Ok::Syscall3(
+                    crate::target::architecture::x86::bit64::syscall::syscall3::Ok::Default(m),
                 ),
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
@@ -67,8 +67,8 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
         ))),
         crate::Result::Err(crate::Error::Target(crate::target::Error::Architecture(
             crate::target::architecture::Error::Syscall(
-                crate::target::architecture::syscall::Error::Syscall3(
-                    crate::target::architecture::syscall::syscall3::Error::Default(raw),
+                crate::target::architecture::x86::bit64::syscall::Error::Syscall3(
+                    crate::target::architecture::x86::bit64::syscall::syscall3::Error::Default(raw),
                 ),
             ),
         ))) => core::result::Result::Err(crate::Error::Target(
