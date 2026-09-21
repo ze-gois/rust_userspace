@@ -1,76 +1,25 @@
-use super::result::*;
-
 #[inline(always)]
-pub fn syscall5(n: usize, a1: usize, a2: usize, a3: usize, a4: usize, a5: usize) -> crate::Result {
-    let syscall_return: usize;
-
+pub fn syscall5(
+    number: usize,
+    argument1: usize,
+    argument2: usize,
+    argument3: usize,
+    argument4: usize,
+    argument5: usize,
+) -> usize {
+    let result: usize;
     unsafe {
         core::arch::asm!(
             "syscall",
-            inlateout("rax") n => syscall_return ,
-            in("rdi") a1,
-            in("rsi") a2,
-            in("rdx") a3,
-            in("r10") a4,
-            in("r8") a5,
+            inlateout("rax") number => result,
+            in("rdi") argument1,
+            in("rsi") argument2,
+            in("rdx") argument3,
+            in("r10") argument4,
+            in("r8") argument5,
             out("rcx") _,
             out("r11") _,
         );
     }
-    handle_result(syscall_return)
-}
-
-pub mod ok {
-    ample::result!(
-        Ok;
-        "Architecture syscall Ok";
-        usize;
-        [
-            [0; SYSCALL5_OK; Default; usize; "ZE"; "Entry to ze"],
-        ]
-    );
-
-    impl Ok {
-        pub fn from_no(no: usize) -> Self {
-            Ok::Default(no)
-        }
-    }
-}
-
-pub mod error {
-    ample::result!(
-        Error;
-        "Architecture syscall Error";
-        usize;
-        [
-            [0; SYSCALL5_ERROR; Default; usize; "ZE"; "Entry to ze"],
-        ]
-    );
-
-    impl Error {
-        pub fn from_no(no: usize) -> Self {
-            Error::Default(no)
-        }
-    }
-}
-
-pub use error::Error;
-pub use ok::Ok;
-
-pub type Result = core::result::Result<Ok, Error>;
-
-pub fn handle_result(result: usize) -> crate::Result {
-    if (result as isize) < 0 {
-        core::result::Result::Err(crate::Error::Target(crate::target::Error::Architecture(
-            crate::target::architecture::Error::Syscall(
-                crate::target::architecture::x86::bit64::syscall::Error::Syscall5(Error::Default(result)),
-            ),
-        )))
-    } else {
-        core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::architecture::Ok::Syscall(
-                crate::target::architecture::x86::bit64::syscall::Ok::Syscall5(Ok::Default(result)),
-            ),
-        )))
-    }
+    result
 }
