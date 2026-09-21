@@ -1,10 +1,10 @@
-use crate::target::architecture::Architecture;
+use crate::target::architecture::x86::bit64::syscall;
 
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::READ;
 
 pub fn read(file_descriptor: isize, byte_buffer: *const u8, byte_length: usize) -> crate::Result {
-    let arch_result = Architecture::syscall3(
+    let arch_result = syscall::syscall3(
         NUMBER,
         file_descriptor as usize,
         byte_buffer as usize,
