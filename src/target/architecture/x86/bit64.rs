@@ -6,7 +6,6 @@
 pub mod callable;
 pub mod result;
 pub mod syscall;
-// pub use syscall::*;
 
 pub mod page {
     pub const SIZE: usize = 0x1000;
@@ -24,21 +23,21 @@ pub mod page {
 
 pub use result::{Error, Ok, Result};
 
-pub type PointerType = *const u64;
+pub type RawPointer = *const u8;
+pub type PointerType = RawPointer;
 
-ample::struct_tuple!(
-    #[derive(Debug)]
-    pub struct Pointer(0: pub PointerType)
-);
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Pointer(pub RawPointer);
 
 impl Pointer {
     pub fn current() -> Self {
-        let p: PointerType;
-        unsafe { core::arch::asm!("mov {}, rsp", out(reg) p) };
-        Pointer(p)
+        let pointer: RawPointer;
+        unsafe { core::arch::asm!("mov {}, rsp", out(reg) pointer) };
+        Self(pointer)
     }
 
-    pub fn as_ptr(self) -> PointerType {
+    pub const fn as_ptr(self) -> RawPointer {
         self.0
     }
 }
