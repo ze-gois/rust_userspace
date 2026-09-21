@@ -13,9 +13,15 @@ or abstractions whose names no longer match their meaning.
 - The existing ELF implementation may be deleted entirely and rebuilt from the
   GABI rather than repaired around legacy assumptions.
 - Module names do not encode hierarchy with underscores. Hierarchy belongs in
-  modules; modules are nouns before qualifications. For example,
+  modules; modules name concrete nouns before qualifications. For example,
   `stack::initial`, not `initial_stack`.
-- ABI names and external constants may retain their normative spelling.
+- Acronyms and abbreviations are aliases rather than canonical vocabulary,
+  except where a normative external identifier is reproduced at a standards
+  boundary.
+- ABI names, constants, and other identifiers reproduced from standards may
+  retain their normative spelling and must remain traceable to that standard.
+- Every identifier must state what it means; misleading naming is a semantic
+  defect, not merely a style problem.
 - `memory::stack` is preserved as an educational, operating-system-neutral
   model of stack memory.
 - Linux process startup semantics do not define generic memory. Linux-specific
@@ -30,9 +36,25 @@ or abstractions whose names no longer match their meaning.
 - A module that survives this revision must be able to justify its namespace and
   semantics without relying on accidental legacy behavior.
 
+## Lexicon discipline
+
+The project follows community and standards terminology before inventing local
+terminology.
+
+A canonical identifier should describe the concrete thing it names. Short forms
+belong in aliases. Module hierarchy expresses grammatical hierarchy: concrete
+nouns precede qualifications, and underscore-composed module names should be
+split when the underscore is hiding a real submodule relation.
+
+Where Rust organization differs from a specification's flat C vocabulary, the
+Rust hierarchy may change the spelling while preserving an explicit semantic
+mapping to the normative standard term.
+
 ## Intended direction
 
-The project should converge toward a structure where the major boundaries are:
+The project should converge toward a structure where the major boundaries are
+clear rather than optimized for legacy call sites. Names below are directional
+and remain subject to the lexicon rules above.
 
 ```text
 userspace
@@ -44,17 +66,18 @@ userspace
 │   └── format
 │       └── elf
 └── target
-    ├── arch
-    └── os
-        └── linux
-            ├── syscall
-            └── process
-                └── stack
-                    └── initial
+    ├── architecture
+    └── system
+        └── operating
+            └── linux
+                ├── syscall
+                └── process
+                    └── stack
+                        └── initial
 ```
 
-This tree is a direction, not a compatibility promise. Names and intermediate
-modules may change as the semantics become clearer.
+The tree is not a compatibility promise. Intermediate modules may change as the
+semantics become clearer and as community terminology is verified.
 
 ## Revision order
 
