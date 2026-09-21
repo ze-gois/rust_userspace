@@ -9,18 +9,31 @@ pub use protection::Protection;
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::MMAP;
 
+/// # Safety
+///
+/// The requested mapping must not invalidate live Rust references or otherwise
+/// violate Rust's aliasing and lifetime rules. This is especially important for
+/// fixed-address mappings.
 #[inline(always)]
-#[rustfmt::skip]
-pub fn mmap(addr: *mut u8, length: usize, protection: i32, flags: i32, fd: i32, offset: i64) -> crate::Result {
-    let raw_return = syscall::syscall6(
-        NUMBER,
-        addr as usize,
-        length,
-        protection as usize,
-        flags as usize,
-        fd as usize,
-        offset as usize,
-    );
+pub unsafe fn mmap(
+    address: *mut u8,
+    length: usize,
+    protection: i32,
+    flags: i32,
+    file_descriptor: i32,
+    offset: i64,
+) -> crate::Result {
+    let raw_return = unsafe {
+        syscall::syscall6(
+            NUMBER,
+            address as usize,
+            length,
+            protection as usize,
+            flags as usize,
+            file_descriptor as usize,
+            offset as usize,
+        )
+    };
 
     handle_result(raw_return)
 }
