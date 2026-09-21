@@ -1,4 +1,4 @@
-use crate::target::arch::{Arch, traits::Callable};
+use crate::target::architecture::{Architecture, traits::Callable};
 
 hooking!(FORK);
 
@@ -8,7 +8,7 @@ hooking!(FORK);
 /// parent process. On failure, the result contains the kernel error value.
 #[inline(always)]
 pub fn fork() -> crate::Result {
-    let arch_result = Arch::syscall0(NUMBER);
+    let arch_result = Architecture::syscall0(NUMBER);
     handle_result(arch_result)
 }
 
@@ -46,9 +46,9 @@ pub type Result = core::result::Result<Ok, Error>;
 pub fn handle_result(result: crate::Result) -> crate::Result {
     match result {
         crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::arch::Ok::X86_64Syscall(
-                crate::target::arch::syscall::Ok::X86_64Syscall0(
-                    crate::target::arch::syscall::syscall0::Ok::Default(value),
+            crate::target::architecture::Ok::Syscall(
+                crate::target::architecture::syscall::Ok::Syscall0(
+                    crate::target::architecture::syscall::syscall0::Ok::Default(value),
                 ),
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
