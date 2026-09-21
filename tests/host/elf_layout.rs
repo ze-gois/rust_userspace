@@ -33,23 +33,23 @@ fn ensure_fixtures() -> PathBuf {
 
 #[test]
 fn generated_wire_sizes_match_elf_abi() {
-    assert_eq!(<Identifier as Bytes<Origin, Origin>>::BYTES_SIZE, 16);
-    assert_eq!(<Header32 as Bytes<Origin, Origin>>::BYTES_SIZE, 52);
-    assert_eq!(<Header64 as Bytes<Origin, Origin>>::BYTES_SIZE, 64);
-    assert_eq!(<ProgramHeader32 as Bytes<Origin, Origin>>::BYTES_SIZE, 32);
-    assert_eq!(<ProgramHeader64 as Bytes<Origin, Origin>>::BYTES_SIZE, 56);
+    assert_eq!(<Identifier as Bytes<Origin, Origin>>::REPRESENTATION_SIZE, 16);
+    assert_eq!(<Header32 as Bytes<Origin, Origin>>::REPRESENTATION_SIZE, 52);
+    assert_eq!(<Header64 as Bytes<Origin, Origin>>::REPRESENTATION_SIZE, 64);
+    assert_eq!(<ProgramHeader32 as Bytes<Origin, Origin>>::REPRESENTATION_SIZE, 32);
+    assert_eq!(<ProgramHeader64 as Bytes<Origin, Origin>>::REPRESENTATION_SIZE, 56);
 
     assert_eq!(
         std::mem::size_of::<Identifier>(),
-        <Identifier as Bytes<Origin, Origin>>::BYTES_SIZE
+        <Identifier as Bytes<Origin, Origin>>::REPRESENTATION_SIZE
     );
     assert_eq!(
         std::mem::size_of::<Header64>(),
-        <Header64 as Bytes<Origin, Origin>>::BYTES_SIZE
+        <Header64 as Bytes<Origin, Origin>>::REPRESENTATION_SIZE
     );
     assert_eq!(
         std::mem::size_of::<ProgramHeader64>(),
-        <ProgramHeader64 as Bytes<Origin, Origin>>::BYTES_SIZE
+        <ProgramHeader64 as Bytes<Origin, Origin>>::REPRESENTATION_SIZE
     );
 }
 
