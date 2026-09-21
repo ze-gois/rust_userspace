@@ -1,6 +1,7 @@
 use crate::target::architecture::{Architecture, traits::Callable};
 
-hooking!(GETRANDOM);
+#[cfg(target_arch = "x86_64")]
+pub const NUMBER: usize = super::number::x86::bit64::GETRANDOM;
 
 pub fn getrandom(byte_buffer: *mut u8, byte_length: usize, flags: u32) -> crate::Result {
     let arch_result = Architecture::syscall3(NUMBER, byte_buffer as usize, byte_length, flags as usize);
