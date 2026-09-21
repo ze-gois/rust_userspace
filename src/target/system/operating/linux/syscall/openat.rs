@@ -1,4 +1,4 @@
-use crate::target::arch::{Arch, traits::Callable};
+use crate::target::architecture::{Architecture, traits::Callable};
 
 pub use super::open::{Error, Ok, Result};
 
@@ -13,7 +13,7 @@ pub fn openat(
     flags: i32,
     mode: i32,
 ) -> crate::Result {
-    let syscall_result = Arch::syscall4(
+    let syscall_result = Architecture::syscall4(
         NUMBER,
         directory_file_descriptor as usize,
         file_pathname as usize,
@@ -27,20 +27,39 @@ pub fn openat(
 pub fn handle_result(result: crate::Result) -> crate::Result {
     match result {
         crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::arch::Ok::X86_64Syscall(
-                crate::target::arch::syscall::Ok::X86_64Syscall4(
-                    crate::target::arch::syscall::syscall4::Ok::Default(value),
+            crate::target::architecture::Ok::Syscall(
+                crate::target::architecture::syscall::Ok::Syscall4(
+                    crate::target::architecture::syscall::syscall4::Ok::Default(value),
                 ),
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(
-            crate::target::Ok::OperatingSystem(crate::target::os::Ok::Syscall(
-                crate::target::os::syscall::Ok::OpenAt(Ok::Default(value)),
+            crate::target::Ok::OperatingSystem(crate::target::system::operating::linux::Ok::Syscall(
+                crate::target::system::operating::linux::syscall::Ok::OpenAt(Ok::Default(value)),
             )),
         )),
+        crate::Result::Err(crate::Error::Target(crate::target::Error::Architecture(
+            crate::target::architecture::Error::Syscall(
+                crate::target::architecture::syscall::Error::Syscall4(
+                    crate::target::architecture::syscall::syscall4::Error::Default(raw),
+                ),
+            ),
+        ))) => core::result::Result::Err(crate::Error::Target(
+            crate::target::Error::OperatingSystem(
+                crate::target::system::operating::linux::Error::Syscall(
+                    crate::target::system::operating::linux::syscall::Error::OpenAt(
+                        Error::Default(raw),
+                    ),
+                ),
+            ),
+        )),
         _ => core::result::Result::Err(crate::Error::Target(
-            crate::target::Error::OperatingSystem(crate::target::os::Error::Syscall(
-                crate::target::os::syscall::Error::OpenAt(Error::Default(3)),
-            )),
+            crate::target::Error::OperatingSystem(
+                crate::target::system::operating::linux::Error::Syscall(
+                    crate::target::system::operating::linux::syscall::Error::OpenAt(
+                        Error::Default(usize::MAX),
+                    ),
+                ),
+            ),
         )),
     }
 }
