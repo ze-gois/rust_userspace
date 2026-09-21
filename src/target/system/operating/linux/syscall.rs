@@ -3,6 +3,42 @@ pub use result::*;
 
 pub mod number;
 
+pub const MAXIMUM_ERROR_NUMBER: usize = 4095;
+
+/// Linux's traditional `MAX_ERRNO` name.
+pub const MAX_ERRNO: usize = MAXIMUM_ERROR_NUMBER;
+
+/// Raw return value from a Linux system call.
+///
+/// The raw register value is preserved even when it encodes an errno.
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Return(usize);
+
+impl Return {
+    pub const fn new(raw: usize) -> Self {
+        Self(raw)
+    }
+
+    pub const fn raw(self) -> usize {
+        self.0
+    }
+
+    pub const fn error_number(self) -> Option<usize> {
+        let signed = self.0 as isize;
+
+        if signed < 0 && signed >= -(MAXIMUM_ERROR_NUMBER as isize) {
+            Some((-signed) as usize)
+        } else {
+            None
+        }
+    }
+
+    pub const fn is_error(self) -> bool {
+        self.error_number().is_some()
+    }
+}
+
 macro_rules! syscalls {
     (
         $(
