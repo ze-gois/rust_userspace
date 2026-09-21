@@ -3,7 +3,8 @@ use crate::target::architecture::{Architecture, traits::Callable};
 pub mod whence;
 pub use whence::Whence;
 
-hooking!(LSEEK);
+#[cfg(target_arch = "x86_64")]
+pub const NUMBER: usize = super::number::x86::bit64::LSEEK;
 
 #[inline(always)]
 pub fn lseek(fd: i32, offset: i64, whence: i32) -> crate::Result {
