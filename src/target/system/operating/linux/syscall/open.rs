@@ -1,4 +1,4 @@
-use crate::target::architecture::Architecture;
+use crate::target::architecture::x86::bit64::syscall;
 
 pub mod flags;
 pub use flags::Flag;
@@ -10,7 +10,7 @@ pub use mode::Mode;
 pub const NUMBER: usize = super::number::x86::bit64::OPEN;
 
 pub fn open(file_pathname: *const u8, flags: i32, mode: i32) -> crate::Result {
-    let syscall_result = Architecture::syscall3(
+    let syscall_result = syscall::syscall3(
         NUMBER,
         file_pathname as usize,
         flags as usize,
