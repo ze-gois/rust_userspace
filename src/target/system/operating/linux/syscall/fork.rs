@@ -9,7 +9,7 @@ pub const NUMBER: usize = super::number::x86::bit64::FORK;
 /// parent process. On failure, the result contains the kernel error value.
 #[inline(always)]
 pub fn fork() -> crate::Result {
-    let raw_return = syscall::syscall0(NUMBER);
+    let raw_return = unsafe { syscall::syscall0(NUMBER) };
     handle_result(raw_return)
 }
 
