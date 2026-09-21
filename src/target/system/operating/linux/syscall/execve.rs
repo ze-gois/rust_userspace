@@ -14,8 +14,8 @@ pub fn execve(
     argv: *const *const u8,
     envp: *const *const u8,
 ) -> crate::Result {
-    let arch_result = syscall::syscall3(NUMBER, filename as usize, argv as usize, envp as usize);
-    handle_result(arch_result)
+    let raw_return = syscall::syscall3(NUMBER, filename as usize, argv as usize, envp as usize);
+    handle_result(raw_return)
 }
 
 pub mod ok {
@@ -53,23 +53,28 @@ pub use ok::Ok;
 
 pub type Result = core::result::Result<Ok, Error>;
 
-pub fn handle_result(result: crate::Result) -> crate::Result {
-    match result {
-        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::architecture::Ok::Syscall(
-                crate::target::architecture::x86::bit64::syscall::Ok::Syscall3(
-                    crate::target::architecture::x86::bit64::syscall::syscall3::Ok::Default(value),
+pub fn handle_result(raw: usize) -> crate::Result {
+    let result = super::Return::new(raw);
+
+    if result.is_error() {
+        core::result::Result::Err(crate::Error::Target(
+            crate::target::Error::OperatingSystem(
+                crate::target::system::operating::linux::Error::Syscall(
+                    crate::target::system::operating::linux::syscall::Error::Execve(
+                        Error::Default(result.raw()),
+                    ),
                 ),
             ),
-        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
-            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::Execve(
-                crate::target::system::operating::linux::syscall::execve::Ok::Default(value),
-            )),
-        ))),
-        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::Execve(
-                Error::Default(1),
-            )),
-        ))),
+        ))
+    } else {
+        core::result::Result::Ok(crate::Ok::Target(
+            crate::target::Ok::OperatingSystem(
+                crate::target::system::operating::linux::Ok::Syscall(
+                    crate::target::system::operating::linux::syscall::Ok::Execve(
+                        Ok::Default(result.raw()),
+                    ),
+                ),
+            ),
+        ))
     }
 }
