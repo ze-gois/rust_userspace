@@ -1,4 +1,4 @@
-use crate::target::architecture::Architecture;
+use crate::target::architecture::x86::bit64::syscall;
 
 pub mod flags;
 pub mod protection;
@@ -12,7 +12,7 @@ pub const NUMBER: usize = super::number::x86::bit64::MMAP;
 #[inline(always)]
 #[rustfmt::skip]
 pub fn mmap(addr: *mut u8, length: usize, protection: i32, flags: i32, fd: i32, offset: i64) -> crate::Result {
-    let arch_result = Architecture::syscall6(
+    let arch_result = syscall::syscall6(
         NUMBER,
         addr as usize,
         length,
