@@ -1,4 +1,4 @@
-use crate::target::architecture::Architecture;
+use crate::target::architecture::x86::bit64::syscall;
 
 pub mod stat;
 pub use stat::Stat;
@@ -8,7 +8,7 @@ pub const NUMBER: usize = super::number::x86::bit64::FSTAT;
 
 #[inline(always)]
 pub fn fstat(fd: isize, stat: *const Stat) -> crate::Result {
-    let arch_result = Architecture::syscall2(NUMBER, fd as usize, stat as usize);
+    let arch_result = syscall::syscall2(NUMBER, fd as usize, stat as usize);
     handle_result(arch_result)
 }
 
