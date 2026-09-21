@@ -1,6 +1,7 @@
 use crate::target::architecture::{Architecture, traits::Callable};
 
-hooking!(WRITE);
+#[cfg(target_arch = "x86_64")]
+pub const NUMBER: usize = super::number::x86::bit64::WRITE;
 
 pub fn write(file_descriptor: isize, byte_buffer: *const u8, byte_count: usize) -> crate::Result {
     let syscall_result = Architecture::syscall3(
