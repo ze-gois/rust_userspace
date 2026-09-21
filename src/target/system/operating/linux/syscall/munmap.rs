@@ -3,9 +3,13 @@ use crate::target::architecture::x86::bit64::syscall;
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::MUNMAP;
 
+/// # Safety
+///
+/// No live reference, pointer owner, or executable code may continue to rely on
+/// the unmapped region after this call succeeds.
 #[inline(always)]
-pub fn munmap(addr: *mut u8, length: usize) -> crate::Result {
-    let raw_return = syscall::syscall2(NUMBER, addr as usize, length);
+pub unsafe fn munmap(address: *mut u8, length: usize) -> crate::Result {
+    let raw_return = unsafe { syscall::syscall2(NUMBER, address as usize, length) };
     handle_result(raw_return)
 }
 
