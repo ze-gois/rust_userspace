@@ -1,7 +1,7 @@
 use crate::target::architecture::x86::bit64::syscall;
 
 pub mod flags;
-pub use flags::Flag;
+pub use flags::Flags;
 
 pub mod mode;
 pub use mode::Mode;
@@ -12,13 +12,13 @@ pub const NUMBER: usize = super::number::x86::bit64::OPEN;
 /// # Safety
 ///
 /// `file_pathname` must point to a readable NUL-terminated pathname.
-pub unsafe fn open(file_pathname: *const u8, flags: i32, mode: i32) -> crate::Result {
+pub unsafe fn open(file_pathname: *const u8, flags: Flags, mode: Mode) -> crate::Result {
     let raw_return = unsafe {
         syscall::syscall3(
             NUMBER,
             file_pathname as usize,
-            flags as usize,
-            mode as usize,
+            flags.bits() as usize,
+            mode.bits() as usize,
         )
     };
 
