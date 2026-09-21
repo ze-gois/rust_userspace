@@ -1,11 +1,10 @@
-#[rustfmt::skip]
-ample::enum_flag!(
-    usize;
-    "Memory map protection";
-    pub enum Protection {
-        [0; None;    PROT_NONE;  "None";    "Pages may not be accessed"],
-        [1; Read;    PROT_READ;  "Read";    "Pages may be read"],
-        [2; Write;   PROT_WRITE; "Write";   "Pages may be written"],
-        [4; Execute; PROT_EXEC;  "Execute"; "Pages may be executed"],
+ample::flags!(
+    i32;
+    "Memory protection";
+    pub struct Protection {
+        [0; NONE;    PROT_NONE;  "PROT_NONE";  "Pages may not be accessed"],
+        [1; READ;    PROT_READ;  "PROT_READ";  "Pages may be read"],
+        [2; WRITE;   PROT_WRITE; "PROT_WRITE"; "Pages may be written"],
+        [4; EXECUTE; PROT_EXEC;  "PROT_EXEC";  "Pages may be executed"]
     }
 );
