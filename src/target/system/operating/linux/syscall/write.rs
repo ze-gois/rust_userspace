@@ -1,9 +1,9 @@
-use crate::target::arch::{Arch, traits::Callable};
+use crate::target::architecture::{Architecture, traits::Callable};
 
 hooking!(WRITE);
 
 pub fn write(file_descriptor: isize, byte_buffer: *const u8, byte_count: usize) -> crate::Result {
-    let syscall_result = Arch::syscall3(
+    let syscall_result = Architecture::syscall3(
         NUMBER,
         file_descriptor as usize,
         byte_buffer as usize,
@@ -15,7 +15,7 @@ pub fn write(file_descriptor: isize, byte_buffer: *const u8, byte_count: usize) 
 
 pub mod ok {
 
-    ample::result!( Ok; "MUnMap Ok"; usize; [
+    ample::result!( Ok; "Write Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
     ]);
 
@@ -27,7 +27,7 @@ pub mod ok {
 }
 
 pub mod error {
-    ample::result!(Error; "MUnMap error"; usize; [
+    ample::result!(Error; "Write Error"; usize; [
         [0;  ERROR2;   Default;           usize; "Error"; "Something wicked this way comes"],
         [1;  ERROR;   Error;             usize; "Error"; "Something wicked this way comes"],
         [9;  EBADF;   BadFileDescriptor; usize;   "EBADF";     "Bad file descriptor"],
@@ -55,20 +55,39 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
     // Err(crate::Error::Default(1))
     match result {
         crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::arch::Ok::X86_64Syscall(
-                crate::target::arch::syscall::Ok::X86_64Syscall3(
-                    crate::target::arch::syscall::syscall3::Ok::Default(m),
+            crate::target::architecture::Ok::Syscall(
+                crate::target::architecture::syscall::Ok::Syscall3(
+                    crate::target::architecture::syscall::syscall3::Ok::Default(m),
                 ),
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
-            crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::Write(
-                crate::target::os::syscall::write::Ok::Default(m),
+            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::Write(
+                crate::target::system::operating::linux::syscall::write::Ok::Default(m),
             )),
         ))),
-        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            crate::target::os::Error::Syscall(crate::target::os::syscall::Error::Write(
-                Error::Default(3),
-            )),
-        ))),
+        crate::Result::Err(crate::Error::Target(crate::target::Error::Architecture(
+            crate::target::architecture::Error::Syscall(
+                crate::target::architecture::syscall::Error::Syscall3(
+                    crate::target::architecture::syscall::syscall3::Error::Default(raw),
+                ),
+            ),
+        ))) => core::result::Result::Err(crate::Error::Target(
+            crate::target::Error::OperatingSystem(
+                crate::target::system::operating::linux::Error::Syscall(
+                    crate::target::system::operating::linux::syscall::Error::Write(
+                        Error::Default(raw),
+                    ),
+                ),
+            ),
+        )),
+        _ => core::result::Result::Err(crate::Error::Target(
+            crate::target::Error::OperatingSystem(
+                crate::target::system::operating::linux::Error::Syscall(
+                    crate::target::system::operating::linux::syscall::Error::Write(
+                        Error::Default(usize::MAX),
+                    ),
+                ),
+            ),
+        )),
     }
 }
