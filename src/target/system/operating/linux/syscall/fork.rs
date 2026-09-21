@@ -9,8 +9,8 @@ pub const NUMBER: usize = super::number::x86::bit64::FORK;
 /// parent process. On failure, the result contains the kernel error value.
 #[inline(always)]
 pub fn fork() -> crate::Result {
-    let arch_result = syscall::syscall0(NUMBER);
-    handle_result(arch_result)
+    let raw_return = syscall::syscall0(NUMBER);
+    handle_result(raw_return)
 }
 
 pub mod ok {
@@ -44,23 +44,28 @@ pub use ok::Ok;
 
 pub type Result = core::result::Result<Ok, Error>;
 
-pub fn handle_result(result: crate::Result) -> crate::Result {
-    match result {
-        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::architecture::Ok::Syscall(
-                crate::target::architecture::x86::bit64::syscall::Ok::Syscall0(
-                    crate::target::architecture::x86::bit64::syscall::syscall0::Ok::Default(value),
+pub fn handle_result(raw: usize) -> crate::Result {
+    let result = super::Return::new(raw);
+
+    if result.is_error() {
+        core::result::Result::Err(crate::Error::Target(
+            crate::target::Error::OperatingSystem(
+                crate::target::system::operating::linux::Error::Syscall(
+                    crate::target::system::operating::linux::syscall::Error::Fork(
+                        Error::Default(result.raw()),
+                    ),
                 ),
             ),
-        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
-            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::Fork(
-                crate::target::system::operating::linux::syscall::fork::Ok::Default(value),
-            )),
-        ))),
-        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::Fork(
-                Error::Default(1),
-            )),
-        ))),
+        ))
+    } else {
+        core::result::Result::Ok(crate::Ok::Target(
+            crate::target::Ok::OperatingSystem(
+                crate::target::system::operating::linux::Ok::Syscall(
+                    crate::target::system::operating::linux::syscall::Ok::Fork(
+                        Ok::Default(result.raw()),
+                    ),
+                ),
+            ),
+        ))
     }
 }
