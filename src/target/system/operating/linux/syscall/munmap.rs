@@ -1,11 +1,11 @@
-use crate::target::architecture::Architecture;
+use crate::target::architecture::x86::bit64::syscall;
 
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::MUNMAP;
 
 #[inline(always)]
 pub fn munmap(addr: *mut u8, length: usize) -> crate::Result {
-    let arch_result = Architecture::syscall2(NUMBER, addr as usize, length);
+    let arch_result = syscall::syscall2(NUMBER, addr as usize, length);
     handle_result(arch_result)
 }
 
