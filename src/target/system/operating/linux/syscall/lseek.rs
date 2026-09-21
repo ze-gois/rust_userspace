@@ -1,4 +1,4 @@
-use crate::target::architecture::Architecture;
+use crate::target::architecture::x86::bit64::syscall;
 
 pub mod whence;
 pub use whence::Whence;
@@ -8,7 +8,7 @@ pub const NUMBER: usize = super::number::x86::bit64::LSEEK;
 
 #[inline(always)]
 pub fn lseek(fd: i32, offset: i64, whence: i32) -> crate::Result {
-    let arch_result = Architecture::syscall3(NUMBER, fd as usize, offset as usize, whence as usize);
+    let arch_result = syscall::syscall3(NUMBER, fd as usize, offset as usize, whence as usize);
 
     handle_result(arch_result)
 }
