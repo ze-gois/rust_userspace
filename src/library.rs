@@ -9,10 +9,8 @@ ample::r#struct!(
     pub struct Origin {}
 );
 
-#[macro_use]
 pub mod target;
 pub mod file;
-pub mod license;
 pub mod memory;
 pub mod panic;
 pub mod result;
