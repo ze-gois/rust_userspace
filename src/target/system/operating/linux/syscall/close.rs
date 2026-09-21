@@ -1,16 +1,16 @@
-use crate::target::arch::{Arch, traits::Callable};
+use crate::target::architecture::{Architecture, traits::Callable};
 
 hooking!(CLOSE);
 
 #[inline(always)]
 pub fn close(fd: isize) -> crate::Result {
-    let arch_result = Arch::syscall1(NUMBER, fd as usize);
+    let arch_result = Architecture::syscall1(NUMBER, fd as usize);
     handle_result(arch_result)
 }
 
 pub mod ok {
 
-    ample::result!( Ok; "MUnMap Ok"; usize; [
+    ample::result!( Ok; "Close Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
     ]);
 
@@ -22,7 +22,7 @@ pub mod ok {
 }
 
 pub mod error {
-    ample::result!(Error; "MUnMap error"; usize; [
+    ample::result!(Error; "Close Error"; usize; [
         [1; ERROR; Default; usize; "Error"; "Something wicked this way comes"],
     ]);
 
@@ -42,9 +42,9 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
     // Err(crate::Error::Default(1))
     match result {
         crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::arch::Ok::X86_64Syscall(
-                crate::target::arch::syscall::Ok::X86_64Syscall1(
-                    crate::target::arch::syscall::syscall1::Ok::Default(m),
+            crate::target::architecture::Ok::Syscall(
+                crate::target::architecture::syscall::Ok::Syscall1(
+                    crate::target::architecture::syscall::syscall1::Ok::Default(m),
                 ),
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
