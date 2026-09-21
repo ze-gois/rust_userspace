@@ -1,6 +1,7 @@
 use ample::traits::AllocatableResult;
 
 use crate::Origin;
+use core::alloc::Layout;
 
 ample::r#struct!(
     #[derive(Debug)]
@@ -44,132 +45,62 @@ impl ample::traits::Allocatable<Origin> for Allocator {
     }
 }
 
-pub trait Allocating<T> {
-    fn allocate(count: usize) -> *mut T;
-    fn allocate_slice(count: usize) -> &'static mut [T];
-    fn deallocate(ptr: *mut T, count: usize) -> bool;
-    fn deallocate_slice(slice: &mut [T]) -> bool;
-}
-
-impl<T> Allocating<T> for T {
-    fn allocate(numerosity: usize) -> *mut T {
-        if numerosity == 0 || core::mem::size_of::<T>() == 0 {
-            return core::ptr::NonNull::<T>::dangling().as_ptr();
+unsafe impl ample::traits::Allocating for Allocator {
+    fn allocate(layout: Layout) -> *mut u8 {
+        if layout.size() == 0 {
+            return layout.align() as *mut u8;
         }
 
-        if core::mem::align_of::<T>() > crate::memory::page::SIZE {
+        if layout.align() > crate::memory::page::SIZE {
             return core::ptr::null_mut();
         }
 
-        let Some(numerosity_of_bytes) = numerosity.checked_mul(core::mem::size_of::<T>()) else {
-            return core::ptr::null_mut();
-        };
-
-        match <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity_of_bytes) {
-            Ok(m) => m.as_ptr() as *mut T,
-            _ => core::ptr::null_mut(),
-        }
-    }
-
-    /// Deallocate an array previously allocated with allocate_array
-    fn deallocate(ptr: *mut T, numerosity: usize) -> bool {
-        if numerosity == 0 || core::mem::size_of::<T>() == 0 {
-            return true;
-        }
-
-        let Some(total_size) = numerosity.checked_mul(core::mem::size_of::<T>()) else {
-            return false;
-        };
-
-        let aligned_size =
-            (total_size + crate::memory::page::SIZE - 1) & !(crate::memory::page::SIZE - 1);
-
-        // let _ = crate::target::os::syscall::munmap(ptr as *mut u8, aligned_size);
-        // true
-        match <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
-            ptr as *mut Allocator,
-            aligned_size,
-        ) {
-            Ok(_) => true,
-            Err(_) => false,
-        }
-    }
-
-    /// Allocate and initialize a slice
-    fn allocate_slice(numerosity: usize) -> &'static mut [T] {
-        let ptr = Self::allocate(numerosity) as *mut T;
-
-        // for i in 0..numerosity {
-        //     unsafe {
-        //         *ptr.add(i) = T::default();
-        //     }
-        // }
-
-        unsafe { core::slice::from_raw_parts_mut(ptr, numerosity) }
-    }
-
-    fn deallocate_slice(slice: &mut [T]) -> bool {
-        Self::deallocate(slice.as_mut_ptr() as *mut T, slice.len())
-    }
-}
-
-impl<T> Allocating<T> for &[T] {
-    fn allocate(numerosity: usize) -> *mut T {
-        if numerosity == 0 || core::mem::size_of::<T>() == 0 {
-            return core::ptr::NonNull::<T>::dangling().as_ptr();
-        }
-
-        if core::mem::align_of::<T>() > crate::memory::page::SIZE {
-            return core::ptr::null_mut();
-        }
-
-        let Some(numerosity_of_bytes) = numerosity.checked_mul(core::mem::size_of::<T>()) else {
-            return core::ptr::null_mut();
-        };
-
-        match <Allocator as ample::traits::Allocatable<Origin>>::allocate(numerosity_of_bytes) {
-            Ok(ptr) => ptr.as_ptr() as *mut T,
+        match <Allocator as ample::traits::Allocatable<Origin>>::allocate(layout.size()) {
+            Ok(result) => result.as_ptr(),
             Err(_) => core::ptr::null_mut(),
         }
     }
 
-    /// Deallocate an array previously allocated with allocate_array
-    fn deallocate(ptr: *mut T, numerosity: usize) -> bool {
-        if numerosity == 0 || core::mem::size_of::<T>() == 0 {
+    unsafe fn deallocate(pointer: *mut u8, layout: Layout) -> bool {
+        if layout.size() == 0 {
             return true;
         }
 
-        let Some(total_size) = numerosity.checked_mul(core::mem::size_of::<T>()) else {
+        if pointer.is_null() {
             return false;
-        };
-
-        let aligned_size =
-            (total_size + crate::memory::page::SIZE - 1) & !(crate::memory::page::SIZE - 1);
+        }
 
         match <Allocator as ample::traits::Allocatable<Origin>>::deallocate(
-            ptr as *mut Allocator,
-            aligned_size,
+            pointer as *mut Allocator,
+            layout.size(),
         ) {
             Ok(_) => true,
             Err(_) => false,
         }
     }
+}
 
-    /// Allocate and initialize a slice
-    fn allocate_slice(numerosity: usize) -> &'static mut [T] {
-        let ptr = <Self as Allocating<T>>::allocate(numerosity);
+impl Allocator {
+    pub fn allocate<T>(count: usize) -> *mut T {
+        let Ok(layout) = Layout::array::<T>(count) else {
+            return core::ptr::null_mut();
+        };
 
-        // for i in 0..numerosity {
-        //     unsafe {
-        //         *ptr.add(i) = T::default();
-        //     }
-        // }
-
-        unsafe { core::slice::from_raw_parts_mut(ptr, numerosity) }
+        <Self as ample::traits::Allocating>::allocate(layout) as *mut T
     }
 
-    fn deallocate_slice(slice: &mut [T]) -> bool {
-        <Self as Allocating<T>>::deallocate(slice.as_mut_ptr(), slice.len())
+    /// # Safety
+    ///
+    /// `pointer` must have been returned by `Allocator::allocate::<T>` for
+    /// the same `count`, and all initialized values must have been dropped.
+    pub unsafe fn deallocate<T>(pointer: *mut T, count: usize) -> bool {
+        let Ok(layout) = Layout::array::<T>(count) else {
+            return false;
+        };
+
+        unsafe {
+            <Self as ample::traits::Allocating>::deallocate(pointer as *mut u8, layout)
+        }
     }
 }
 
