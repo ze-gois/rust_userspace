@@ -8,19 +8,24 @@ pub const AT_FDCWD: isize = CURRENT_WORKING_DIRECTORY;
 #[cfg(target_arch = "x86_64")]
 pub const NUMBER: usize = super::number::x86::bit64::OPENAT;
 
-pub fn openat(
+/// # Safety
+///
+/// `file_pathname` must point to a readable NUL-terminated pathname.
+pub unsafe fn openat(
     directory_file_descriptor: isize,
     file_pathname: *const u8,
     flags: i32,
     mode: i32,
 ) -> crate::Result {
-    let raw_return = syscall::syscall4(
-        NUMBER,
-        directory_file_descriptor as usize,
-        file_pathname as usize,
-        flags as usize,
-        mode as usize,
-    );
+    let raw_return = unsafe {
+        syscall::syscall4(
+            NUMBER,
+            directory_file_descriptor as usize,
+            file_pathname as usize,
+            flags as usize,
+            mode as usize,
+        )
+    };
 
     handle_result(raw_return)
 }
