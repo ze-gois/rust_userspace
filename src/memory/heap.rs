@@ -5,7 +5,6 @@ ample::r#struct!(
     pub struct Allocator {}
 );
 
-pub type AllocatorPointer = *mut Allocator;
 
 unsafe impl ample::traits::Allocating for Allocator {
     fn allocate(layout: Layout) -> *mut u8 {
