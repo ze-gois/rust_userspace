@@ -1,4 +1,3 @@
-pub mod result;
 pub mod syscall;
 
 pub mod page {
@@ -9,7 +8,6 @@ pub mod page {
     pub const BASE_SIZE: usize = 0x1000;
 }
 
-pub use result::{Error, Ok, Result};
 
 /// Raw x86-64 stack pointer value.
 pub type StackPointer = *const u8;
