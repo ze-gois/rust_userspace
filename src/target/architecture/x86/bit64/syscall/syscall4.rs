@@ -1,5 +1,5 @@
 #[inline(always)]
-pub fn syscall4(
+pub unsafe fn syscall4(
     number: usize,
     argument1: usize,
     argument2: usize,
