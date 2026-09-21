@@ -1,39 +1,72 @@
 use super::syscall::*;
 
-impl crate::target::architecture::traits::Callable for crate::target::architecture::Architecture {
-    fn _syscall0(n: usize) -> crate::Result {
-        syscall0(n)
+impl crate::target::architecture::Architecture {
+    pub fn syscall0(number: usize) -> crate::Result {
+        syscall0(number)
     }
 
-    fn _syscall1(n: usize, a1: usize) -> crate::Result {
-        syscall1(n, a1)
+    pub fn syscall1(number: usize, argument1: usize) -> crate::Result {
+        syscall1(number, argument1)
     }
 
-    fn _syscall2(n: usize, a1: usize, a2: usize) -> crate::Result {
-        syscall2(n, a1, a2)
+    pub fn syscall2(number: usize, argument1: usize, argument2: usize) -> crate::Result {
+        syscall2(number, argument1, argument2)
     }
 
-    fn _syscall3(n: usize, a1: usize, a2: usize, a3: usize) -> crate::Result {
-        syscall3(n, a1, a2, a3)
-    }
-
-    fn _syscall4(n: usize, a1: usize, a2: usize, a3: usize, a4: usize) -> crate::Result {
-        syscall4(n, a1, a2, a3, a4)
-    }
-
-    fn _syscall5(n: usize, a1: usize, a2: usize, a3: usize, a4: usize, a5: usize) -> crate::Result {
-        syscall5(n, a1, a2, a3, a4, a5)
-    }
-
-    fn _syscall6(
-        n: usize,
-        a1: usize,
-        a2: usize,
-        a3: usize,
-        a4: usize,
-        a5: usize,
-        a6: usize,
+    pub fn syscall3(
+        number: usize,
+        argument1: usize,
+        argument2: usize,
+        argument3: usize,
     ) -> crate::Result {
-        syscall6(n, a1, a2, a3, a4, a5, a6)
+        syscall3(number, argument1, argument2, argument3)
+    }
+
+    pub fn syscall4(
+        number: usize,
+        argument1: usize,
+        argument2: usize,
+        argument3: usize,
+        argument4: usize,
+    ) -> crate::Result {
+        syscall4(number, argument1, argument2, argument3, argument4)
+    }
+
+    pub fn syscall5(
+        number: usize,
+        argument1: usize,
+        argument2: usize,
+        argument3: usize,
+        argument4: usize,
+        argument5: usize,
+    ) -> crate::Result {
+        syscall5(
+            number,
+            argument1,
+            argument2,
+            argument3,
+            argument4,
+            argument5,
+        )
+    }
+
+    pub fn syscall6(
+        number: usize,
+        argument1: usize,
+        argument2: usize,
+        argument3: usize,
+        argument4: usize,
+        argument5: usize,
+        argument6: usize,
+    ) -> crate::Result {
+        syscall6(
+            number,
+            argument1,
+            argument2,
+            argument3,
+            argument4,
+            argument5,
+            argument6,
+        )
     }
 }
