@@ -23,8 +23,8 @@ pub use result::{Error, Ok, Result};
 pub mod traits;
 
 // impl traits::Bytes<Origin, Origin> for &str {
-//     const BYTES_SIZE: usize = core::mem::size_of::<&str>();
-//     fn to_bytes(&self, endianness: bool) -> [u8; Self::BYTES_SIZE] {
+//     const REPRESENTATION_SIZE: usize = core::mem::size_of::<&str>();
+//     fn to_bytes(&self, endianness: bool) -> [u8; Self::REPRESENTATION_SIZE] {
 //         let bytes =
 //         memory::alloc::<char>(self.len());
 //     }
