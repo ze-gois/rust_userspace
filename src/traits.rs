@@ -1,5 +1,3 @@
-pub mod str;
-pub use str::Str;
 
 pub trait Ample {}
 pub trait Userspace {}
