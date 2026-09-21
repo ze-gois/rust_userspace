@@ -13,7 +13,6 @@ pub use open::open;
 pub mod seek;
 pub use seek::seek;
 
-pub mod format;
 
 pub mod result;
 pub use result::{Error, Ok, Result};
