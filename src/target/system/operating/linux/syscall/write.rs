@@ -24,66 +24,21 @@ pub unsafe fn write(
     handle_result(raw_return)
 }
 
-pub mod ok {
-
-    ample::result!( Ok; "Write Ok"; usize; [
-        [0; OK; Default; usize; "Ok"; "All good"],
-    ]);
-
-    impl Ok {
-        pub fn from_no(no: usize) -> Self {
-            Ok::Default(no)
-        }
-    }
-}
-
-pub mod error {
-    ample::result!(Error; "Write Error"; usize; [
-        [0;  ERROR2;   Default;           usize; "Error"; "Something wicked this way comes"],
-        [1;  ERROR;   Error;             usize; "Error"; "Something wicked this way comes"],
-        [9;  EBADF;   BadFileDescriptor; usize;   "EBADF";     "Bad file descriptor"],
-        [14; EFAULT;  InvalidBuffer;     usize;  "EFAULT";    "Invalid buffer pointer"],
-        [27; EFBIG;   BufferTooLarge;    usize;   "EFBIG";     "Buffer too large"],
-        [4;  EINTR;   Interrupted;       usize;   "EINTR";     "System call was interrupted"],
-        [5;  EIO;     IOError;           usize;     "EIO";       "Input/output error"],
-        [28; ENOSPC;  NoSpaceLeft;       usize;  "ENOSPC";    "No space left on device"],
-        [32; EPIPE;   BrokenPipe;        usize;   "EPIPE";     "Broken pipe"],
-    ]);
-
-    impl Error {
-        pub fn from_no(no: usize) -> Self {
-            Error::Default(no)
-        }
-    }
-}
-
-pub use error::Error;
-pub use ok::Ok;
-
-pub type Result = core::result::Result<Ok, Error>;
-
 pub fn handle_result(raw: usize) -> crate::Result {
-    let result = super::Return::new(raw);
-
-    if result.is_error() {
-        core::result::Result::Err(crate::Error::Target(
-            crate::target::Error::OperatingSystem(
-                crate::target::system::operating::linux::Error::Syscall(
-                    crate::target::system::operating::linux::syscall::Error::Write(
-                        Error::Default(result.raw()),
-                    ),
-                ),
-            ),
-        ))
-    } else {
-        core::result::Result::Ok(crate::Ok::Target(
-            crate::target::Ok::OperatingSystem(
+    match super::Return::new(raw).classify() {
+        core::result::Result::Ok(success) => core::result::Result::Ok(
+            crate::Ok::Target(crate::target::Ok::OperatingSystem(
                 crate::target::system::operating::linux::Ok::Syscall(
-                    crate::target::system::operating::linux::syscall::Ok::Write(
-                        Ok::Default(result.raw()),
-                    ),
+                    crate::target::system::operating::linux::syscall::Ok::Write(success),
                 ),
-            ),
-        ))
+            )),
+        ),
+        core::result::Result::Err(failure) => core::result::Result::Err(
+            crate::Error::Target(crate::target::Error::OperatingSystem(
+                crate::target::system::operating::linux::Error::Syscall(
+                    crate::target::system::operating::linux::syscall::Error::Write(failure),
+                ),
+            )),
+        ),
     }
 }
