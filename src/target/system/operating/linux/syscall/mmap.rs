@@ -1,4 +1,4 @@
-use crate::target::arch::{Arch, traits::Callable};
+use crate::target::architecture::{Architecture, traits::Callable};
 
 pub mod flags;
 pub mod protection;
@@ -11,7 +11,7 @@ hooking!(MMAP);
 #[inline(always)]
 #[rustfmt::skip]
 pub fn mmap(addr: *mut u8, length: usize, protection: i32, flags: i32, fd: i32, offset: i64) -> crate::Result {
-    let arch_result = Arch::syscall6(
+    let arch_result = Architecture::syscall6(
         NUMBER,
         addr as usize,
         length,
@@ -26,7 +26,7 @@ pub fn mmap(addr: *mut u8, length: usize, protection: i32, flags: i32, fd: i32, 
 
 pub mod ok {
 
-    ample::result!( Ok; "MUnMap Ok"; usize; [
+    ample::result!( Ok; "Mmap Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
     ]);
 
@@ -38,7 +38,7 @@ pub mod ok {
 }
 
 pub mod error {
-    ample::result!(Error; "MUnMap error"; usize; [
+    ample::result!(Error; "Mmap Error"; usize; [
         [1; ERROR; Default; usize; "Error"; "Something wicked this way comes"],
     ]);
 
@@ -58,9 +58,9 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
     // Err(crate::Error::Default(1))
     match result {
         crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
-            crate::target::arch::Ok::X86_64Syscall(
-                crate::target::arch::syscall::Ok::X86_64Syscall6(
-                    crate::target::arch::syscall::syscall6::Ok::Default(m),
+            crate::target::architecture::Ok::Syscall(
+                crate::target::architecture::syscall::Ok::Syscall6(
+                    crate::target::architecture::syscall::syscall6::Ok::Default(m),
                 ),
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
@@ -69,9 +69,9 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
             )),
         ))),
         crate::Result::Err(crate::Error::Target(crate::target::Error::Architecture(
-            crate::target::arch::Error::X86_64Syscall(
-                crate::target::arch::syscall::Error::X86_64Syscall6(
-                    crate::target::arch::syscall::syscall6::Error::Default(errno),
+            crate::target::architecture::Error::Syscall(
+                crate::target::architecture::syscall::Error::Syscall6(
+                    crate::target::architecture::syscall::syscall6::Error::Default(errno),
                 ),
             ),
         ))) => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
