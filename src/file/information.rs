@@ -9,7 +9,7 @@ pub fn from_fd(fd: isize) -> syscall::fstat::Stat {
         -1,
         0,
     ) {
-        core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
+        core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
             crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::MMap(
                 crate::target::os::syscall::mmap::Ok::Default(m),
             )),
