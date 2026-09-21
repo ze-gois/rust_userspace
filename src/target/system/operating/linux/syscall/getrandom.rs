@@ -9,7 +9,7 @@ pub fn getrandom(byte_buffer: *mut u8, byte_length: usize, flags: u32) -> crate:
 }
 
 pub mod ok {
-    ample::result!( Ok; "GetRandom Ok"; usize; [
+    ample::result!( Ok; "Getrandom Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
     ]);
 
@@ -21,7 +21,7 @@ pub mod ok {
 }
 
 pub mod error {
-    ample::result!(Error; "GetRandom error"; usize; [
+    ample::result!(Error; "Getrandom error"; usize; [
         [1; ERROR; Default; usize; "Error"; "Something wicked this way comes"],
         [4; EINTR; Interrupted; usize; "EINTR"; "System call was interrupted"],
         [14; EFAULT; InvalidBuffer; usize; "EFAULT"; "Invalid buffer pointer"],
@@ -51,12 +51,12 @@ pub fn handle_result(result: crate::Result) -> crate::Result {
                 ),
             ),
         ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
-            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::GetRandom(
+            crate::target::system::operating::linux::Ok::Syscall(crate::target::system::operating::linux::syscall::Ok::Getrandom(
                 crate::target::system::operating::linux::syscall::getrandom::Ok::Default(m),
             )),
         ))),
         _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
-            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::GetRandom(
+            crate::target::system::operating::linux::Error::Syscall(crate::target::system::operating::linux::syscall::Error::Getrandom(
                 Error::Default(3),
             )),
         ))),
