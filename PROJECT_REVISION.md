@@ -30,9 +30,10 @@ or abstractions whose names no longer match their meaning.
 - `memory::heap` and `memory::stack` describe memory concepts, not file
   formats or operating-system conventions.
 - `Allocating` is retained as a valuable abstraction, but allocation layout
-  must be independent from serialized `Bytes::BYTES_SIZE`.
-- Serialization layout, in-memory Rust layout, residency, and ownership are
-  distinct concepts.
+  must be independent from representation size.
+- Representation, in-memory Rust layout, residency, and ownership are distinct
+  concepts.
+- Serialization and deserialization are operations over representation.
 - A module that survives this revision must be able to justify its namespace and
   semantics without relying on accidental legacy behavior.
 
@@ -88,7 +89,8 @@ semantics become clearer and as community terminology is verified.
 4. Separate Linux process-startup ABI from generic memory.
 5. Rebuild `file::format::elf` from the GABI and ample's representation
    primitives.
-6. Add resolved/owned ELF descriptors only after the wire model is sound.
+6. Add resolved/owned ELF descriptors only after the representation model is
+   sound.
 7. Reintroduce loading and execution policy only after the format and memory
    layers have defensible boundaries.
 
