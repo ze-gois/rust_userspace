@@ -13,10 +13,10 @@ pub const NUMBER: usize = super::number::x86::bit64::MPROTECT;
 pub unsafe fn mprotect(
     address: *mut u8,
     length: usize,
-    protection: i32,
+    protection: Protection,
 ) -> crate::Result {
     let raw_return = unsafe {
-        syscall::syscall3(NUMBER, address as usize, length, protection as usize)
+        syscall::syscall3(NUMBER, address as usize, length, protection.bits() as usize)
     };
     handle_result(raw_return)
 }
