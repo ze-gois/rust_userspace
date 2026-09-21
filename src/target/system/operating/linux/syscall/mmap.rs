@@ -6,7 +6,8 @@ pub mod protection;
 pub use flags::Flag;
 pub use protection::Protection;
 
-hooking!(MMAP);
+#[cfg(target_arch = "x86_64")]
+pub const NUMBER: usize = super::number::x86::bit64::MMAP;
 
 #[inline(always)]
 #[rustfmt::skip]
