@@ -1,6 +1,6 @@
 use crate::target::architecture::x86::bit64::syscall;
 
-pub use super::open::{Access, Error, Flags, Mode, Ok, Result};
+pub use super::open::{Access, Flags, Mode};
 
 pub const CURRENT_WORKING_DIRECTORY: isize = -100;
 pub const AT_FDCWD: isize = CURRENT_WORKING_DIRECTORY;
@@ -32,27 +32,20 @@ pub unsafe fn openat(
 }
 
 pub fn handle_result(raw: usize) -> crate::Result {
-    let result = super::Return::new(raw);
-
-    if result.is_error() {
-        core::result::Result::Err(crate::Error::Target(
-            crate::target::Error::OperatingSystem(
-                crate::target::system::operating::linux::Error::Syscall(
-                    crate::target::system::operating::linux::syscall::Error::Openat(
-                        Error::Default(result.raw()),
-                    ),
-                ),
-            ),
-        ))
-    } else {
-        core::result::Result::Ok(crate::Ok::Target(
-            crate::target::Ok::OperatingSystem(
+    match super::Return::new(raw).classify() {
+        core::result::Result::Ok(success) => core::result::Result::Ok(
+            crate::Ok::Target(crate::target::Ok::OperatingSystem(
                 crate::target::system::operating::linux::Ok::Syscall(
-                    crate::target::system::operating::linux::syscall::Ok::Openat(
-                        Ok::Default(result.raw()),
-                    ),
+                    crate::target::system::operating::linux::syscall::Ok::Openat(success),
                 ),
-            ),
-        ))
+            )),
+        ),
+        core::result::Result::Err(failure) => core::result::Result::Err(
+            crate::Error::Target(crate::target::Error::OperatingSystem(
+                crate::target::system::operating::linux::Error::Syscall(
+                    crate::target::system::operating::linux::syscall::Error::Openat(failure),
+                ),
+            )),
+        ),
     }
 }
