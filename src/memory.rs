@@ -1,4 +1,4 @@
-pub mod alloc;
+pub mod allocator;
 pub mod heap;
 pub mod page;
 pub mod stack;
