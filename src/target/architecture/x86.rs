@@ -4,6 +4,3 @@
 /// under the x86 family rather than encoding hierarchy with an underscore.
 #[cfg(target_arch = "x86_64")]
 pub mod bit64;
-
-#[cfg(target_arch = "x86_64")]
-pub use bit64::*;
