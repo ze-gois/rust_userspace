@@ -1,13 +1,13 @@
 pub mod ok {
     ample::result!(
         Ok;
-        "Human Ok";
+        "Target Ok";
         usize;
         [
-            [1; TARGET_DEFAULT_OK; Default; usize; "ZE"; "Entry to ze"],
-            [2; TARGET_INFO_OK; Info; usize; "ZE"; "Entry to ze"],
-            [3; TARGET_OPERATING_SYSTEM_OK; OperatingSystem; crate::target::os::Ok; "ZE"; "Entry to ze"],
-            [4; TARGET_ARCHITECTURE_OK; Architecture; crate::target::arch::Ok; "ZE"; "Entry to ze"],
+            [1; TARGET_DEFAULT_OK; Default; usize; "Target"; "Target result"],
+            [2; TARGET_INFO_OK; Info; usize; "Target"; "Target result"],
+            [3; TARGET_OPERATING_SYSTEM_OK; OperatingSystem; crate::target::system::operating::linux::Ok; "Target"; "Target result"],
+            [4; TARGET_ARCHITECTURE_OK; Architecture; crate::target::architecture::Ok; "Target"; "Target result"],
         ]
     );
 
@@ -21,13 +21,13 @@ pub mod ok {
 pub mod error {
     ample::result!(
         Error;
-        "Human error";
+        "Target Error";
         usize;
         [
-            [1; TARGET_DEFAULT_ERROR; Default; usize; "ZE"; "Entry to ze"],
-            [2; TARGET_INFO_ERROR; Info; usize; "ZE"; "Entry to ze"],
-            [3; TARGET_OPERATING_SYSTEM_ERROR; OperatingSystem; crate::target::os::Error; "ZE"; "Entry to ze"],
-            [4; TARGET_ARCHITECTURE_ERROR; Architecture; crate::target::arch::Error; "ZE"; "Entry to ze"],
+            [1; TARGET_DEFAULT_ERROR; Default; usize; "Target"; "Target result"],
+            [2; TARGET_INFO_ERROR; Info; usize; "Target"; "Target result"],
+            [3; TARGET_OPERATING_SYSTEM_ERROR; OperatingSystem; crate::target::system::operating::linux::Error; "Target"; "Target result"],
+            [4; TARGET_ARCHITECTURE_ERROR; Architecture; crate::target::architecture::Error; "Target"; "Target result"],
         ]
     );
 
