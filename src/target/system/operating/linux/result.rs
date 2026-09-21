@@ -1,11 +1,11 @@
 pub mod ok {
     ample::result!(
         Ok;
-        "Human Ok";
+        "Linux Ok";
         usize;
         [
-            [0; LINUX_DEFAULT_OK; Default; usize; "ZE"; "Entry to ze"],
-            [1; LINUX_SYSCALL_OK; Syscall; super::super::syscall::Ok; "ZE"; "Entry to ze"],
+            [0; LINUX_DEFAULT_OK; Default; usize; "Linux"; "Linux result"],
+            [1; LINUX_SYSCALL_OK; Syscall; super::super::syscall::Ok; "Linux"; "Linux result"],
         ]
     );
 
@@ -19,11 +19,11 @@ pub mod ok {
 pub mod error {
     ample::result!(
         Error;
-        "Human error";
+        "Linux Error";
         usize;
         [
-            [0; LINUX_DEFAULT_ERROR; Default; usize; "ZE"; "Entry to ze"],
-            [1; LINUX_SYSCALL_ERROR; Syscall; super::super::syscall::Error; "ZE"; "Entry to ze"],
+            [0; LINUX_DEFAULT_ERROR; Default; usize; "Linux"; "Linux result"],
+            [1; LINUX_SYSCALL_ERROR; Syscall; super::super::syscall::Error; "Linux"; "Linux result"],
         ]
     );
 
