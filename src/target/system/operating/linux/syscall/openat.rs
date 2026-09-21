@@ -1,4 +1,4 @@
-use crate::target::architecture::Architecture;
+use crate::target::architecture::x86::bit64::syscall;
 
 pub use super::open::{Error, Ok, Result};
 
@@ -14,7 +14,7 @@ pub fn openat(
     flags: i32,
     mode: i32,
 ) -> crate::Result {
-    let syscall_result = Architecture::syscall4(
+    let syscall_result = syscall::syscall4(
         NUMBER,
         directory_file_descriptor as usize,
         file_pathname as usize,
