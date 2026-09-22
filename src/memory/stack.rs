@@ -108,12 +108,16 @@ impl Stack {
 
         crate::info!("auxv[{}]\n", self.auxiliary.len());
         for (index, auxiliary) in self.auxiliary.iter().enumerate() {
+            let value = auxiliary.value();
+
             crate::info!(
-                "  auxv[{}] = {{ type: {}, raw: {:#x}, value: {:?} }}\n",
+                "  auxv[{}] = {{ type: {}, acronym: {:?}, description: {:?}, raw: {:#x}, value: {:?} }}\n",
                 index,
                 auxiliary.raw_key(),
+                ample::traits::enums::Labeled::<ample::Origin>::acronym(&value),
+                ample::traits::enums::Labeled::<ample::Origin>::description(&value),
                 auxiliary.raw_value(),
-                auxiliary.value(),
+                value,
             );
         }
 
