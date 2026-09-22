@@ -27,7 +27,7 @@ use super::{
 mod dynamic;
 mod parser;
 
-use self::parser::{parse_dynamic_array, parse_note_table, range, read};
+use self::parser::{parse_dynamic_array, parse_note_table, range, word};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParseError {
@@ -255,7 +255,11 @@ impl<'file> ObjectFile<'file> {
         }
 
         let segment = self.segment(index)?;
-        parse_note_table(segment.file_image, self.header.identification.class)
+        parse_note_table(
+            segment.file_image,
+            self.header.identification.class,
+            self.header.identification.data,
+        )
     }
 
     pub fn sections_in_loadable_segment(
@@ -385,8 +389,11 @@ impl<'file> ObjectFile<'file> {
 
                 for index in 0..count {
                     let offset = index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<symbol::class_32::Representation>(section.contents, offset)?;
+                    let representation = symbol::class_32::Representation::decode(
+                        section.contents,
+                        offset,
+                        self.header.identification.data,
+                    )?;
                     symbols.push(Symbol::from(representation));
                 }
             }
@@ -397,8 +404,11 @@ impl<'file> ObjectFile<'file> {
 
                 for index in 0..count {
                     let offset = index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<symbol::class_64::Representation>(section.contents, offset)?;
+                    let representation = symbol::class_64::Representation::decode(
+                        section.contents,
+                        offset,
+                        self.header.identification.data,
+                    )?;
                     symbols.push(Symbol::from(representation));
                 }
             }
@@ -427,7 +437,11 @@ impl<'file> ObjectFile<'file> {
 
             for (index, symbol) in symbols.iter().enumerate() {
                 let offset = index.checked_mul(word_size)?;
-                let extended = read::<u32>(extended_section_indices.contents, offset)?;
+                let extended = word(
+                    extended_section_indices.contents,
+                    offset,
+                    self.header.identification.data,
+                )?;
 
                 if symbol.section_index != section_header::Index::EXTENDED && extended != 0 {
                     return None;
@@ -481,8 +495,11 @@ impl<'file> ObjectFile<'file> {
                 }
                 for index in 0..count {
                     let offset = index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<relocation::class_32::RelRepresentation>(section.contents, offset)?;
+                    let representation = relocation::class_32::RelRepresentation::decode(
+                        section.contents,
+                        offset,
+                        self.header.identification.data,
+                    )?;
                     relocations.push(Relocation::from(representation));
                 }
             }
@@ -492,8 +509,11 @@ impl<'file> ObjectFile<'file> {
                 }
                 for index in 0..count {
                     let offset = index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<relocation::class_32::RelaRepresentation>(section.contents, offset)?;
+                    let representation = relocation::class_32::RelaRepresentation::decode(
+                        section.contents,
+                        offset,
+                        self.header.identification.data,
+                    )?;
                     relocations.push(Relocation::from(representation));
                 }
             }
@@ -503,8 +523,11 @@ impl<'file> ObjectFile<'file> {
                 }
                 for index in 0..count {
                     let offset = index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<relocation::class_64::RelRepresentation>(section.contents, offset)?;
+                    let representation = relocation::class_64::RelRepresentation::decode(
+                        section.contents,
+                        offset,
+                        self.header.identification.data,
+                    )?;
                     relocations.push(Relocation::from(representation));
                 }
             }
@@ -514,8 +537,11 @@ impl<'file> ObjectFile<'file> {
                 }
                 for index in 0..count {
                     let offset = index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<relocation::class_64::RelaRepresentation>(section.contents, offset)?;
+                    let representation = relocation::class_64::RelaRepresentation::decode(
+                        section.contents,
+                        offset,
+                        self.header.identification.data,
+                    )?;
                     relocations.push(Relocation::from(representation));
                 }
             }
@@ -549,6 +575,7 @@ impl<'file> ObjectFile<'file> {
         let array = parse_dynamic_array(
             section.contents,
             self.header.identification.class,
+            self.header.identification.data,
             entry_size,
         )?;
 
@@ -569,19 +596,27 @@ impl<'file> ObjectFile<'file> {
             return None;
         }
 
-        let bucket_count = read::<u32>(section.contents, 0)? as usize;
-        let chain_count = read::<u32>(section.contents, 4)? as usize;
+        let bucket_count = word(section.contents, 0, self.header.identification.data)? as usize;
+        let chain_count = word(section.contents, 4, self.header.identification.data)? as usize;
         let mut offset = 8usize;
 
         let mut buckets = Vec::with_capacity(bucket_count);
         for _ in 0..bucket_count {
-            buckets.push(read::<u32>(section.contents, offset)?);
+            buckets.push(word(
+                section.contents,
+                offset,
+                self.header.identification.data,
+            )?);
             offset = offset.checked_add(core::mem::size_of::<u32>())?;
         }
 
         let mut chains = Vec::with_capacity(chain_count);
         for _ in 0..chain_count {
-            chains.push(read::<u32>(section.contents, offset)?);
+            chains.push(word(
+                section.contents,
+                offset,
+                self.header.identification.data,
+            )?);
             offset = offset.checked_add(core::mem::size_of::<u32>())?;
         }
 
@@ -602,13 +637,21 @@ impl<'file> ObjectFile<'file> {
             return None;
         }
 
-        let flags = SectionGroupFlags::from_raw(read::<u32>(section.contents, 0)?);
+        let flags = SectionGroupFlags::from_raw(word(
+            section.contents,
+            0,
+            self.header.identification.data,
+        )?);
         let count = section.contents.len() / core::mem::size_of::<u32>();
         let mut members = Vec::with_capacity(count.saturating_sub(1));
 
         for index in 1..count {
             let offset = index.checked_mul(core::mem::size_of::<u32>())?;
-            members.push(read::<u32>(section.contents, offset)? as usize);
+            members.push(word(
+                section.contents,
+                offset,
+                self.header.identification.data,
+            )? as usize);
         }
 
         let symbols = self.symbol_table(header.link as usize)?;
@@ -626,7 +669,11 @@ impl<'file> ObjectFile<'file> {
             return None;
         }
 
-        parse_note_table(section.contents, self.header.identification.class)
+        parse_note_table(
+            section.contents,
+            self.header.identification.class,
+            self.header.identification.data,
+        )
     }
 
     pub fn compressed_section(&self, section_index: usize) -> Option<CompressedSection<'file>> {
@@ -642,16 +689,22 @@ impl<'file> ObjectFile<'file> {
         match self.header.identification.class {
             Class::Class32 => {
                 let size = core::mem::size_of::<compression::class_32::Representation>();
-                let representation =
-                    read::<compression::class_32::Representation>(section.contents, 0)?;
+                let representation = compression::class_32::Representation::decode(
+                    section.contents,
+                    0,
+                    self.header.identification.data,
+                )?;
                 let header = CompressionHeader::from(representation);
                 let data = section.contents.get(size..)?;
                 Some(CompressedSection::new(header, data))
             }
             Class::Class64 => {
                 let size = core::mem::size_of::<compression::class_64::Representation>();
-                let representation =
-                    read::<compression::class_64::Representation>(section.contents, 0)?;
+                let representation = compression::class_64::Representation::decode(
+                    section.contents,
+                    0,
+                    self.header.identification.data,
+                )?;
                 let header = CompressionHeader::from(representation);
                 let data = section.contents.get(size..)?;
                 Some(CompressedSection::new(header, data))
