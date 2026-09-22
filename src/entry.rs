@@ -119,7 +119,7 @@ pub extern "C" fn entry(
         const SYMBOL_PREVIEW: usize = 32;
         for (symbol_index, symbol) in symbol_table.iter().take(SYMBOL_PREVIEW).enumerate() {
             userspace::info!(
-                "    symbol[{}] = {{ name: {:?}, binding: {:?}, type: {:?}, visibility: {:?}, section_index: {}, value: {:#x}, size: {:#x} }}\n",
+                "    symbol[{}] = {{ name: {:?}, binding: {:?}, type: {:?}, visibility: {:?}, section_index_encoding: {:#x}, section_index: {:?}, value: {:#x}, size: {:#x} }}\n",
                 symbol_index,
                 symbol_table.name(symbol_index),
                 symbol.binding,
