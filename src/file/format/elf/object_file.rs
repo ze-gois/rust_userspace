@@ -24,6 +24,7 @@ use super::{
     section_group::{Flags as SectionGroupFlags, SectionGroup},
     section_header::{self, SectionHeader},
     segment::contents::{ImageContribution, Section as SegmentSection},
+    shared_object_dependencies::SharedObjectDependencies,
     string_table::StringTable,
     symbol::{self, Symbol},
     symbol_table::SymbolTable,
@@ -698,6 +699,38 @@ impl<'file> ObjectFile<'file> {
             self.dynamic_symbol_table_from_program_header(program_header_index)?,
             addend,
             purpose,
+        ))
+    }
+
+    pub fn shared_object_dependencies_from_program_header(
+        &self,
+        index: usize,
+    ) -> Option<SharedObjectDependencies<'file>> {
+        let array = self.dynamic_array_from_program_header(index)?;
+        let strings = self.dynamic_string_table_from_program_header(index)?;
+
+        let mut needed = Vec::new();
+        for entry in array.iter() {
+            if matches!(entry.tag, Tag::Needed) {
+                needed.push(strings.get_str(entry.payload as usize)?);
+            }
+        }
+
+        let shared_object_name = array
+            .first(Tag::SharedObjectName)
+            .and_then(|entry| strings.get_str(entry.payload as usize));
+        let runtime_search_path = array
+            .first(Tag::RuntimeSearchPath)
+            .and_then(|entry| strings.get_str(entry.payload as usize));
+        let run_path = array
+            .first(Tag::RunPath)
+            .and_then(|entry| strings.get_str(entry.payload as usize));
+
+        Some(SharedObjectDependencies::new(
+            needed,
+            shared_object_name,
+            runtime_search_path,
+            run_path,
         ))
     }
 
