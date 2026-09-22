@@ -1,81 +1,62 @@
+pub mod arguments;
+pub mod auxiliary;
+pub mod environment;
+pub mod region;
+
+pub use region::{Growth, Region};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Growth {
-    Downward,
-    Upward,
+pub enum Status {
+    Raw,
+    Modified,
 }
 
-/// A stack memory region.
+/// Linux initial process stack reconstructed from the stack pointer supplied
+/// by `_start`.
 ///
-/// The region is the half-open interval `[lower, upper)`. The stack pointer may
-/// equal either bound when the stack is empty, depending on the growth
-/// direction.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The pointed-to strings and auxiliary data remain owned by the original
+/// process stack. This structure owns only the vectors of descriptors used to
+/// navigate that layout.
+#[derive(Debug)]
 pub struct Stack {
-    lower: usize,
-    upper: usize,
-    pointer: usize,
-    growth: Growth,
+    pub former: crate::target::architecture::StackPointer,
+    pub latter: *const u8,
+    pub arguments: arguments::List,
+    pub environment: environment::List,
+    pub auxiliary: auxiliary::List,
+    pub status: Status,
 }
 
 impl Stack {
-    pub fn new(lower: usize, upper: usize, pointer: usize, growth: Growth) -> Option<Self> {
-        if lower > upper || pointer < lower || pointer > upper {
-            return None;
-        }
+    /// Reconstruct the Linux initial process stack from the untouched pointer
+    /// received from `start.s`.
+    ///
+    /// # Safety
+    ///
+    /// `stack_pointer` must point to a valid Linux initial process stack:
+    /// argc, argv pointers terminated by null, envp pointers terminated by
+    /// null, followed by an auxiliary vector terminated by AT_NULL.
+    pub unsafe fn from_pointer(
+        stack_pointer: crate::target::architecture::StackPointer,
+    ) -> Self {
+        let (arguments, environment_pointer) =
+            unsafe { arguments::from_pointer(stack_pointer) };
+        let (environment, auxiliary_pointer) =
+            unsafe { environment::from_pointer(environment_pointer) };
+        let (auxiliary, latter_pointer) =
+            unsafe { auxiliary::from_pointer(auxiliary_pointer) };
 
-        Some(Self {
-            lower,
-            upper,
-            pointer,
-            growth,
-        })
-    }
-
-    pub fn empty(lower: usize, upper: usize, growth: Growth) -> Option<Self> {
-        let pointer = match growth {
-            Growth::Downward => upper,
-            Growth::Upward => lower,
-        };
-
-        Self::new(lower, upper, pointer, growth)
-    }
-
-    pub const fn lower(&self) -> usize {
-        self.lower
-    }
-
-    pub const fn upper(&self) -> usize {
-        self.upper
-    }
-
-    pub const fn pointer(&self) -> usize {
-        self.pointer
-    }
-
-    pub const fn growth(&self) -> Growth {
-        self.growth
-    }
-
-    pub const fn capacity(&self) -> usize {
-        self.upper - self.lower
-    }
-
-    pub const fn used(&self) -> usize {
-        match self.growth {
-            Growth::Downward => self.upper - self.pointer,
-            Growth::Upward => self.pointer - self.lower,
+        Self {
+            former: stack_pointer,
+            latter: latter_pointer.cast::<u8>(),
+            arguments,
+            environment,
+            auxiliary,
+            status: Status::Raw,
         }
     }
 
-    pub const fn remaining(&self) -> usize {
-        self.capacity() - self.used()
-    }
-
-    pub const fn is_empty(&self) -> bool {
-        self.used() == 0
-    }
-
-    pub const fn contains(&self, address: usize) -> bool {
-        address >= self.lower && address < self.upper
+    pub fn argc(&self) -> usize {
+        self.arguments.len()
     }
 }
