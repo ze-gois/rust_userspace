@@ -288,9 +288,11 @@ fn main() {
 
         if let Some(group) = object.section_group(index) {
             println!(
-                "    section group: flags={:?} signature={:?} members={:?}",
+                "    section group: flags={:?} signature_index={} signature={:?} signature_symbol={:?} members={:?}",
                 group.flags,
+                group.signature_symbol_index,
                 group.signature_name(),
+                group.signature_symbol(),
                 group.members,
             );
             if let Some(members) = object.section_group_members(index) {
