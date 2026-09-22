@@ -126,6 +126,7 @@ pub extern "C" fn entry(
                 symbol.r#type,
                 symbol.visibility,
                 symbol.section_index.raw(),
+                symbol_table.section_index(symbol_index),
                 symbol.value,
                 symbol.size,
             );
