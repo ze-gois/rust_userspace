@@ -6,12 +6,16 @@
 
 use ample::r#type::Vec;
 
-use super::{string_table::StringTable, symbol::Symbol};
+use super::{
+    string_table::StringTable,
+    symbol::{ResolvedSectionIndex, Symbol},
+};
 
 #[derive(Debug)]
 pub struct SymbolTable<'file> {
     pub symbols: Vec<Symbol>,
     pub strings: StringTable<'file>,
+    pub section_indices: Vec<ResolvedSectionIndex>,
     pub first_non_local_index: usize,
 }
 
@@ -19,13 +23,19 @@ impl<'file> SymbolTable<'file> {
     pub const fn new(
         symbols: Vec<Symbol>,
         strings: StringTable<'file>,
+        section_indices: Vec<ResolvedSectionIndex>,
         first_non_local_index: usize,
     ) -> Self {
         Self {
             symbols,
             strings,
+            section_indices,
             first_non_local_index,
         }
+    }
+
+    pub fn section_index(&self, index: usize) -> Option<ResolvedSectionIndex> {
+        self.section_indices.get(index).copied()
     }
 
     pub fn name(&self, index: usize) -> Option<&'file str> {
