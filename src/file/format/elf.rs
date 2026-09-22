@@ -4,6 +4,7 @@
 //! Generic ABI. Operating-system loading and process construction belong to
 //! consumers of this representation, not to the format itself.
 
+pub mod base_address;
 pub mod compression;
 pub mod header;
 pub mod identification;
