@@ -338,6 +338,14 @@ impl<'file> ObjectFile<'file> {
         Ok(())
     }
 
+    pub fn lowest_load_virtual_address(&self) -> Option<u64> {
+        self.program_headers
+            .iter()
+            .filter(|header| matches!(header.r#type, program_header::Type::Load))
+            .map(|header| header.virtual_address)
+            .min()
+    }
+
     pub fn file_offset_for_virtual_address(&self, address: u64) -> Option<u64> {
         for header in &self.program_headers {
             if !matches!(header.r#type, program_header::Type::Load) {
