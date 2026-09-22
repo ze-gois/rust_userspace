@@ -29,6 +29,13 @@ impl<'file> ObjectFile<'file> {
         let identification = Identification::from_bytes(identification_bytes)
             .ok_or(ParseError::InvalidIdentification)?;
 
+        if !matches!(
+            identification.data,
+            Data::LeastSignificantByteFirst | Data::MostSignificantByteFirst
+        ) {
+            return Err(ParseError::UnsupportedDataEncoding);
+        }
+
         match identification.class {
             Class::Class32 => Self::parse_class_32(bytes),
             Class::Class64 => Self::parse_class_64(bytes),
