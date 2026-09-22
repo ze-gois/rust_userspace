@@ -1,44 +1,26 @@
 //! System V hash table resolved through the dynamic array.
 
-use ample::r#type::Vec;
-
-use super::dynamic_symbol_table::DynamicSymbolTable;
+use super::{
+    dynamic_symbol_table::DynamicSymbolTable,
+    hash::HashTable,
+};
 
 #[derive(Debug)]
 pub struct DynamicHashTable<'file> {
-    pub buckets: Vec<u32>,
-    pub chains: Vec<u32>,
+    pub table: HashTable,
     pub symbols: DynamicSymbolTable<'file>,
 }
 
 impl<'file> DynamicHashTable<'file> {
-    pub const fn new(
-        buckets: Vec<u32>,
-        chains: Vec<u32>,
-        symbols: DynamicSymbolTable<'file>,
-    ) -> Self {
-        Self {
-            buckets,
-            chains,
-            symbols,
-        }
+    pub const fn new(table: HashTable, symbols: DynamicSymbolTable<'file>) -> Self {
+        Self { table, symbols }
     }
 
     pub fn find(&self, name: &[u8]) -> Option<usize> {
-        if self.buckets.is_empty() {
-            return None;
-        }
-
-        let mut index =
-            *self.buckets.get(super::hash::hash(name) as usize % self.buckets.len())? as usize;
-
-        while index != 0 {
-            if self.symbols.name(index)?.as_bytes() == name {
-                return Some(index);
-            }
-            index = *self.chains.get(index)? as usize;
-        }
-
-        None
+        self.table.find_index(name, |index, expected| {
+            self.symbols
+                .name(index)
+                .is_some_and(|actual| actual.as_bytes() == expected)
+        })
     }
 }
