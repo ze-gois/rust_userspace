@@ -47,9 +47,25 @@ fn main() {
 
         if matches!(header.r#type, program_header::Type::Dynamic) {
             if let Some(array) = object.dynamic_array_from_program_header(index) {
+                let strings = object.dynamic_string_table_from_program_header(index);
                 println!("    dynamic array:");
                 for (entry_index, entry) in array.iter().enumerate() {
-                    println!("      [{entry_index}] {entry:?}");
+                    let string = strings
+                        .as_ref()
+                        .and_then(|table| match entry.tag {
+                            userspace::file::format::elf::dynamic::Tag::Needed
+                            | userspace::file::format::elf::dynamic::Tag::SharedObjectName
+                            | userspace::file::format::elf::dynamic::Tag::RuntimeSearchPath
+                            | userspace::file::format::elf::dynamic::Tag::RunPath => {
+                                table.get_str(entry.payload as usize)
+                            }
+                            _ => None,
+                        });
+                    if let Some(string) = string {
+                        println!("      [{entry_index}] {entry:?} -> {string:?}");
+                    } else {
+                        println!("      [{entry_index}] {entry:?}");
+                    }
                 }
             }
 
@@ -58,7 +74,7 @@ fn main() {
             }
 
             if let Some(strings) = object.dynamic_string_table_from_program_header(index) {
-                println!("    dynamic string table: {strings:?}");
+                println!("    dynamic string table: {} bytes", strings.bytes().len());
             }
 
             if let Some(symbols) = object.dynamic_symbol_table_from_program_header(index) {
