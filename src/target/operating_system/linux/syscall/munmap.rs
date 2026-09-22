@@ -23,7 +23,9 @@ pub mod ok {
 
 pub mod error {
     ample::result!(Error; "MUnMap error"; usize; [
-        [1; ERROR; Default; usize; "Error"; "Something wicked this way comes"],
+        [22; EINVAL; InvalidArgument; usize; "EINVAL"; "Address is not page-aligned or length is zero"],
+        [12; ENOMEM; OutOfMemory; usize; "ENOMEM"; "Unmapping would require additional mapping structures that cannot be allocated"],
+        [usize::MAX; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
