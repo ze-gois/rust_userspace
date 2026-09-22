@@ -7,6 +7,13 @@ use super::super::{
     representation::{class_32 as representation_32, class_64 as representation_64, Decoder},
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SectionValidationError {
+    ObjectTypeNotExecutableOrSharedObject,
+    EntrySizeMismatch,
+    SizeNotEntryMultiple,
+}
+
 #[derive(Debug)]
 pub struct Table {
     pub entries: Vec<Entry>,
