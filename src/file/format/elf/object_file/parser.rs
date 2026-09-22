@@ -396,20 +396,6 @@ fn align(value: usize, alignment: usize) -> Option<usize> {
     value.checked_add(mask).map(|value| value & !mask)
 }
 
-fn word_by_size(
-    bytes: &[u8],
-    offset: usize,
-    word_size: usize,
-    data: Data,
-) -> Option<u64> {
-    let mut decoder = Decoder::new(bytes, offset, data)?;
-    match word_size {
-        4 => decoder.word().map(u64::from),
-        8 => decoder.xword(),
-        _ => None,
-    }
-}
-
 pub(super) fn word(bytes: &[u8], offset: usize, data: Data) -> Option<u32> {
     Decoder::new(bytes, offset, data)?.word()
 }
