@@ -265,7 +265,55 @@ impl<'file> ObjectFile<'file> {
             Class::None | Class::Reserved(_) => return None,
         }
 
-        Some(SymbolTable::new(symbols, strings, header.information as usize))
+        let extended_section_indices = self
+            .section_headers
+            .iter()
+            .enumerate()
+            .find(|(_, candidate)| {
+                matches!(
+                    candidate.r#type,
+                    section_header::Type::SymbolTableSectionIndex
+                ) && candidate.link as usize == section_index
+            })
+            .map(|(index, _)| self.section(index))
+            .transpose()?;
+
+        let mut section_indices = Vec::with_capacity(count);
+
+        if let Some(extended_section_indices) = extended_section_indices {
+            let word_size = core::mem::size_of::<u32>();
+            if extended_section_indices.contents.len() != count.checked_mul(word_size)? {
+                return None;
+            }
+
+            for (index, symbol) in symbols.iter().enumerate() {
+                let offset = index.checked_mul(word_size)?;
+                let extended = read::<u32>(extended_section_indices.contents, offset)?;
+
+                if symbol.section_index != section_header::Index::EXTENDED && extended != 0 {
+                    return None;
+                }
+
+                section_indices.push(symbol::ResolvedSectionIndex::resolve(
+                    symbol.section_index,
+                    Some(extended),
+                )?);
+            }
+        } else {
+            for symbol in &symbols {
+                section_indices.push(symbol::ResolvedSectionIndex::resolve(
+                    symbol.section_index,
+                    None,
+                )?);
+            }
+        }
+
+        Some(SymbolTable::new(
+            symbols,
+            strings,
+            section_indices,
+            header.information as usize,
+        ))
     }
 
     pub fn relocation_table(&self, section_index: usize) -> Option<RelocationTable<'file>> {
