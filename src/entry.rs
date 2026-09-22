@@ -55,6 +55,11 @@ pub extern "C" fn entry(
         object_file.section_name_string_table_index,
     );
 
+    userspace::info!(
+        "entry_file_offset={:?}\n",
+        object_file.file_offset_for_virtual_address(header.entry),
+    );
+
     userspace::info!("program_headers[{}]\n", object_file.program_headers.len());
     for (index, program_header) in object_file.program_headers.iter().enumerate() {
         userspace::info!(
@@ -118,6 +123,59 @@ pub extern "C" fn entry(
             template.zero_fill_size(),
             template.alignment(),
         );
+    }
+
+    for (index, program_header) in object_file.program_headers.iter().enumerate() {
+        match program_header.r#type {
+            userspace::file::format::elf::program_header::Type::Dynamic => {
+                if let Some(array) = object_file.dynamic_array_from_program_header(index) {
+                    userspace::info!(
+                        "dynamic_array ph[{}]: entries[{}]\n",
+                        index,
+                        array.len(),
+                    );
+
+                    if let Some(strings) =
+                        object_file.dynamic_string_table_from_program_header(index)
+                    {
+                        for entry in array.iter() {
+                            if matches!(
+                                entry.tag,
+                                userspace::file::format::elf::dynamic::Tag::Needed
+                                    | userspace::file::format::elf::dynamic::Tag::SharedObjectName
+                                    | userspace::file::format::elf::dynamic::Tag::RuntimeSearchPath
+                                    | userspace::file::format::elf::dynamic::Tag::RunPath
+                            ) {
+                                userspace::info!(
+                                    "  {:?} = {:?}\n",
+                                    entry.tag,
+                                    strings.get_str(entry.payload as usize),
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+            userspace::file::format::elf::program_header::Type::Note => {
+                if let Some(notes) = object_file.note_table_from_program_header(index) {
+                    userspace::info!(
+                        "notes ph[{}]: entries[{}]\n",
+                        index,
+                        notes.len(),
+                    );
+                    for (note_index, note) in notes.iter().enumerate() {
+                        userspace::info!(
+                            "  note[{}] = {{ name: {:?}, type: {}, descriptor_size: {} }}\n",
+                            note_index,
+                            core::str::from_utf8(note.name).ok(),
+                            note.r#type,
+                            note.descriptor.len(),
+                        );
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 
     userspace::info!("section_headers[{}]\n", object_file.section_headers.len());
