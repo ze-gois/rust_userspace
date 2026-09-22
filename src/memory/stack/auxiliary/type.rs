@@ -47,41 +47,45 @@ macro_rules! auxiliary_types {
             ]
         );
 
-        ample::enum_labeled_typed!(
-            #[derive(Debug)]
-            pub enum TypeUnit,
-            usize,
-            "AT_TYPE",
-            [
-                $(
-                    [
-                        $discriminant;
-                        $variant;
-                        ();
-                        $constant;
-                        $acronym;
-                        $description
-                    ]
-                ),*,
+        pub mod unit {
+            ample::enum_labeled_typed!(
+                #[derive(Debug)]
+                pub enum TypeUnit,
+                usize,
+                "AT_TYPE",
                 [
-                    0xffff_ffff_ffff_ffff;
-                    Unknown;
-                    ();
-                    AT_UNKNOWN;
-                    "Unknown";
-                    "Unknown auxiliary-vector entry"
+                    $(
+                        [
+                            $discriminant;
+                            $variant;
+                            ();
+                            $constant;
+                            $acronym;
+                            $description
+                        ]
+                    ),*,
+                    [
+                        0xffff_ffff_ffff_ffff;
+                        Unknown;
+                        ();
+                        AT_UNKNOWN;
+                        "Unknown";
+                        "Unknown auxiliary-vector entry"
+                    ]
                 ]
-            ]
-        );
+            );
 
-        impl TypeUnit {
-            pub fn from_discriminant(discriminant: usize) -> Self {
-                match discriminant {
-                    $($discriminant => Self::$variant(()),)*
-                    _ => Self::Unknown(()),
+            impl TypeUnit {
+                pub fn from_discriminant(discriminant: usize) -> Self {
+                    match discriminant {
+                        $($discriminant => Self::$variant(()),)*
+                        _ => Self::Unknown(()),
+                    }
                 }
             }
         }
+
+        pub use unit::TypeUnit;
 
         impl TypeTrait for Type {
             fn from_pair(key: *const Word, value: *const Word) -> Self {
