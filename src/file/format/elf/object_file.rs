@@ -8,10 +8,13 @@ use super::{
     dynamic_table::DynamicTable,
     hash::HashTable,
     header::{self, Header},
+    loadable_segment::LoadableSegment,
     note::Note,
     note_table::NoteTable,
     identification::{Class, Data, Identification},
     program_header::{self, ProgramHeader},
+    program_header_table_image::ProgramHeaderTableImage,
+    program_interpreter::ProgramInterpreter,
     relocation::{self, Relocation},
     relocation_table::RelocationTable,
     section_group::{Flags as SectionGroupFlags, SectionGroup},
@@ -19,6 +22,7 @@ use super::{
     string_table::StringTable,
     symbol::{self, Symbol},
     symbol_table::SymbolTable,
+    thread_local_storage,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -196,6 +200,140 @@ impl<'file> ObjectFile<'file> {
         )?;
 
         Some(super::segment::Segment::new(program_header, file_image))
+    }
+
+    pub fn loadable_segment(&self, index: usize) -> Option<LoadableSegment<'file>> {
+        let program_header = *self.program_headers.get(index)?;
+        if !matches!(program_header.r#type, program_header::Type::Load) {
+            return None;
+        }
+
+        if program_header.file_size > program_header.memory_size {
+            return None;
+        }
+
+        let file_image = range(self.bytes, program_header.offset, program_header.file_size)?;
+        Some(LoadableSegment::new(program_header, file_image))
+    }
+
+    pub fn program_interpreter(&self) -> Option<ProgramInterpreter<'file>> {
+        let (index, program_header) = self
+            .program_headers
+            .iter()
+            .enumerate()
+            .find(|(_, header)| matches!(header.r#type, program_header::Type::Interpreter))?;
+        let segment = self.segment(index)?;
+        let pathname = core::ffi::CStr::from_bytes_with_nul(segment.file_image).ok()?;
+        Some(ProgramInterpreter::new(*program_header, pathname))
+    }
+
+    pub fn program_header_table_image(&self) -> Option<ProgramHeaderTableImage<'file>> {
+        let (index, program_header) = self
+            .program_headers
+            .iter()
+            .enumerate()
+            .find(|(_, header)| matches!(header.r#type, program_header::Type::ProgramHeader))?;
+        let segment = self.segment(index)?;
+        Some(ProgramHeaderTableImage::new(
+            *program_header,
+            segment.file_image,
+        ))
+    }
+
+    pub fn thread_local_storage_template(
+        &self,
+    ) -> Option<thread_local_storage::Template<'file>> {
+        let (index, program_header) = self
+            .program_headers
+            .iter()
+            .enumerate()
+            .find(|(_, header)| matches!(header.r#type, program_header::Type::ThreadLocalStorage))?;
+
+        if program_header.file_size > program_header.memory_size {
+            return None;
+        }
+
+        let segment = self.segment(index)?;
+        Some(thread_local_storage::Template::new(
+            *program_header,
+            segment.file_image,
+        ))
+    }
+
+    pub fn validate_program_headers(
+        &self,
+    ) -> Result<(), program_header::ValidationError> {
+        use program_header::{Type, ValidationError};
+
+        let mut first_load_seen = false;
+        let mut interpreter_seen = false;
+        let mut program_header_table_image_seen = false;
+        let mut previous_load: Option<(usize, u64)> = None;
+
+        for (index, header) in self.program_headers.iter().enumerate() {
+            match header.r#type {
+                Type::Load => {
+                    first_load_seen = true;
+
+                    if header.file_size > header.memory_size {
+                        return Err(ValidationError::LoadFileImageLargerThanMemoryImage {
+                            index,
+                        });
+                    }
+
+                    if header.alignment > 1 {
+                        if !header.alignment.is_power_of_two() {
+                            return Err(ValidationError::LoadAlignmentNotPowerOfTwo { index });
+                        }
+
+                        if header.virtual_address % header.alignment
+                            != header.offset % header.alignment
+                        {
+                            return Err(ValidationError::LoadAddressOffsetIncongruent {
+                                index,
+                            });
+                        }
+                    }
+
+                    if let Some((previous_index, previous_virtual_address)) = previous_load {
+                        if header.virtual_address < previous_virtual_address {
+                            return Err(
+                                ValidationError::LoadSegmentsNotOrderedByVirtualAddress {
+                                    previous: previous_index,
+                                    current: index,
+                                },
+                            );
+                        }
+                    }
+
+                    previous_load = Some((index, header.virtual_address));
+                }
+                Type::Interpreter => {
+                    if interpreter_seen {
+                        return Err(ValidationError::MultipleInterpreters);
+                    }
+                    if first_load_seen {
+                        return Err(ValidationError::InterpreterAfterLoad { index });
+                    }
+                    interpreter_seen = true;
+                }
+                Type::ProgramHeader => {
+                    if program_header_table_image_seen {
+                        return Err(ValidationError::MultipleProgramHeaderTableImages);
+                    }
+                    if first_load_seen {
+                        return Err(ValidationError::ProgramHeaderTableImageAfterLoad { index });
+                    }
+                    program_header_table_image_seen = true;
+                }
+                Type::SharedLibrary => {
+                    return Err(ValidationError::SharedLibrarySegment { index });
+                }
+                _ => {}
+            }
+        }
+
+        Ok(())
     }
 
     pub fn section_name_string_table(&self) -> Option<StringTable<'file>> {
