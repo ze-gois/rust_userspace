@@ -21,6 +21,7 @@ pub mod base_address;
 // Linking view and section contents.
 pub mod section_header;
 pub mod section;
+pub mod section_link;
 pub mod string_table;
 pub mod symbol;
 pub mod symbol_table;
