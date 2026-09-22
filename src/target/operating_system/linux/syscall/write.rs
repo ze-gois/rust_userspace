@@ -40,12 +40,12 @@ pub mod error {
         [28; ENOSPC; NoSpaceLeft; usize; "ENOSPC"; "Device has no space for the data"],
         [1; EPERM; OperationNotPermitted; usize; "EPERM"; "Operation was prevented, for example by a file seal"],
         [32; EPIPE; BrokenPipe; usize; "EPIPE"; "Pipe or socket reading end is closed"],
-        [usize::MAX; UNKNOWN; Unknown; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [usize::MAX; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
         pub fn from_no(no: usize) -> Self {
-            Error::Unknown(no)
+            Error::Default(no)
         }
     }
 }
