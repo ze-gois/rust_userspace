@@ -1,8 +1,8 @@
-#[cfg(all(not(feature = "with_std"), not(feature = "host_tests")))]
+#[cfg(not(feature = "with_std"))]
 use core::panic::PanicInfo;
 
 #[panic_handler]
-#[cfg(all(not(feature = "with_std"), not(feature = "host_tests")))]
+#[cfg(not(feature = "with_std"))]
 pub fn panic(_info: &PanicInfo) -> ! {
     #[cfg(target_os = "linux")]
     {
