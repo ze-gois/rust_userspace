@@ -42,7 +42,7 @@ pub extern "C" fn entry(
         header.version,
     );
     userspace::info!(
-        "entry={:#x} phoff={:#x} phentsize={} phnum={} shoff={:#x} shentsize={} shnum={} shstrndx={}\n",
+        "entry={:#x} phoff={:#x} phentsize={} phnum={} shoff={:#x} shentsize={} shnum_encoding={:?} shnum={} shstrndx_encoding={:?} shstrndx={:?}\n",
         header.entry,
         header.program_header_offset,
         header.program_header_entry_size,
@@ -50,7 +50,9 @@ pub extern "C" fn entry(
         header.section_header_offset,
         header.section_header_entry_size,
         header.section_header_count,
-        header.section_name_string_table_index.raw(),
+        object_file.section_header_count,
+        header.section_name_string_table_index,
+        object_file.section_name_string_table_index,
     );
 
     userspace::info!("program_headers[{}]\n", object_file.program_headers.len());
