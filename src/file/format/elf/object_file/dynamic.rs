@@ -29,7 +29,7 @@ use super::super::{
     hash::HashTable,
     identification::Class,
     program_header,
-    relocation::{self, Relocation},
+    relocation::{self, relative, Relocation},
     section_header,
     shared_object_dependencies::SharedObjectDependencies,
     string_table::StringTable,
@@ -228,6 +228,89 @@ impl<'file> ObjectFile<'file> {
             HashTable::new(buckets, chains),
             self.dynamic_symbol_table_from_program_header(index)?,
         ))
+    }
+
+    pub fn relative_relocation_table_from_program_header(
+        &self,
+        index: usize,
+    ) -> Option<relative::Table> {
+        self.validate_dynamic_relative_relocation(index).ok()?;
+
+        let array = self.dynamic_array_from_program_header(index)?;
+        let address = array.first(Tag::RelativeRelocation)?.payload;
+        let size = usize::try_from(array.first(Tag::RelativeRelocationSize)?.payload).ok()?;
+        let entry_size = usize::try_from(
+            array.first(Tag::RelativeRelocationEntrySize)?.payload,
+        ).ok()?;
+        let bytes = self.file_range_for_virtual_address(address, u64::try_from(size).ok()?)?;
+        let count = size / entry_size;
+        let mut entries = Vec::with_capacity(count);
+
+        match self.header.identification.class {
+            Class::Class32 => {
+                for entry_index in 0..count {
+                    let offset = entry_index.checked_mul(entry_size)?;
+                    let representation = relative::class_32::Representation::decode(
+                        bytes,
+                        offset,
+                        self.header.identification.data,
+                    )?;
+                    entries.push(relative::Entry::from(representation));
+                }
+            }
+            Class::Class64 => {
+                for entry_index in 0..count {
+                    let offset = entry_index.checked_mul(entry_size)?;
+                    let representation = relative::class_64::Representation::decode(
+                        bytes,
+                        offset,
+                        self.header.identification.data,
+                    )?;
+                    entries.push(relative::Entry::from(representation));
+                }
+            }
+            Class::None | Class::Reserved(_) => return None,
+        }
+
+        Some(relative::Table::new(entries))
+    }
+
+    pub fn validate_dynamic_relative_relocation(
+        &self,
+        index: usize,
+    ) -> Result<(), dynamic::validation::ValidationError> {
+        use dynamic::validation::ValidationError;
+
+        let Some(array) = self.dynamic_array_from_program_header(index) else {
+            return Ok(());
+        };
+        let Some(_) = array.first(Tag::RelativeRelocation) else {
+            return Ok(());
+        };
+
+        let size = array
+            .first(Tag::RelativeRelocationSize)
+            .ok_or(ValidationError::RelativeRelocationMissingSize)?
+            .payload;
+        let entry_size = array
+            .first(Tag::RelativeRelocationEntrySize)
+            .ok_or(ValidationError::RelativeRelocationMissingEntrySize)?
+            .payload;
+
+        let expected_entry_size = match self.header.identification.class {
+            Class::Class32 => 4u64,
+            Class::Class64 => 8u64,
+            Class::None | Class::Reserved(_) => return Ok(()),
+        };
+
+        if entry_size != expected_entry_size {
+            return Err(ValidationError::RelativeRelocationEntrySizeMismatch);
+        }
+        if size % entry_size != 0 {
+            return Err(ValidationError::RelativeRelocationSizeNotEntryMultiple);
+        }
+
+        Ok(())
     }
 
     pub fn dynamic_relocation_tables_from_program_header(
