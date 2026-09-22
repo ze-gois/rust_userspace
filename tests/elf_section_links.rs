@@ -13,6 +13,7 @@ fn section_header(
     offset: u64,
     size: u64,
     link: u32,
+    information: u32,
     entry_size: u64,
 ) {
     word(bytes, 0);
@@ -22,7 +23,7 @@ fn section_header(
     xword(bytes, offset);
     xword(bytes, size);
     word(bytes, link);
-    word(bytes, 0);
+    word(bytes, information);
     xword(bytes, 1);
     xword(bytes, entry_size);
 }
@@ -50,7 +51,7 @@ fn fixture() -> Vec<u8> {
     half(&mut bytes, 56);
     half(&mut bytes, 0);
     half(&mut bytes, 64);
-    half(&mut bytes, 4);
+    half(&mut bytes, 5);
     half(&mut bytes, 0);
 
     bytes.push(0);
@@ -58,11 +59,13 @@ fn fixture() -> Vec<u8> {
     // [0] SHT_NULL
     bytes.extend_from_slice(&[0u8; 64]);
     // [1] SHT_STRTAB
-    section_header(&mut bytes, 3, STRING_OFFSET, STRING_SIZE, 0, 0);
+    section_header(&mut bytes, 3, STRING_OFFSET, STRING_SIZE, 0, 0, 0);
     // [2] SHT_SYMTAB -> string table [1]
-    section_header(&mut bytes, 2, 0, 0, 1, 24);
+    section_header(&mut bytes, 2, 0, 0, 1, 0, 24);
     // [3] SHT_RELA -> symbol table [2]
-    section_header(&mut bytes, 4, 0, 0, 2, 24);
+    section_header(&mut bytes, 4, 0, 0, 2, 4, 24);
+    // [4] SHT_PROGBITS relocation target
+    section_header(&mut bytes, 1, 0, 0, 0, 0, 0);
 
     bytes
 }
@@ -95,4 +98,29 @@ fn leaves_unassigned_section_link_uninterpreted() {
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
 
     assert!(object.section_link(1).is_none());
+}
+
+#[test]
+fn resolves_relocation_target_section_information() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    let target = object
+        .relocation_target_section(3)
+        .expect("relocation target must resolve");
+    assert_eq!(target.section_index, 4);
+}
+
+#[test]
+fn leaves_undefined_relocation_target_without_relation() {
+    let mut bytes = fixture();
+
+    // Section [3] starts after the ELF header, one byte of string data,
+    // and three preceding section headers. sh_info is 44 bytes into Elf64_Shdr.
+    let relocation_information_offset = 64 + 1 + (3 * 64) + 44;
+    bytes[relocation_information_offset..relocation_information_offset + 4]
+        .copy_from_slice(&0u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    assert!(object.relocation_target_section(3).is_none());
 }
