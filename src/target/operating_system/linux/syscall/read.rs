@@ -34,12 +34,12 @@ pub mod error {
         [22; EINVAL; InvalidArgument; usize; "EINVAL"; "Object or direct-I/O alignment makes the read invalid"],
         [5; EIO; InputOutput; usize; "EIO"; "Low-level input/output error occurred"],
         [21; EISDIR; IsDirectory; usize; "EISDIR"; "File descriptor refers to a directory"],
-        [usize::MAX; UNKNOWN; Unknown; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [usize::MAX; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
         pub fn from_no(no: usize) -> Self {
-            Error::Unknown(no)
+            Error::Default(no)
         }
     }
 }
