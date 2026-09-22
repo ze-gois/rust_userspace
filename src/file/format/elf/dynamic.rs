@@ -4,6 +4,7 @@ pub mod class_32;
 pub mod class_64;
 pub mod section;
 pub mod tag;
+pub mod validation;
 
 pub use tag::{PayloadKind, Tag};
 
