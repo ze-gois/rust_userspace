@@ -110,3 +110,17 @@ fn rejects_invalid_section_group_member_index() {
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
     assert!(object.section_group_members(3).is_none());
 }
+
+#[test]
+fn resolves_section_group_signature_symbol() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    let group = object.section_group(3).expect("section group must resolve");
+    let signature = group
+        .signature_symbol()
+        .expect("section-group signature symbol must resolve");
+
+    assert_eq!(group.signature_symbol_index, 0);
+    assert_eq!(signature.name_index, 0);
+}
