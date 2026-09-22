@@ -39,6 +39,7 @@ pub mod ok {
 
 pub mod error {
     ample::result!(Error; "Open error"; usize; [
+        [9; EBADF; BadFileDescriptor; usize; "EBADF"; "OpenAt received an invalid directory file descriptor for a relative path"],
         [13; EACCES; PermissionDenied; usize; "EACCES"; "Requested access or pathname search permission is denied"],
         [16; EBUSY; Busy; usize; "EBUSY"; "Exclusive open requested for a block device that is in use"],
         [122; EDQUOT; QuotaExceeded; usize; "EDQUOT"; "Disk block or inode quota is exhausted"],
