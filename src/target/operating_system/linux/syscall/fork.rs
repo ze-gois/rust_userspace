@@ -26,9 +26,10 @@ pub mod ok {
 
 pub mod error {
     ample::result!(Error; "Fork error"; usize; [
-        [1; ERROR; Default; usize; "Error"; "Fork failed"],
-        [12; ENOMEM; OutOfMemory; usize; "ENOMEM"; "Insufficient memory"],
-        [11; EAGAIN; ProcessLimit; usize; "EAGAIN"; "Process limit reached"],
+        [11; EAGAIN; TryAgain; usize; "EAGAIN"; "A process, thread, PID, cgroup, or scheduler limit prevents fork"],
+        [12; ENOMEM; OutOfMemory; usize; "ENOMEM"; "Kernel memory is insufficient or the PID namespace cannot create a child"],
+        [38; ENOSYS; NotImplemented; usize; "ENOSYS"; "Fork is not supported on this platform"],
+        [usize::MAX; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
