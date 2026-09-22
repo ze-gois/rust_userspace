@@ -8,6 +8,8 @@ use super::{
     program_header::{self, ProgramHeader},
     section_header::{self, SectionHeader},
     string_table::StringTable,
+    symbol::{self, Symbol},
+    symbol_table::SymbolTable,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -166,6 +168,64 @@ impl<'file> ObjectFile<'file> {
         let header = self.section_headers.get(index)?;
         self.section_name_string_table()?
             .get_str(header.name_index as usize)
+    }
+
+    pub fn symbol_table(&self, section_index: usize) -> Option<SymbolTable<'file>> {
+        let header = *self.section_headers.get(section_index)?;
+
+        if !matches!(
+            header.r#type,
+            section_header::Type::SymbolTable | section_header::Type::DynamicSymbolTable
+        ) {
+            return None;
+        }
+
+        let section = self.section(section_index)?;
+        let strings_section = self.section(header.link as usize)?;
+
+        if !matches!(strings_section.header.r#type, section_header::Type::StringTable) {
+            return None;
+        }
+
+        let strings = StringTable::new(strings_section.contents);
+        let entry_size = usize::try_from(header.entry_size).ok()?;
+
+        if entry_size == 0 || section.contents.len() % entry_size != 0 {
+            return None;
+        }
+
+        let count = section.contents.len() / entry_size;
+        let mut symbols = Vec::with_capacity(count);
+
+        match self.header.identification.class {
+            Class::Class32 => {
+                if entry_size < core::mem::size_of::<symbol::class_32::Representation>() {
+                    return None;
+                }
+
+                for index in 0..count {
+                    let offset = index.checked_mul(entry_size)?;
+                    let representation =
+                        read::<symbol::class_32::Representation>(section.contents, offset)?;
+                    symbols.push(Symbol::from(representation));
+                }
+            }
+            Class::Class64 => {
+                if entry_size < core::mem::size_of::<symbol::class_64::Representation>() {
+                    return None;
+                }
+
+                for index in 0..count {
+                    let offset = index.checked_mul(entry_size)?;
+                    let representation =
+                        read::<symbol::class_64::Representation>(section.contents, offset)?;
+                    symbols.push(Symbol::from(representation));
+                }
+            }
+            Class::None | Class::Reserved(_) => return None,
+        }
+
+        Some(SymbolTable::new(symbols, strings))
     }
 }
 
