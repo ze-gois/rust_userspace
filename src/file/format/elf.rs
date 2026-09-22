@@ -11,6 +11,7 @@ pub mod program_header;
 pub mod representation;
 pub mod section_header;
 pub mod dynamic;
+pub mod dynamic_array;
 pub mod hash;
 pub mod note;
 pub mod relocation;
