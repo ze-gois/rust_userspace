@@ -7,9 +7,11 @@ pub mod class_32;
 pub mod class_64;
 pub mod flags;
 pub mod r#type;
+pub mod validation;
 
 pub use flags::Flags;
 pub use r#type::Type;
+pub use validation::Error as ValidationError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ProgramHeader {
