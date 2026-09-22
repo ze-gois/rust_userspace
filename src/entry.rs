@@ -223,7 +223,7 @@ pub extern "C" fn entry(
                         userspace::info!(
                             "  note[{}] = {{ name: {:?}, type: {}, descriptor_size: {} }}\n",
                             note_index,
-                            core::str::from_utf8(note.name).ok(),
+                            core::str::from_utf8(note.originator).ok(),
                             note.r#type,
                             note.descriptor.len(),
                         );
