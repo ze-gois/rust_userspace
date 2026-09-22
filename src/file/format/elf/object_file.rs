@@ -16,6 +16,7 @@ use super::{
     relocation::{self, relative, Relocation},
     relocation_table::RelocationTable,
     section_group::{Flags as SectionGroupFlags, SectionGroup},
+    section::LinkOrder,
     section_header::{self, SectionHeader},
     segment::contents::{ImageContribution, Section as SegmentSection},
     string_table::StringTable,
@@ -340,6 +341,27 @@ impl<'file> ObjectFile<'file> {
         }
 
         None
+    }
+
+    pub fn link_order(&self, section_index: usize) -> Option<LinkOrder<'file>> {
+        let metadata = self.section(section_index)?;
+        if !metadata
+            .header
+            .flags
+            .contains(section_header::Flags::LINK_ORDER)
+        {
+            return None;
+        }
+
+        let referenced_index = usize::try_from(metadata.header.link).ok()?;
+        let referenced = self.section(referenced_index)?;
+
+        Some(LinkOrder::new(
+            section_index,
+            metadata,
+            referenced_index,
+            referenced,
+        ))
     }
 
     pub fn section_name_string_table(&self) -> Option<StringTable<'file>> {
