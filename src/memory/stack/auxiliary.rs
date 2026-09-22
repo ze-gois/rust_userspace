@@ -6,10 +6,22 @@ pub mod r#type;
 pub use entry::Entry;
 pub use r#type::{Type, TypeTrait};
 
-pub type List = Vec<Entry>;
+#[derive(Debug, Default)]
+pub struct List {
+    entries: Vec<Entry>,
+}
+
+impl List {
+    pub fn new() -> Self { Self { entries: Vec::new() } }
+    pub fn push(&mut self, entry: Entry) { self.entries.push(entry); }
+    pub fn len(&self) -> usize { self.entries.len() }
+    pub fn is_empty(&self) -> bool { self.entries.is_empty() }
+    pub fn get(&self, index: usize) -> Option<&Entry> { self.entries.get(index) }
+    pub fn iter(&self) -> core::slice::Iter<'_, Entry> { self.entries.iter() }
+}
 
 pub unsafe fn from_pointer(auxiliary_pointer: *const usize) -> (List, *const usize) {
-    let mut values = List::new();
+    let mut auxiliary = List::new();
     let mut index = 0usize;
 
     loop {
@@ -19,10 +31,10 @@ pub unsafe fn from_pointer(auxiliary_pointer: *const usize) -> (List, *const usi
 
         if value.is_null() {
             let latter = unsafe { pointer.add(2) };
-            return (values, latter);
+            return (auxiliary, latter);
         }
 
-        values.push(entry);
+        auxiliary.push(entry);
         index = index.saturating_add(1);
     }
 }
