@@ -181,8 +181,8 @@ pub extern "C" fn entry(
                     {
                         userspace::info!(
                             "  system_v_hash = {{ buckets: {}, chains: {} }}\n",
-                            hash.buckets.len(),
-                            hash.chains.len(),
+                            hash.table.buckets.len(),
+                            hash.table.chains.len(),
                         );
                     }
 
