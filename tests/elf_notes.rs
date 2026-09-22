@@ -8,7 +8,7 @@ fn elf64_note_fixture() -> Vec<u8> {
     const HEADER_SIZE: u64 = 64;
     const PROGRAM_HEADER_SIZE: u64 = 56;
     const NOTE_OFFSET: u64 = HEADER_SIZE + PROGRAM_HEADER_SIZE;
-    const NOTE_SIZE: u64 = 32;
+    const NOTE_SIZE: u64 = 24;
 
     let mut bytes = Vec::new();
 
