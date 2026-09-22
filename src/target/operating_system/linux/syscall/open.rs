@@ -64,12 +64,12 @@ pub mod error {
         [30; EROFS; ReadOnlyFileSystem; usize; "EROFS"; "Write access was requested on a read-only filesystem"],
         [26; ETXTBSY; TextFileBusy; usize; "ETXTBSY"; "Executable, swap, or kernel-used file is busy"],
         [11; EWOULDBLOCK; WouldBlock; usize; "EWOULDBLOCK"; "Nonblocking open conflicts with an incompatible lease"],
-        [usize::MAX; UNKNOWN; Unknown; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [usize::MAX; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
         pub fn from_no(no: usize) -> Self {
-            Error::Unknown(no)
+            Error::Default(no)
         }
     }
 }
