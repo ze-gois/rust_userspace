@@ -29,6 +29,7 @@ pub mod relocation_table;
 pub mod dynamic;
 pub mod dynamic_array;
 pub mod hash;
+pub mod initialization_termination;
 pub mod note;
 pub mod note_table;
 pub mod compression;
