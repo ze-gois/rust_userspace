@@ -71,6 +71,55 @@ pub extern "C" fn entry(
         );
     }
 
+    userspace::info!(
+        "program_header_conformance={:?}\n",
+        object_file.validate_program_headers()
+    );
+
+    userspace::info!("loadable_segments\n");
+    for index in 0..object_file.program_headers.len() {
+        let Some(segment) = object_file.loadable_segment(index) else {
+            continue;
+        };
+
+        userspace::info!(
+            "  ph[{}] = {{ file_size: {:#x}, memory_size: {:#x}, zero_fill_size: {:#x}, alignment: {:#x}, readable: {}, writable: {}, executable: {} }}\n",
+            index,
+            segment.file_size(),
+            segment.memory_size(),
+            segment.zero_fill_size(),
+            segment.alignment(),
+            segment.program_header.flags.readable(),
+            segment.program_header.flags.writable(),
+            segment.program_header.flags.executable(),
+        );
+    }
+
+    if let Some(interpreter) = object_file.program_interpreter() {
+        userspace::info!(
+            "program_interpreter = {:?}\n",
+            interpreter.pathname_str(),
+        );
+    }
+
+    if let Some(program_header_table_image) = object_file.program_header_table_image() {
+        userspace::info!(
+            "program_header_table_image = {{ file_size: {:#x}, virtual_address: {:#x} }}\n",
+            program_header_table_image.program_header.file_size,
+            program_header_table_image.program_header.virtual_address,
+        );
+    }
+
+    if let Some(template) = object_file.thread_local_storage_template() {
+        userspace::info!(
+            "thread_local_storage = {{ initialization_size: {:#x}, total_size: {:#x}, zero_fill_size: {:#x}, alignment: {:#x} }}\n",
+            template.initialization_size(),
+            template.total_size(),
+            template.zero_fill_size(),
+            template.alignment(),
+        );
+    }
+
     userspace::info!("section_headers[{}]\n", object_file.section_headers.len());
     for (index, section_header) in object_file.section_headers.iter().enumerate() {
         userspace::info!(
