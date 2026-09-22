@@ -197,7 +197,7 @@ where
         return Ok(Vec::new());
     }
 
-    if entry_size as usize < minimum_entry_size {
+    if (entry_size as usize) < minimum_entry_size {
         return Err(size_error);
     }
 
