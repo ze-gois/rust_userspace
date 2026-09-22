@@ -27,7 +27,6 @@ pub mod ok {
     ample::result!( Ok; "MUnMap Ok"; usize; [
         [0; OK; Default; usize; "Ok"; "All good"],
         [98; OPENAT;  OPENAT; usize; "OPENAT"; "WAITING"],
-        [99; OPENAT4;  OPENAT4; usize; "OPENAT"; "WAITING"],
     ]);
 
     impl Ok {
