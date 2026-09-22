@@ -86,6 +86,55 @@ pub extern "C" fn entry(
             section_header.entry_size,
         );
     }
+    userspace::info!("symbol_tables\n");
+    for (section_index, section_header) in object_file.section_headers.iter().enumerate() {
+        if !matches!(
+            section_header.r#type,
+            userspace::file::format::elf::section_header::Type::SymbolTable
+                | userspace::file::format::elf::section_header::Type::DynamicSymbolTable
+        ) {
+            continue;
+        }
+
+        let Some(symbol_table) = object_file.symbol_table(section_index) else {
+            userspace::info!(
+                "  section[{}] {:?}: <invalid symbol table>\n",
+                section_index,
+                object_file.section_name(section_index),
+            );
+            continue;
+        };
+
+        userspace::info!(
+            "  section[{}] {:?}: symbols[{}]\n",
+            section_index,
+            object_file.section_name(section_index),
+            symbol_table.len(),
+        );
+
+        const SYMBOL_PREVIEW: usize = 32;
+        for (symbol_index, symbol) in symbol_table.iter().take(SYMBOL_PREVIEW).enumerate() {
+            userspace::info!(
+                "    symbol[{}] = {{ name: {:?}, binding: {:?}, type: {:?}, visibility: {:?}, section_index: {}, value: {:#x}, size: {:#x} }}\n",
+                symbol_index,
+                symbol_table.name(symbol_index),
+                symbol.binding,
+                symbol.r#type,
+                symbol.visibility,
+                symbol.section_index.raw(),
+                symbol.value,
+                symbol.size,
+            );
+        }
+
+        if symbol_table.len() > SYMBOL_PREVIEW {
+            userspace::info!(
+                "    ... {} additional symbols omitted from preview\n",
+                symbol_table.len() - SYMBOL_PREVIEW,
+            );
+        }
+    }
+
     userspace::info!("-----------------------\n");
 
     userspace::target::os::syscall::exit(0)
