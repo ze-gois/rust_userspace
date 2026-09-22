@@ -774,7 +774,34 @@ impl<'file> ObjectFile<'file> {
         )
     }
 
+    pub fn validate_compressed_section(
+        &self,
+        section_index: usize,
+    ) -> Result<(), compression::ValidationError> {
+        use compression::ValidationError;
+
+        let Some(header) = self.section_headers.get(section_index) else {
+            return Ok(());
+        };
+        if !header.flags.contains(section_header::Flags::COMPRESSED) {
+            return Ok(());
+        }
+
+        if matches!(header.r#type, section_header::Type::NoBits) {
+            return Err(ValidationError::NoBitsCompressedSection);
+        }
+
+        if header.flags.contains(section_header::Flags::ALLOCATE)
+            && !matches!(self.header.r#type, super::header::Type::Relocatable)
+        {
+            return Err(ValidationError::AllocatedCompressedSectionOutsideRelocatableObject);
+        }
+
+        Ok(())
+    }
+
     pub fn compressed_section(&self, section_index: usize) -> Option<CompressedSection<'file>> {
+        self.validate_compressed_section(section_index).ok()?;
         let section = self.section(section_index)?;
         if !section
             .header
