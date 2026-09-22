@@ -4,7 +4,7 @@ use ample::r#type::Vec;
 
 use super::{
     compression::{self, CompressedSection, CompressionHeader},
-    dynamic_table::DynamicTable,
+    dynamic::section::Section as DynamicSection,
     hash::HashTable,
     header::Header,
     loadable_segment::LoadableSegment,
@@ -529,7 +529,7 @@ impl<'file> ObjectFile<'file> {
         ))
     }
 
-    pub fn dynamic_table(&self, section_index: usize) -> Option<DynamicTable<'file>> {
+    pub fn dynamic_section(&self, section_index: usize) -> Option<DynamicSection<'file>> {
         let header = *self.section_headers.get(section_index)?;
         if !matches!(header.r#type, section_header::Type::Dynamic) {
             return None;
@@ -552,7 +552,7 @@ impl<'file> ObjectFile<'file> {
             entry_size,
         )?;
 
-        Some(DynamicTable::new(
+        Some(DynamicSection::new(
             array,
             StringTable::new(strings_section.contents),
         ))
