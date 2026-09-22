@@ -3,6 +3,8 @@
 use ample::r#type::Vec;
 
 use super::{
+    dynamic::{self, Dynamic, Tag},
+    dynamic_table::DynamicTable,
     header::{self, Header},
     identification::{Class, Data, Identification},
     program_header::{self, ProgramHeader},
@@ -301,6 +303,68 @@ impl<'file> ObjectFile<'file> {
             relocations,
             symbols,
             header.information as usize,
+        ))
+    }
+
+    pub fn dynamic_table(&self, section_index: usize) -> Option<DynamicTable<'file>> {
+        let header = *self.section_headers.get(section_index)?;
+        if !matches!(header.r#type, section_header::Type::Dynamic) {
+            return None;
+        }
+
+        let section = self.section(section_index)?;
+        let strings_section = self.section(header.link as usize)?;
+        if !matches!(strings_section.header.r#type, section_header::Type::StringTable) {
+            return None;
+        }
+
+        let entry_size = usize::try_from(header.entry_size).ok()?;
+        if entry_size == 0 || section.contents.len() % entry_size != 0 {
+            return None;
+        }
+
+        let count = section.contents.len() / entry_size;
+        let mut entries = Vec::with_capacity(count);
+
+        match self.header.identification.class {
+            Class::Class32 => {
+                if entry_size < core::mem::size_of::<dynamic::class_32::Representation>() {
+                    return None;
+                }
+                for index in 0..count {
+                    let offset = index.checked_mul(entry_size)?;
+                    let representation =
+                        read::<dynamic::class_32::Representation>(section.contents, offset)?;
+                    let entry = Dynamic::from(representation);
+                    let end = matches!(entry.tag, Tag::Null);
+                    entries.push(entry);
+                    if end {
+                        break;
+                    }
+                }
+            }
+            Class::Class64 => {
+                if entry_size < core::mem::size_of::<dynamic::class_64::Representation>() {
+                    return None;
+                }
+                for index in 0..count {
+                    let offset = index.checked_mul(entry_size)?;
+                    let representation =
+                        read::<dynamic::class_64::Representation>(section.contents, offset)?;
+                    let entry = Dynamic::from(representation);
+                    let end = matches!(entry.tag, Tag::Null);
+                    entries.push(entry);
+                    if end {
+                        break;
+                    }
+                }
+            }
+            Class::None | Class::Reserved(_) => return None,
+        }
+
+        Some(DynamicTable::new(
+            entries,
+            StringTable::new(strings_section.contents),
         ))
     }
 }
