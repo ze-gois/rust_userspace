@@ -67,6 +67,10 @@ impl<'file> SectionGroup<'file> {
         }
     }
 
+    pub fn signature_symbol(&self) -> Option<&super::symbol::Symbol> {
+        self.symbols.get(self.signature_symbol_index)
+    }
+
     pub fn signature_name(&self) -> Option<&'file str> {
         self.symbols.name(self.signature_symbol_index)
     }
