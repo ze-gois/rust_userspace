@@ -39,6 +39,8 @@ pub struct ObjectFile<'file> {
     pub header: Header,
     pub program_headers: Vec<ProgramHeader>,
     pub section_headers: Vec<SectionHeader>,
+    pub section_header_count: usize,
+    pub section_name_string_table_index: Option<usize>,
 }
 
 impl<'file> ObjectFile<'file> {
@@ -68,11 +70,17 @@ impl<'file> ObjectFile<'file> {
             read(bytes, 0).ok_or(ParseError::Truncated)?;
         let header = Header::try_from(representation).map_err(|_| ParseError::InvalidHeader)?;
 
+        let initial_section_header = initial_section_header_32(bytes, &header)?;
+        let section_header_count =
+            resolve_section_header_count(&header, initial_section_header)?;
+        let section_name_string_table_index =
+            resolve_section_name_string_table_index(&header, initial_section_header)?;
+
         let program_headers = parse_table(
             bytes,
             header.program_header_offset,
             header.program_header_entry_size,
-            header.program_header_count,
+            header.program_header_count as usize,
             core::mem::size_of::<program_header::class_32::Representation>(),
             |bytes, offset| {
                 read::<program_header::class_32::Representation>(bytes, offset)
@@ -85,7 +93,7 @@ impl<'file> ObjectFile<'file> {
             bytes,
             header.section_header_offset,
             header.section_header_entry_size,
-            header.section_header_count,
+            section_header_count,
             core::mem::size_of::<section_header::class_32::Representation>(),
             |bytes, offset| {
                 read::<section_header::class_32::Representation>(bytes, offset)
@@ -94,11 +102,19 @@ impl<'file> ObjectFile<'file> {
             ParseError::SectionHeaderEntryTooSmall,
         )?;
 
+        if let Some(index) = section_name_string_table_index {
+            if index >= section_headers.len() {
+                return Err(ParseError::InvalidSectionNameStringTable);
+            }
+        }
+
         Ok(Self {
             bytes,
             header,
             program_headers,
             section_headers,
+            section_header_count,
+            section_name_string_table_index,
         })
     }
 
@@ -107,11 +123,17 @@ impl<'file> ObjectFile<'file> {
             read(bytes, 0).ok_or(ParseError::Truncated)?;
         let header = Header::try_from(representation).map_err(|_| ParseError::InvalidHeader)?;
 
+        let initial_section_header = initial_section_header_64(bytes, &header)?;
+        let section_header_count =
+            resolve_section_header_count(&header, initial_section_header)?;
+        let section_name_string_table_index =
+            resolve_section_name_string_table_index(&header, initial_section_header)?;
+
         let program_headers = parse_table(
             bytes,
             header.program_header_offset,
             header.program_header_entry_size,
-            header.program_header_count,
+            header.program_header_count as usize,
             core::mem::size_of::<program_header::class_64::Representation>(),
             |bytes, offset| {
                 read::<program_header::class_64::Representation>(bytes, offset)
@@ -124,7 +146,7 @@ impl<'file> ObjectFile<'file> {
             bytes,
             header.section_header_offset,
             header.section_header_entry_size,
-            header.section_header_count,
+            section_header_count,
             core::mem::size_of::<section_header::class_64::Representation>(),
             |bytes, offset| {
                 read::<section_header::class_64::Representation>(bytes, offset)
@@ -133,11 +155,19 @@ impl<'file> ObjectFile<'file> {
             ParseError::SectionHeaderEntryTooSmall,
         )?;
 
+        if let Some(index) = section_name_string_table_index {
+            if index >= section_headers.len() {
+                return Err(ParseError::InvalidSectionNameStringTable);
+            }
+        }
+
         Ok(Self {
             bytes,
             header,
             program_headers,
             section_headers,
+            section_header_count,
+            section_name_string_table_index,
         })
     }
 
@@ -168,7 +198,7 @@ impl<'file> ObjectFile<'file> {
     }
 
     pub fn section_name_string_table(&self) -> Option<StringTable<'file>> {
-        let index = self.header.section_name_string_table_index.raw() as usize;
+        let index = self.section_name_string_table_index?;
         let section = self.section(index)?;
         Some(StringTable::new(section.contents))
     }
@@ -506,6 +536,72 @@ impl<'file> ObjectFile<'file> {
     }
 }
 
+fn initial_section_header_32(
+    bytes: &[u8],
+    header: &Header,
+) -> Result<Option<SectionHeader>, ParseError> {
+    if header.section_header_offset == 0 {
+        return Ok(None);
+    }
+
+    if (header.section_header_entry_size as usize)
+        < core::mem::size_of::<section_header::class_32::Representation>()
+    {
+        return Err(ParseError::SectionHeaderEntryTooSmall);
+    }
+
+    let offset =
+        usize::try_from(header.section_header_offset).map_err(|_| ParseError::Truncated)?;
+    Ok(read::<section_header::class_32::Representation>(bytes, offset).map(SectionHeader::from))
+}
+
+fn initial_section_header_64(
+    bytes: &[u8],
+    header: &Header,
+) -> Result<Option<SectionHeader>, ParseError> {
+    if header.section_header_offset == 0 {
+        return Ok(None);
+    }
+
+    if (header.section_header_entry_size as usize)
+        < core::mem::size_of::<section_header::class_64::Representation>()
+    {
+        return Err(ParseError::SectionHeaderEntryTooSmall);
+    }
+
+    let offset =
+        usize::try_from(header.section_header_offset).map_err(|_| ParseError::Truncated)?;
+    Ok(read::<section_header::class_64::Representation>(bytes, offset).map(SectionHeader::from))
+}
+
+fn resolve_section_header_count(
+    header: &Header,
+    initial: Option<SectionHeader>,
+) -> Result<usize, ParseError> {
+    match header.section_header_count {
+        header::SectionHeaderCount::Direct(count) => Ok(count as usize),
+        header::SectionHeaderCount::ZeroOrExtended if header.section_header_offset == 0 => Ok(0),
+        header::SectionHeaderCount::ZeroOrExtended => {
+            let initial = initial.ok_or(ParseError::Truncated)?;
+            usize::try_from(initial.size).map_err(|_| ParseError::Truncated)
+        }
+    }
+}
+
+fn resolve_section_name_string_table_index(
+    header: &Header,
+    initial: Option<SectionHeader>,
+) -> Result<Option<usize>, ParseError> {
+    match header.section_name_string_table_index {
+        header::SectionNameStringTableIndex::Undefined => Ok(None),
+        header::SectionNameStringTableIndex::Direct(index) => Ok(Some(index.raw() as usize)),
+        header::SectionNameStringTableIndex::Extended => {
+            let initial = initial.ok_or(ParseError::InvalidSectionNameStringTable)?;
+            Ok(Some(initial.link as usize))
+        }
+    }
+}
+
 fn align(value: usize, alignment: usize) -> Option<usize> {
     let mask = alignment.checked_sub(1)?;
     value.checked_add(mask).map(|value| value & !mask)
@@ -535,7 +631,7 @@ fn parse_table<T, F>(
     bytes: &[u8],
     offset: u64,
     entry_size: u16,
-    count: u16,
+    count: usize,
     minimum_entry_size: usize,
     mut parse: F,
     size_error: ParseError,
@@ -553,9 +649,9 @@ where
 
     let offset = usize::try_from(offset).map_err(|_| ParseError::Truncated)?;
     let entry_size = entry_size as usize;
-    let mut entries = Vec::with_capacity(count as usize);
+    let mut entries = Vec::with_capacity(count);
 
-    for index in 0..count as usize {
+    for index in 0..count {
         let entry_offset = offset
             .checked_add(index.checked_mul(entry_size).ok_or(ParseError::Truncated)?)
             .ok_or(ParseError::Truncated)?;
