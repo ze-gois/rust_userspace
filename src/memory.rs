@@ -3,4 +3,4 @@ pub mod heap;
 pub mod page;
 pub mod stack;
 
-pub use stack::Stack;
+pub use stack::{Growth, Region, Stack};
