@@ -17,6 +17,7 @@ use super::{
     relocation_table::RelocationTable,
     section_group::{Flags as SectionGroupFlags, SectionGroup},
     section::LinkOrder,
+    section_link::{Meaning as SectionLinkMeaning, SectionLink},
     section_header::{self, SectionHeader},
     segment::contents::{ImageContribution, Section as SegmentSection},
     string_table::StringTable,
@@ -341,6 +342,52 @@ impl<'file> ObjectFile<'file> {
         }
 
         None
+    }
+
+    pub fn section_link(&self, section_index: usize) -> Option<SectionLink<'file>> {
+        let header = *self.section_headers.get(section_index)?;
+
+        let meaning = match header.r#type {
+            section_header::Type::Dynamic
+            | section_header::Type::SymbolTable
+            | section_header::Type::DynamicSymbolTable => SectionLinkMeaning::StringTable,
+            section_header::Type::Hash
+            | section_header::Type::Relocation
+            | section_header::Type::RelocationWithAddend
+            | section_header::Type::Group
+            | section_header::Type::SymbolTableSectionIndex => {
+                SectionLinkMeaning::SymbolTable
+            }
+            _ => return None,
+        };
+
+        let linked_section_index = usize::try_from(header.link).ok()?;
+        let linked_section = self.section(linked_section_index)?;
+
+        match meaning {
+            SectionLinkMeaning::StringTable
+                if !matches!(linked_section.header.r#type, section_header::Type::StringTable) =>
+            {
+                return None;
+            }
+            SectionLinkMeaning::SymbolTable
+                if !matches!(
+                    linked_section.header.r#type,
+                    section_header::Type::SymbolTable
+                        | section_header::Type::DynamicSymbolTable
+                ) =>
+            {
+                return None;
+            }
+            _ => {}
+        }
+
+        Some(SectionLink::new(
+            section_index,
+            linked_section_index,
+            linked_section,
+            meaning,
+        ))
     }
 
     pub fn link_order(&self, section_index: usize) -> Option<LinkOrder<'file>> {
