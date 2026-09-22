@@ -20,6 +20,7 @@ use super::{
     relocation_table::RelocationTable,
     section_group::{Flags as SectionGroupFlags, SectionGroup},
     section_header::{self, SectionHeader},
+    segment_section::{ImageContribution, SegmentSection},
     string_table::StringTable,
     symbol::{self, Symbol},
     symbol_table::SymbolTable,
@@ -403,6 +404,83 @@ impl<'file> ObjectFile<'file> {
 
         let segment = self.segment(index)?;
         parse_note_table(segment.file_image, self.header.identification.class)
+    }
+
+    pub fn sections_in_loadable_segment(
+        &self,
+        program_header_index: usize,
+    ) -> Option<Vec<SegmentSection>> {
+        let program_header = *self.program_headers.get(program_header_index)?;
+        if !matches!(program_header.r#type, program_header::Type::Load) {
+            return None;
+        }
+
+        let memory_end = program_header
+            .virtual_address
+            .checked_add(program_header.memory_size)?;
+        let file_end = program_header.offset.checked_add(program_header.file_size)?;
+        let mut sections = Vec::new();
+
+        for (section_index, section_header) in self.section_headers.iter().copied().enumerate() {
+            if !section_header.flags.contains(section_header::Flags::ALLOCATE) {
+                continue;
+            }
+
+            let section_memory_end = section_header.address.checked_add(section_header.size)?;
+            let inside_memory = section_header.address >= program_header.virtual_address
+                && section_memory_end <= memory_end;
+
+            if !inside_memory {
+                continue;
+            }
+
+            let contribution = if matches!(section_header.r#type, section_header::Type::NoBits) {
+                ImageContribution::MemoryOnly
+            } else {
+                let section_file_end = section_header.offset.checked_add(section_header.size)?;
+                let inside_file = section_header.offset >= program_header.offset
+                    && section_file_end <= file_end;
+
+                if !inside_file {
+                    continue;
+                }
+
+                let address_displacement =
+                    section_header.address.checked_sub(program_header.virtual_address)?;
+                let file_displacement = section_header.offset.checked_sub(program_header.offset)?;
+
+                if address_displacement != file_displacement {
+                    continue;
+                }
+
+                ImageContribution::FileAndMemory
+            };
+
+            sections.push(SegmentSection::new(
+                section_index,
+                section_header,
+                contribution,
+            ));
+        }
+
+        Some(sections)
+    }
+
+    pub fn loadable_segment_for_section(
+        &self,
+        section_index: usize,
+    ) -> Option<(usize, SegmentSection)> {
+        for program_header_index in 0..self.program_headers.len() {
+            let sections = self.sections_in_loadable_segment(program_header_index)?;
+            if let Some(section) = sections
+                .into_iter()
+                .find(|section| section.section_index == section_index)
+            {
+                return Some((program_header_index, section));
+            }
+        }
+
+        None
     }
 
     pub fn section_name_string_table(&self) -> Option<StringTable<'file>> {
