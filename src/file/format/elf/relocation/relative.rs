@@ -1,9 +1,34 @@
 //! Compact relative relocation entries (`Elf32_Relr` / `Elf64_Relr`).
 
+use ample::r#type::Vec;
+
 use super::super::{
     identification::Data,
     representation::{class_32 as representation_32, class_64 as representation_64, Decoder},
 };
+
+#[derive(Debug)]
+pub struct Table {
+    pub entries: Vec<Entry>,
+}
+
+impl Table {
+    pub const fn new(entries: Vec<Entry>) -> Self {
+        Self { entries }
+    }
+
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    pub fn iter(&self) -> core::slice::Iter<'_, Entry> {
+        self.entries.iter()
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Entry {
