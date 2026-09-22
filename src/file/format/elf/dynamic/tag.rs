@@ -44,6 +44,9 @@ pub enum Tag {
     PreInitializationArray,
     PreInitializationArraySize,
     SymbolTableSectionIndex,
+    RelativeRelocationSize,
+    RelativeRelocation,
+    RelativeRelocationEntrySize,
     OperatingSystemSpecific(i64),
     ProcessorSpecific(i64),
     Reserved(i64),
@@ -86,6 +89,9 @@ impl Tag {
             32 => Self::PreInitializationArray,
             33 => Self::PreInitializationArraySize,
             34 => Self::SymbolTableSectionIndex,
+            35 => Self::RelativeRelocationSize,
+            36 => Self::RelativeRelocation,
+            37 => Self::RelativeRelocationEntrySize,
             0x6000_000d..=0x6fff_f000 => Self::OperatingSystemSpecific(raw),
             0x7000_0000..=0x7fff_ffff => Self::ProcessorSpecific(raw),
             _ => Self::Reserved(raw),
@@ -110,7 +116,8 @@ impl Tag {
             | Self::InitializationArray
             | Self::TerminationArray
             | Self::PreInitializationArray
-            | Self::SymbolTableSectionIndex => PayloadKind::Pointer,
+            | Self::SymbolTableSectionIndex
+            | Self::RelativeRelocation => PayloadKind::Pointer,
             Self::Needed
             | Self::ProcedureLinkageTableRelocationSize
             | Self::RelocationWithAddendSize
@@ -126,7 +133,9 @@ impl Tag {
             | Self::TerminationArraySize
             | Self::RunPath
             | Self::Flags
-            | Self::PreInitializationArraySize => PayloadKind::Value,
+            | Self::PreInitializationArraySize
+            | Self::RelativeRelocationSize
+            | Self::RelativeRelocationEntrySize => PayloadKind::Value,
             Self::OperatingSystemSpecific(_)
             | Self::ProcessorSpecific(_)
             | Self::Reserved(_) => PayloadKind::Unspecified,
