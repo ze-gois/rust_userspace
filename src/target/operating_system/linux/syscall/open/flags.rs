@@ -24,3 +24,9 @@ impl Flag {
     pub const WRONLY: Self = Self::WRITE_ONLY;
     pub const RDWR: Self = Self::READ_WRITE;
 }
+
+impl Flag {
+    pub const fn to(self) -> i32 {
+        self.bits()
+    }
+}
