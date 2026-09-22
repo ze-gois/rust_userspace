@@ -15,18 +15,96 @@ pub const PADDING_INDEX: usize = 9;
 
 pub const MAGIC: [u8; 4] = [0x7f, b'E', b'L', b'F'];
 
-#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Class {
-    None = 0,
-    Class32 = 1,
-    Class64 = 2,
+    None,
+    Class32,
+    Class64,
+    Reserved(u8),
 }
 
-#[repr(u8)]
+impl Class {
+    pub const fn from_raw(raw: u8) -> Self {
+        match raw {
+            0 => Self::None,
+            1 => Self::Class32,
+            2 => Self::Class64,
+            _ => Self::Reserved(raw),
+        }
+    }
+
+    pub const fn raw(self) -> u8 {
+        match self {
+            Self::None => 0,
+            Self::Class32 => 1,
+            Self::Class64 => 2,
+            Self::Reserved(raw) => raw,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Data {
-    None = 0,
-    LeastSignificantByteFirst = 1,
-    MostSignificantByteFirst = 2,
+    None,
+    LeastSignificantByteFirst,
+    MostSignificantByteFirst,
+    Reserved(u8),
+}
+
+impl Data {
+    pub const fn from_raw(raw: u8) -> Self {
+        match raw {
+            0 => Self::None,
+            1 => Self::LeastSignificantByteFirst,
+            2 => Self::MostSignificantByteFirst,
+            _ => Self::Reserved(raw),
+        }
+    }
+
+    pub const fn raw(self) -> u8 {
+        match self {
+            Self::None => 0,
+            Self::LeastSignificantByteFirst => 1,
+            Self::MostSignificantByteFirst => 2,
+            Self::Reserved(raw) => raw,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OperatingSystemAbi(u8);
+
+impl OperatingSystemAbi {
+    pub const fn from_raw(raw: u8) -> Self {
+        Self(raw)
+    }
+
+    pub const fn raw(self) -> u8 {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Identification {
+    pub class: Class,
+    pub data: Data,
+    pub version: u8,
+    pub operating_system_abi: OperatingSystemAbi,
+    pub abi_version: u8,
+}
+
+impl Identification {
+    pub fn from_bytes(bytes: [u8; SIZE]) -> Option<Self> {
+        if bytes[..4] != MAGIC {
+            return None;
+        }
+
+        Some(Self {
+            class: Class::from_raw(bytes[CLASS_INDEX]),
+            data: Data::from_raw(bytes[DATA_INDEX]),
+            version: bytes[VERSION_INDEX],
+            operating_system_abi: OperatingSystemAbi::from_raw(bytes[OS_ABI_INDEX]),
+            abi_version: bytes[ABI_VERSION_INDEX],
+        })
+    }
 }
