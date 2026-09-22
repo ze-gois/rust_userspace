@@ -471,7 +471,10 @@ impl<'file> ObjectFile<'file> {
         section_index: usize,
     ) -> Option<(usize, SegmentSection)> {
         for program_header_index in 0..self.program_headers.len() {
-            let sections = self.sections_in_loadable_segment(program_header_index)?;
+            let Some(sections) = self.sections_in_loadable_segment(program_header_index) else {
+                continue;
+            };
+
             if let Some(section) = sections
                 .into_iter()
                 .find(|section| section.section_index == section_index)
