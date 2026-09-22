@@ -45,7 +45,6 @@ fn elf64_note_fixture() -> Vec<u8> {
     word(&mut bytes, 4);
     word(&mut bytes, 7);
     bytes.extend_from_slice(b"GNU\0");
-    bytes.extend_from_slice(&[0u8; 4]); // ELF64 name padding to 8-byte alignment.
     bytes.extend_from_slice(&[1, 2, 3, 4]);
     bytes.extend_from_slice(&[0u8; 4]); // ELF64 descriptor padding.
 
