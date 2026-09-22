@@ -285,6 +285,15 @@ fn main() {
                 group.signature_name(),
                 group.members,
             );
+            if let Some(members) = object.section_group_members(index) {
+                for member in members {
+                    println!(
+                        "      member section={} name={:?}",
+                        member.section_index,
+                        object.section_name(member.section_index),
+                    );
+                }
+            }
         }
 
         if let Some(notes) = object.note_table(index) {
