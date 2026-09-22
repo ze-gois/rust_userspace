@@ -537,8 +537,7 @@ impl<'file> ObjectFile<'file> {
         }
 
         Some(DynamicHashTable::new(
-            buckets,
-            chains,
+            HashTable::new(buckets, chains),
             self.dynamic_symbol_table_from_program_header(index)?,
         ))
     }
@@ -1044,7 +1043,7 @@ impl<'file> ObjectFile<'file> {
         ))
     }
 
-    pub fn hash_table(&self, section_index: usize) -> Option<HashTable<'file>> {
+    pub fn hash_table(&self, section_index: usize) -> Option<HashTable> {
         let header = *self.section_headers.get(section_index)?;
         if !matches!(header.r#type, section_header::Type::Hash) {
             return None;
@@ -1071,8 +1070,8 @@ impl<'file> ObjectFile<'file> {
             offset = offset.checked_add(core::mem::size_of::<u32>())?;
         }
 
-        let symbols = self.symbol_table(header.link as usize)?;
-        Some(HashTable::new(buckets, chains, symbols))
+        let _symbols = self.symbol_table(header.link as usize)?;
+        Some(HashTable::new(buckets, chains))
     }
 
     pub fn section_group(&self, section_index: usize) -> Option<SectionGroup<'file>> {
