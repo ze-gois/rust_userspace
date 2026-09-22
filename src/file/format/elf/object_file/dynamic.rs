@@ -7,7 +7,7 @@ use super::{
     ObjectFile,
 };
 use super::super::{
-    dynamic::{self, Tag},
+    dynamic::{self, Flags, Tag},
     header,
     initialization_termination::{
         FunctionAddress,
@@ -64,6 +64,13 @@ impl<'file> ObjectFile<'file> {
             self.header.identification.data,
             entry_size,
         )
+    }
+
+    pub fn dynamic_flags_from_program_header(&self, index: usize) -> Option<Flags> {
+        let array = self.dynamic_array_from_program_header(index)?;
+        Some(Flags::from_raw(
+            array.first(Tag::Flags).map_or(0, |entry| entry.payload),
+        ))
     }
 
     pub fn dynamic_string_table_from_program_header(
