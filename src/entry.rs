@@ -166,6 +166,50 @@ pub extern "C" fn entry(
                             }
                         }
                     }
+
+                    if let Some(symbols) =
+                        object_file.dynamic_symbol_table_from_program_header(index)
+                    {
+                        userspace::info!(
+                            "  dynamic_symbols[{}]\n",
+                            symbols.len(),
+                        );
+                    }
+
+                    if let Some(hash) =
+                        object_file.dynamic_hash_table_from_program_header(index)
+                    {
+                        userspace::info!(
+                            "  system_v_hash = {{ buckets: {}, chains: {} }}\n",
+                            hash.buckets.len(),
+                            hash.chains.len(),
+                        );
+                    }
+
+                    if let Some(relocation_tables) =
+                        object_file.dynamic_relocation_tables_from_program_header(index)
+                    {
+                        for table in relocation_tables {
+                            userspace::info!(
+                                "  dynamic_relocations = {{ purpose: {:?}, addend: {:?}, entries: {} }}\n",
+                                table.purpose,
+                                table.addend,
+                                table.len(),
+                            );
+                        }
+                    }
+
+                    if let Some(dependencies) =
+                        object_file.shared_object_dependencies_from_program_header(index)
+                    {
+                        userspace::info!(
+                            "  shared_object = {{ name: {:?}, rpath: {:?}, runpath: {:?}, needed: {:?} }}\n",
+                            dependencies.shared_object_name,
+                            dependencies.runtime_search_path,
+                            dependencies.run_path,
+                            dependencies.needed,
+                        );
+                    }
                 }
             }
             userspace::file::format::elf::program_header::Type::Note => {
