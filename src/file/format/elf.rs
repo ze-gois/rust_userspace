@@ -33,3 +33,4 @@ pub mod program_header_table_image;
 pub mod thread_local_storage;
 pub mod dynamic_symbol_table;
 pub mod dynamic_hash_table;
+pub mod dynamic_relocation_table;
