@@ -123,3 +123,8 @@ github-actions = { repository = "ze-gois/rust_userspace" }
 # split-debuginfo = "unpacked"
 # rpath = false
 # strip = "debuginfo"
+
+[[test]]
+name = "elf_representation"
+path = "tests/elf_representation.rs"
+required-features = ["host_tests"]
