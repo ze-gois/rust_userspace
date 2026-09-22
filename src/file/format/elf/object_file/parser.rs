@@ -37,13 +37,16 @@ impl<'file> ObjectFile<'file> {
         }
 
         match identification.class {
-            Class::Class32 => Self::parse_class_32(bytes),
-            Class::Class64 => Self::parse_class_64(bytes),
+            Class::Class32 => Self::parse_class_32(bytes, identification),
+            Class::Class64 => Self::parse_class_64(bytes, identification),
             Class::None | Class::Reserved(_) => Err(ParseError::UnsupportedClass),
         }
     }
 
-    fn parse_class_32(bytes: &'file [u8]) -> Result<Self, ParseError> {
+    fn parse_class_32(
+        bytes: &'file [u8],
+        identification: Identification,
+    ) -> Result<Self, ParseError> {
         let representation = header::class_32::Representation::decode(
             bytes,
             0,
@@ -108,7 +111,10 @@ impl<'file> ObjectFile<'file> {
         })
     }
 
-    fn parse_class_64(bytes: &'file [u8]) -> Result<Self, ParseError> {
+    fn parse_class_64(
+        bytes: &'file [u8],
+        identification: Identification,
+    ) -> Result<Self, ParseError> {
         let representation = header::class_64::Representation::decode(
             bytes,
             0,
