@@ -4,10 +4,12 @@ pub mod binding;
 pub mod class_32;
 pub mod class_64;
 pub mod r#type;
+pub mod section_index;
 pub mod visibility;
 
 pub use binding::Binding;
 pub use r#type::Type;
+pub use section_index::ResolvedSectionIndex;
 pub use visibility::Visibility;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
