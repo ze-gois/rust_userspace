@@ -13,7 +13,7 @@ use super::{
     program_header::{self, ProgramHeader},
     program_header_table_image::ProgramHeaderTableImage,
     program_interpreter::ProgramInterpreter,
-    relocation::{self, Relocation},
+    relocation::{self, relative, Relocation},
     relocation_table::RelocationTable,
     section_group::{Flags as SectionGroupFlags, SectionGroup},
     section_header::{self, SectionHeader},
@@ -467,6 +467,82 @@ impl<'file> ObjectFile<'file> {
             section_indices,
             header.information as usize,
         ))
+    }
+
+    pub fn relative_relocation_table(
+        &self,
+        section_index: usize,
+    ) -> Option<relative::Table> {
+        self.validate_relative_relocation_section(section_index).ok()?;
+
+        let section = self.section(section_index)?;
+        let entry_size = usize::try_from(section.header.entry_size).ok()?;
+        let count = section.contents.len() / entry_size;
+        let mut entries = Vec::with_capacity(count);
+
+        match self.header.identification.class {
+            Class::Class32 => {
+                for entry_index in 0..count {
+                    let offset = entry_index.checked_mul(entry_size)?;
+                    let representation = relative::class_32::Representation::decode(
+                        section.contents,
+                        offset,
+                        self.header.identification.data,
+                    )?;
+                    entries.push(relative::Entry::from(representation));
+                }
+            }
+            Class::Class64 => {
+                for entry_index in 0..count {
+                    let offset = entry_index.checked_mul(entry_size)?;
+                    let representation = relative::class_64::Representation::decode(
+                        section.contents,
+                        offset,
+                        self.header.identification.data,
+                    )?;
+                    entries.push(relative::Entry::from(representation));
+                }
+            }
+            Class::None | Class::Reserved(_) => return None,
+        }
+
+        Some(relative::Table::new(entries))
+    }
+
+    pub fn validate_relative_relocation_section(
+        &self,
+        section_index: usize,
+    ) -> Result<(), relative::SectionValidationError> {
+        use relative::SectionValidationError;
+
+        let Some(header) = self.section_headers.get(section_index) else {
+            return Ok(());
+        };
+        if !matches!(header.r#type, section_header::Type::RelativeRelocation) {
+            return Ok(());
+        }
+
+        if !matches!(
+            self.header.r#type,
+            super::header::Type::Executable | super::header::Type::SharedObject
+        ) {
+            return Err(SectionValidationError::ObjectTypeNotExecutableOrSharedObject);
+        }
+
+        let expected_entry_size = match self.header.identification.class {
+            Class::Class32 => 4u64,
+            Class::Class64 => 8u64,
+            Class::None | Class::Reserved(_) => return Ok(()),
+        };
+
+        if header.entry_size != expected_entry_size {
+            return Err(SectionValidationError::EntrySizeMismatch);
+        }
+        if header.size % header.entry_size != 0 {
+            return Err(SectionValidationError::SizeNotEntryMultiple);
+        }
+
+        Ok(())
     }
 
     pub fn relocation_table(&self, section_index: usize) -> Option<RelocationTable<'file>> {
