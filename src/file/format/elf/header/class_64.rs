@@ -1,4 +1,7 @@
-use super::super::{identification, representation::class_64 as representation};
+use super::super::{
+    identification,
+    representation::{class_64 as representation, Decoder},
+};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -17,4 +20,30 @@ pub struct Representation {
     pub e_shentsize: representation::Half,
     pub e_shnum: representation::Half,
     pub e_shstrndx: representation::Half,
+}
+
+impl Representation {
+    pub fn decode(
+        bytes: &[u8],
+        offset: usize,
+        data: identification::Data,
+    ) -> Option<Self> {
+        let mut decoder = Decoder::new(bytes, offset, data)?;
+        Some(Self {
+            e_ident: decoder.bytes()?,
+            e_type: decoder.half()?,
+            e_machine: decoder.half()?,
+            e_version: decoder.word()?,
+            e_entry: decoder.xword()?,
+            e_phoff: decoder.xword()?,
+            e_shoff: decoder.xword()?,
+            e_flags: decoder.word()?,
+            e_ehsize: decoder.half()?,
+            e_phentsize: decoder.half()?,
+            e_phnum: decoder.half()?,
+            e_shentsize: decoder.half()?,
+            e_shnum: decoder.half()?,
+            e_shstrndx: decoder.half()?,
+        })
+    }
 }
