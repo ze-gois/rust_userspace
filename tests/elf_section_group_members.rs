@@ -12,6 +12,20 @@ fn xword(bytes: &mut Vec<u8>, value: u64) {
     bytes.extend_from_slice(&value.to_le_bytes());
 }
 
+fn symbol(
+    bytes: &mut Vec<u8>,
+    name_index: u32,
+    information: u8,
+    section_index: u16,
+) {
+    word(bytes, name_index);
+    bytes.push(information);
+    bytes.push(0);
+    half(bytes, section_index);
+    xword(bytes, 0);
+    xword(bytes, 0);
+}
+
 fn section_header(
     bytes: &mut Vec<u8>,
     section_type: u32,
@@ -37,8 +51,10 @@ fn section_header(
 fn fixture() -> Vec<u8> {
     const HEADER_SIZE: u64 = 64;
     const STRING_OFFSET: u64 = HEADER_SIZE;
-    const STRING_SIZE: u64 = 1;
-    const GROUP_OFFSET: u64 = STRING_OFFSET + STRING_SIZE;
+    const STRING_SIZE: u64 = 11;
+    const SYMBOL_OFFSET: u64 = STRING_OFFSET + STRING_SIZE;
+    const SYMBOL_SIZE: u64 = 48;
+    const GROUP_OFFSET: u64 = SYMBOL_OFFSET + SYMBOL_SIZE;
     const GROUP_SIZE: u64 = 12;
     const SECTION_HEADER_OFFSET: u64 = GROUP_OFFSET + GROUP_SIZE;
 
@@ -62,7 +78,12 @@ fn fixture() -> Vec<u8> {
     half(&mut bytes, 6);
     half(&mut bytes, 0);
 
-    bytes.push(0);
+    bytes.extend_from_slice(b"\0signature\0");
+
+    // Symbol [0]: STN_UNDEF.
+    symbol(&mut bytes, 0, 0, 0);
+    // Symbol [1]: group signature, defined in member section [4].
+    symbol(&mut bytes, 1, 0x12, 4);
 
     // SHT_GROUP contents: GRP_COMDAT, section [4], section [5].
     word(&mut bytes, 1);
@@ -73,10 +94,19 @@ fn fixture() -> Vec<u8> {
     bytes.extend_from_slice(&[0u8; 64]);
     // [1] SHT_STRTAB
     section_header(&mut bytes, 3, STRING_OFFSET, STRING_SIZE, 0, 0, 1, 0);
-    // [2] SHT_SYMTAB -> string table [1]
-    section_header(&mut bytes, 2, 0, 0, 1, 0, 8, 24);
-    // [3] SHT_GROUP -> symbol table [2], signature symbol [0]
-    section_header(&mut bytes, 17, GROUP_OFFSET, GROUP_SIZE, 2, 0, 4, 4);
+    // [2] SHT_SYMTAB -> string table [1], first non-local symbol [1].
+    section_header(
+        &mut bytes,
+        2,
+        SYMBOL_OFFSET,
+        SYMBOL_SIZE,
+        1,
+        1,
+        8,
+        24,
+    );
+    // [3] SHT_GROUP -> symbol table [2], signature symbol [1].
+    section_header(&mut bytes, 17, GROUP_OFFSET, GROUP_SIZE, 2, 1, 4, 4);
     // [4], [5] member sections.
     section_header(&mut bytes, 1, 0, 0, 0, 0, 1, 0);
     section_header(&mut bytes, 1, 0, 0, 0, 0, 1, 0);
@@ -103,7 +133,7 @@ fn rejects_invalid_section_group_member_index() {
     let mut bytes = fixture();
 
     // The second member is the third word in SHT_GROUP contents.
-    let second_member_offset = 64 + 1 + 8;
+    let second_member_offset = 64 + 11 + 48 + 8;
     bytes[second_member_offset..second_member_offset + 4]
         .copy_from_slice(&99u32.to_le_bytes());
 
@@ -121,6 +151,7 @@ fn resolves_section_group_signature_symbol() {
         .signature_symbol()
         .expect("section-group signature symbol must resolve");
 
-    assert_eq!(group.signature_symbol_index, 0);
-    assert_eq!(signature.name_index, 0);
+    assert_eq!(group.signature_symbol_index, 1);
+    assert_eq!(group.signature_name(), Some("signature"));
+    assert_eq!(signature.name_index, 1);
 }
