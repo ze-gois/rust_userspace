@@ -12,6 +12,7 @@ use super::super::{
     header::{self, Header},
     identification::{Class, Data, Identification},
     note::Note,
+    representation::Decoder,
     note_table::NoteTable,
     program_header::{self, ProgramHeader},
     section_header::{self, SectionHeader},
@@ -28,10 +29,6 @@ impl<'file> ObjectFile<'file> {
         let identification = Identification::from_bytes(identification_bytes)
             .ok_or(ParseError::InvalidIdentification)?;
 
-        if !native_data_encoding(identification.data) {
-            return Err(ParseError::UnsupportedDataEncoding);
-        }
-
         match identification.class {
             Class::Class32 => Self::parse_class_32(bytes),
             Class::Class64 => Self::parse_class_64(bytes),
@@ -40,8 +37,12 @@ impl<'file> ObjectFile<'file> {
     }
 
     fn parse_class_32(bytes: &'file [u8]) -> Result<Self, ParseError> {
-        let representation: header::class_32::Representation =
-            read(bytes, 0).ok_or(ParseError::Truncated)?;
+        let representation = header::class_32::Representation::decode(
+            bytes,
+            0,
+            identification.data,
+        )
+        .ok_or(ParseError::Truncated)?;
         let header = Header::try_from(representation).map_err(|_| ParseError::InvalidHeader)?;
 
         let initial_section_header = initial_section_header_32(bytes, &header)?;
@@ -57,8 +58,12 @@ impl<'file> ObjectFile<'file> {
             header.program_header_count as usize,
             core::mem::size_of::<program_header::class_32::Representation>(),
             |bytes, offset| {
-                read::<program_header::class_32::Representation>(bytes, offset)
-                    .map(ProgramHeader::from)
+                program_header::class_32::Representation::decode(
+                    bytes,
+                    offset,
+                    identification.data,
+                )
+                .map(ProgramHeader::from)
             },
             ParseError::ProgramHeaderEntryTooSmall,
         )?;
@@ -70,8 +75,12 @@ impl<'file> ObjectFile<'file> {
             section_header_count,
             core::mem::size_of::<section_header::class_32::Representation>(),
             |bytes, offset| {
-                read::<section_header::class_32::Representation>(bytes, offset)
-                    .map(SectionHeader::from)
+                section_header::class_32::Representation::decode(
+                    bytes,
+                    offset,
+                    identification.data,
+                )
+                .map(SectionHeader::from)
             },
             ParseError::SectionHeaderEntryTooSmall,
         )?;
@@ -93,8 +102,12 @@ impl<'file> ObjectFile<'file> {
     }
 
     fn parse_class_64(bytes: &'file [u8]) -> Result<Self, ParseError> {
-        let representation: header::class_64::Representation =
-            read(bytes, 0).ok_or(ParseError::Truncated)?;
+        let representation = header::class_64::Representation::decode(
+            bytes,
+            0,
+            identification.data,
+        )
+        .ok_or(ParseError::Truncated)?;
         let header = Header::try_from(representation).map_err(|_| ParseError::InvalidHeader)?;
 
         let initial_section_header = initial_section_header_64(bytes, &header)?;
@@ -110,8 +123,12 @@ impl<'file> ObjectFile<'file> {
             header.program_header_count as usize,
             core::mem::size_of::<program_header::class_64::Representation>(),
             |bytes, offset| {
-                read::<program_header::class_64::Representation>(bytes, offset)
-                    .map(ProgramHeader::from)
+                program_header::class_64::Representation::decode(
+                    bytes,
+                    offset,
+                    identification.data,
+                )
+                .map(ProgramHeader::from)
             },
             ParseError::ProgramHeaderEntryTooSmall,
         )?;
@@ -123,8 +140,12 @@ impl<'file> ObjectFile<'file> {
             section_header_count,
             core::mem::size_of::<section_header::class_64::Representation>(),
             |bytes, offset| {
-                read::<section_header::class_64::Representation>(bytes, offset)
-                    .map(SectionHeader::from)
+                section_header::class_64::Representation::decode(
+                    bytes,
+                    offset,
+                    identification.data,
+                )
+                .map(SectionHeader::from)
             },
             ParseError::SectionHeaderEntryTooSmall,
         )?;
@@ -149,6 +170,7 @@ impl<'file> ObjectFile<'file> {
 pub(super) fn parse_dynamic_array(
     bytes: &[u8],
     class: Class,
+    data: Data,
     entry_size: usize,
 ) -> Option<DynamicArray> {
     if entry_size == 0 || bytes.len() % entry_size != 0 {
@@ -167,7 +189,7 @@ pub(super) fn parse_dynamic_array(
             for index in 0..count {
                 let offset = index.checked_mul(entry_size)?;
                 let representation =
-                    read::<dynamic::class_32::Representation>(bytes, offset)?;
+                    dynamic::class_32::Representation::decode(bytes, offset, data)?;
                 let entry = Dynamic::from(representation);
                 let end = matches!(entry.tag, Tag::Null);
                 entries.push(entry);
@@ -184,7 +206,7 @@ pub(super) fn parse_dynamic_array(
             for index in 0..count {
                 let offset = index.checked_mul(entry_size)?;
                 let representation =
-                    read::<dynamic::class_64::Representation>(bytes, offset)?;
+                    dynamic::class_64::Representation::decode(bytes, offset, data)?;
                 let entry = Dynamic::from(representation);
                 let end = matches!(entry.tag, Tag::Null);
                 entries.push(entry);
@@ -202,6 +224,7 @@ pub(super) fn parse_dynamic_array(
 pub(super) fn parse_note_table<'file>(
     bytes: &'file [u8],
     class: Class,
+    data: Data,
 ) -> Option<NoteTable<'file>> {
     let word_size = match class {
         Class::Class32 => 4usize,
@@ -213,11 +236,11 @@ pub(super) fn parse_note_table<'file>(
     let mut offset = 0usize;
 
     while offset < bytes.len() {
-        let namesz = read_word(bytes, offset, word_size)?;
+        let namesz = word_by_size(bytes, offset, word_size, data)?;
         offset = offset.checked_add(word_size)?;
-        let descsz = read_word(bytes, offset, word_size)?;
+        let descsz = word_by_size(bytes, offset, word_size, data)?;
         offset = offset.checked_add(word_size)?;
-        let r#type = read_word(bytes, offset, word_size)?;
+        let r#type = word_by_size(bytes, offset, word_size, data)?;
         offset = offset.checked_add(word_size)?;
 
         let name_length = usize::try_from(namesz).ok()?;
@@ -252,7 +275,12 @@ fn initial_section_header_32(
 
     let offset =
         usize::try_from(header.section_header_offset).map_err(|_| ParseError::Truncated)?;
-    Ok(read::<section_header::class_32::Representation>(bytes, offset).map(SectionHeader::from))
+    Ok(section_header::class_32::Representation::decode(
+        bytes,
+        offset,
+        header.identification.data,
+    )
+    .map(SectionHeader::from))
 }
 
 fn initial_section_header_64(
@@ -271,7 +299,12 @@ fn initial_section_header_64(
 
     let offset =
         usize::try_from(header.section_header_offset).map_err(|_| ParseError::Truncated)?;
-    Ok(read::<section_header::class_64::Representation>(bytes, offset).map(SectionHeader::from))
+    Ok(section_header::class_64::Representation::decode(
+        bytes,
+        offset,
+        header.identification.data,
+    )
+    .map(SectionHeader::from))
 }
 
 fn resolve_section_header_count(
@@ -308,18 +341,6 @@ fn resolve_section_name_string_table_index(
             let initial = initial.ok_or(ParseError::InvalidSectionNameStringTable)?;
             Ok(Some(initial.link as usize))
         }
-    }
-}
-
-fn native_data_encoding(data: Data) -> bool {
-    #[cfg(target_endian = "little")]
-    {
-        matches!(data, Data::LeastSignificantByteFirst)
-    }
-
-    #[cfg(target_endian = "big")]
-    {
-        matches!(data, Data::MostSignificantByteFirst)
     }
 }
 
@@ -362,12 +383,22 @@ fn align(value: usize, alignment: usize) -> Option<usize> {
     value.checked_add(mask).map(|value| value & !mask)
 }
 
-fn read_word(bytes: &[u8], offset: usize, word_size: usize) -> Option<u64> {
+fn word_by_size(
+    bytes: &[u8],
+    offset: usize,
+    word_size: usize,
+    data: Data,
+) -> Option<u64> {
+    let mut decoder = Decoder::new(bytes, offset, data)?;
     match word_size {
-        4 => read::<u32>(bytes, offset).map(u64::from),
-        8 => read::<u64>(bytes, offset),
+        4 => decoder.word().map(u64::from),
+        8 => decoder.xword(),
         _ => None,
     }
+}
+
+pub(super) fn word(bytes: &[u8], offset: usize, data: Data) -> Option<u32> {
+    Decoder::new(bytes, offset, data)?.word()
 }
 
 pub(super) fn range(bytes: &[u8], offset: u64, size: u64) -> Option<&[u8]> {
@@ -377,10 +408,3 @@ pub(super) fn range(bytes: &[u8], offset: u64, size: u64) -> Option<&[u8]> {
     bytes.get(start..end)
 }
 
-pub(super) fn read<T: Copy>(bytes: &[u8], offset: usize) -> Option<T> {
-    let size = core::mem::size_of::<T>();
-    let end = offset.checked_add(size)?;
-    let source = bytes.get(offset..end)?;
-
-    Some(unsafe { source.as_ptr().cast::<T>().read_unaligned() })
-}
