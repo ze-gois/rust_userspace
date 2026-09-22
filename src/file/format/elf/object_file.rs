@@ -3,13 +3,16 @@
 use ample::r#type::Vec;
 
 use super::{
+    compression::{self, CompressedSection, CompressionHeader},
     dynamic::{self, Dynamic, Tag},
     dynamic_table::DynamicTable,
+    hash::HashTable,
     header::{self, Header},
     identification::{Class, Data, Identification},
     program_header::{self, ProgramHeader},
     relocation::{self, Relocation},
     relocation_table::RelocationTable,
+    section_group::{Flags as SectionGroupFlags, SectionGroup},
     section_header::{self, SectionHeader},
     string_table::StringTable,
     symbol::{self, Symbol},
@@ -366,6 +369,99 @@ impl<'file> ObjectFile<'file> {
             entries,
             StringTable::new(strings_section.contents),
         ))
+    }
+
+    pub fn hash_table(&self, section_index: usize) -> Option<HashTable<'file>> {
+        let header = *self.section_headers.get(section_index)?;
+        if !matches!(header.r#type, section_header::Type::Hash) {
+            return None;
+        }
+
+        let section = self.section(section_index)?;
+        if section.contents.len() < 8 {
+            return None;
+        }
+
+        let bucket_count = read::<u32>(section.contents, 0)? as usize;
+        let chain_count = read::<u32>(section.contents, 4)? as usize;
+        let mut offset = 8usize;
+
+        let mut buckets = Vec::with_capacity(bucket_count);
+        for _ in 0..bucket_count {
+            buckets.push(read::<u32>(section.contents, offset)?);
+            offset = offset.checked_add(core::mem::size_of::<u32>())?;
+        }
+
+        let mut chains = Vec::with_capacity(chain_count);
+        for _ in 0..chain_count {
+            chains.push(read::<u32>(section.contents, offset)?);
+            offset = offset.checked_add(core::mem::size_of::<u32>())?;
+        }
+
+        let symbols = self.symbol_table(header.link as usize)?;
+        Some(HashTable::new(buckets, chains, symbols))
+    }
+
+    pub fn section_group(&self, section_index: usize) -> Option<SectionGroup<'file>> {
+        let header = *self.section_headers.get(section_index)?;
+        if !matches!(header.r#type, section_header::Type::Group) {
+            return None;
+        }
+
+        let section = self.section(section_index)?;
+        if section.contents.len() < core::mem::size_of::<u32>()
+            || section.contents.len() % core::mem::size_of::<u32>() != 0
+        {
+            return None;
+        }
+
+        let flags = SectionGroupFlags::from_raw(read::<u32>(section.contents, 0)?);
+        let count = section.contents.len() / core::mem::size_of::<u32>();
+        let mut members = Vec::with_capacity(count.saturating_sub(1));
+
+        for index in 1..count {
+            let offset = index.checked_mul(core::mem::size_of::<u32>())?;
+            members.push(read::<u32>(section.contents, offset)? as usize);
+        }
+
+        let symbols = self.symbol_table(header.link as usize)?;
+        Some(SectionGroup::new(
+            flags,
+            members,
+            symbols,
+            header.information as usize,
+        ))
+    }
+
+    pub fn compressed_section(&self, section_index: usize) -> Option<CompressedSection<'file>> {
+        let section = self.section(section_index)?;
+        if !section
+            .header
+            .flags
+            .contains(section_header::Flags::COMPRESSED)
+        {
+            return None;
+        }
+
+        match self.header.identification.class {
+            Class::Class32 => {
+                let size = core::mem::size_of::<compression::class_32::Representation>();
+                let representation =
+                    read::<compression::class_32::Representation>(section.contents, 0)?;
+                let header = CompressionHeader::from(representation);
+                let data = section.contents.get(size..)?;
+                Some(CompressedSection::new(header, data))
+            }
+            Class::Class64 => {
+                let size = core::mem::size_of::<compression::class_64::Representation>();
+                let representation =
+                    read::<compression::class_64::Representation>(section.contents, 0)?;
+                let header = CompressionHeader::from(representation);
+                let data = section.contents.get(size..)?;
+                Some(CompressedSection::new(header, data))
+            }
+            Class::None | Class::Reserved(_) => None,
+        }
     }
 }
 
