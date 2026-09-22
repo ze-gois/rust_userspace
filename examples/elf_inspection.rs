@@ -228,10 +228,18 @@ fn main() {
         if let Some(symbols) = object.symbol_table(index) {
             println!("    symbols ({}):", symbols.len());
             for (symbol_index, symbol) in symbols.iter().enumerate() {
+                let section_index = symbols.section_index(symbol_index);
+                let section_name = match section_index {
+                    Some(userspace::file::format::elf::symbol::ResolvedSectionIndex::Section(section_index)) => {
+                        object.section_name(section_index)
+                    }
+                    _ => None,
+                };
                 println!(
-                    "      [{symbol_index}] name={:?} section={:?} symbol={symbol:?}",
+                    "      [{symbol_index}] name={:?} section={:?} section_name={:?} symbol={symbol:?}",
                     symbols.name(symbol_index),
-                    symbols.section_index(symbol_index),
+                    section_index,
+                    section_name,
                 );
             }
         }
