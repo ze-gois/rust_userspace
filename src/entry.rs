@@ -8,6 +8,85 @@ pub extern "C" fn entry(
     let stack = unsafe { userspace::memory::Stack::from_pointer(stack_pointer) };
     stack.print();
 
-    userspace::file::print("LICENSE");
+    let Some(argument_0) = stack.arguments.get(0) else {
+        userspace::info!("argv[0] is absent\n");
+        userspace::target::os::syscall::exit(1)
+    };
+
+    let Some(path) = argument_0.as_c_str() else {
+        userspace::info!("argv[0] is not a valid C string\n");
+        userspace::target::os::syscall::exit(1)
+    };
+
+    let Some(bytes) = userspace::file::read(path) else {
+        userspace::info!("failed to read argv[0]\n");
+        userspace::target::os::syscall::exit(1)
+    };
+
+    let object_file = match userspace::file::format::elf::ObjectFile::parse(&bytes) {
+        Ok(object_file) => object_file,
+        Err(error) => {
+            userspace::info!("failed to parse argv[0] as ELF: {:?}\n", error);
+            userspace::target::os::syscall::exit(1)
+        }
+    };
+
+    let header = object_file.header;
+    userspace::info!("--- ELF Object File ---\n");
+    userspace::info!(
+        "class={:?} data={:?} type={:?} machine={} version={:?}\n",
+        header.identification.class,
+        header.identification.data,
+        header.r#type,
+        header.machine.raw(),
+        header.version,
+    );
+    userspace::info!(
+        "entry={:#x} phoff={:#x} phentsize={} phnum={} shoff={:#x} shentsize={} shnum={} shstrndx={}\n",
+        header.entry,
+        header.program_header_offset,
+        header.program_header_entry_size,
+        header.program_header_count,
+        header.section_header_offset,
+        header.section_header_entry_size,
+        header.section_header_count,
+        header.section_name_string_table_index.raw(),
+    );
+
+    userspace::info!("program_headers[{}]\n", object_file.program_headers.len());
+    for (index, program_header) in object_file.program_headers.iter().enumerate() {
+        userspace::info!(
+            "  ph[{}] = {{ type: {:?}, flags: {:#x}, offset: {:#x}, virtual_address: {:#x}, physical_address: {:#x}, file_size: {:#x}, memory_size: {:#x}, alignment: {:#x} }}\n",
+            index,
+            program_header.r#type,
+            program_header.flags.raw(),
+            program_header.offset,
+            program_header.virtual_address,
+            program_header.physical_address,
+            program_header.file_size,
+            program_header.memory_size,
+            program_header.alignment,
+        );
+    }
+
+    userspace::info!("section_headers[{}]\n", object_file.section_headers.len());
+    for (index, section_header) in object_file.section_headers.iter().enumerate() {
+        userspace::info!(
+            "  sh[{}] = {{ name: {:?}, type: {:?}, flags: {:#x}, address: {:#x}, offset: {:#x}, size: {:#x}, link: {}, information: {}, alignment: {:#x}, entry_size: {:#x} }}\n",
+            index,
+            object_file.section_name(index),
+            section_header.r#type,
+            section_header.flags.raw(),
+            section_header.address,
+            section_header.offset,
+            section_header.size,
+            section_header.link,
+            section_header.information,
+            section_header.alignment,
+            section_header.entry_size,
+        );
+    }
+    userspace::info!("-----------------------\n");
+
     userspace::target::os::syscall::exit(0)
 }
