@@ -239,7 +239,7 @@ pub(super) fn parse_note_table<'file>(
     class: Class,
     data: Data,
 ) -> Option<NoteTable<'file>> {
-    let word_size = match class {
+    let alignment = match class {
         Class::Class32 => 4usize,
         Class::Class64 => 8usize,
         Class::None | Class::Reserved(_) => return None,
@@ -249,22 +249,22 @@ pub(super) fn parse_note_table<'file>(
     let mut offset = 0usize;
 
     while offset < bytes.len() {
-        let namesz = word_by_size(bytes, offset, word_size, data)?;
-        offset = offset.checked_add(word_size)?;
-        let descsz = word_by_size(bytes, offset, word_size, data)?;
-        offset = offset.checked_add(word_size)?;
-        let r#type = word_by_size(bytes, offset, word_size, data)?;
-        offset = offset.checked_add(word_size)?;
+        let namesz = u64::from(word(bytes, offset, data)?);
+        offset = offset.checked_add(core::mem::size_of::<u32>())?;
+        let descsz = u64::from(word(bytes, offset, data)?);
+        offset = offset.checked_add(core::mem::size_of::<u32>())?;
+        let r#type = u64::from(word(bytes, offset, data)?);
+        offset = offset.checked_add(core::mem::size_of::<u32>())?;
 
         let name_length = usize::try_from(namesz).ok()?;
         let name_end = offset.checked_add(name_length)?;
         let name = bytes.get(offset..name_end)?;
-        offset = align(name_end, word_size)?;
+        offset = align(name_end, alignment)?;
 
         let descriptor_length = usize::try_from(descsz).ok()?;
         let descriptor_end = offset.checked_add(descriptor_length)?;
         let descriptor = bytes.get(offset..descriptor_end)?;
-        offset = align(descriptor_end, word_size)?;
+        offset = align(descriptor_end, alignment)?;
 
         notes.push(Note::new(name, r#type, descriptor));
     }
