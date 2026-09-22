@@ -9,4 +9,8 @@ pub enum ValidationError {
     InitializationArraySizeNotPointerMultiple,
     TerminationArraySizeNotPointerMultiple,
     PreInitializationArraySizeNotPointerMultiple,
+    RelativeRelocationMissingSize,
+    RelativeRelocationMissingEntrySize,
+    RelativeRelocationEntrySizeMismatch,
+    RelativeRelocationSizeNotEntryMultiple,
 }
