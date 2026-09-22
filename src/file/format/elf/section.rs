@@ -21,3 +21,27 @@ impl<'file> Section<'file> {
         self.contents.len()
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct LinkOrder<'file> {
+    pub metadata_index: usize,
+    pub metadata: Section<'file>,
+    pub referenced_index: usize,
+    pub referenced: Section<'file>,
+}
+
+impl<'file> LinkOrder<'file> {
+    pub const fn new(
+        metadata_index: usize,
+        metadata: Section<'file>,
+        referenced_index: usize,
+        referenced: Section<'file>,
+    ) -> Self {
+        Self {
+            metadata_index,
+            metadata,
+            referenced_index,
+            referenced,
+        }
+    }
+}
