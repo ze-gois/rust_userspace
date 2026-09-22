@@ -37,7 +37,7 @@ macro_rules! auxiliary_types {
                     ]
                 ),*,
                 [
-                    usize::MAX;
+                    0xffff_ffff_ffff_ffff;
                     Unknown;
                     usize;
                     AT_UNKNOWN;
@@ -64,7 +64,7 @@ macro_rules! auxiliary_types {
                     ]
                 ),*,
                 [
-                    usize::MAX;
+                    0xffff_ffff_ffff_ffff;
                     Unknown;
                     ();
                     AT_UNKNOWN;
