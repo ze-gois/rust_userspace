@@ -2,7 +2,10 @@
 
 use ample::r#type::Vec;
 
-use super::symbol_table::SymbolTable;
+use super::{
+    section::Section,
+    symbol_table::SymbolTable,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Flags(u32);
@@ -22,6 +25,22 @@ impl Flags {
 
     pub const fn comdat(self) -> bool {
         self.0 & Self::COMDAT != 0
+    }
+}
+
+
+#[derive(Debug, Clone, Copy)]
+pub struct Member<'file> {
+    pub section_index: usize,
+    pub section: Section<'file>,
+}
+
+impl<'file> Member<'file> {
+    pub const fn new(section_index: usize, section: Section<'file>) -> Self {
+        Self {
+            section_index,
+            section,
+        }
     }
 }
 
