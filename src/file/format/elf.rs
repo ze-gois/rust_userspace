@@ -23,3 +23,5 @@ pub use object_file::{ObjectFile, ParseError};
 pub mod symbol_table;
 pub mod relocation_table;
 pub mod dynamic_table;
+pub mod section_group;
+pub mod note_table;
