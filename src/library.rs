@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(feature = "with_std"), no_std)]
 #![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
 // #![feature(never_type)]
