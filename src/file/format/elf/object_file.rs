@@ -225,7 +225,7 @@ impl<'file> ObjectFile<'file> {
             Class::None | Class::Reserved(_) => return None,
         }
 
-        Some(SymbolTable::new(symbols, strings))
+        Some(SymbolTable::new(symbols, strings, header.information as usize))
     }
 }
 
