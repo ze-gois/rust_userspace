@@ -210,6 +210,33 @@ pub extern "C" fn entry(
                             dependencies.needed,
                         );
                     }
+
+                    userspace::info!(
+                        "  initialization_termination_conformance={:?}\n",
+                        object_file.validate_dynamic_initialization_and_termination(index),
+                    );
+
+                    if let Some(functions) =
+                        object_file.initialization_and_termination_functions_from_program_header(index)
+                    {
+                        userspace::info!(
+                            "  initialization = {{ function: {:?}, array_entries: {} }}\n",
+                            functions.initialization.function,
+                            functions.initialization.functions.len(),
+                        );
+                        userspace::info!(
+                            "  pre_initialization = {:?}\n",
+                            functions
+                                .pre_initialization
+                                .as_ref()
+                                .map(|pre| pre.functions.len()),
+                        );
+                        userspace::info!(
+                            "  termination = {{ array_entries: {}, function: {:?} }}\n",
+                            functions.termination.functions.len(),
+                            functions.termination.function,
+                        );
+                    }
                 }
             }
             userspace::file::format::elf::program_header::Type::Note => {
