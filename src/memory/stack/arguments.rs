@@ -26,7 +26,22 @@ impl Entry {
     }
 }
 
-pub type List = Vec<Entry>;
+#[derive(Debug, Default)]
+pub struct List {
+    entries: Vec<Entry>,
+}
+
+impl List {
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self { entries: Vec::with_capacity(capacity) }
+    }
+
+    pub fn push(&mut self, entry: Entry) { self.entries.push(entry); }
+    pub fn len(&self) -> usize { self.entries.len() }
+    pub fn is_empty(&self) -> bool { self.entries.is_empty() }
+    pub fn get(&self, index: usize) -> Option<&Entry> { self.entries.get(index) }
+    pub fn iter(&self) -> core::slice::Iter<'_, Entry> { self.entries.iter() }
+}
 
 pub unsafe fn from_pointer(
     stack_pointer: crate::target::architecture::StackPointer,
@@ -35,12 +50,12 @@ pub unsafe fn from_pointer(
     let count = unsafe { *words };
     let pointers = unsafe { words.add(1) };
 
-    let mut values = List::with_capacity(count);
+    let mut arguments = List::with_capacity(count);
     for index in 0..count {
         let pointer = unsafe { *pointers.add(index) } as *const u8;
-        values.push(Entry::from_pointer(pointer));
+        arguments.push(Entry::from_pointer(pointer));
     }
 
     let environment = unsafe { pointers.add(count + 1) };
-    (values, environment)
+    (arguments, environment)
 }
