@@ -2,6 +2,7 @@
 
 pub mod class_32;
 pub mod class_64;
+pub mod section;
 pub mod tag;
 
 pub use tag::{PayloadKind, Tag};
