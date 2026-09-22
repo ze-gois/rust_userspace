@@ -20,3 +20,4 @@ pub mod string_table;
 pub mod symbol;
 pub mod object_file;
 pub use object_file::{ObjectFile, ParseError};
+pub mod symbol_table;
