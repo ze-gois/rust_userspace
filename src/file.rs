@@ -1,5 +1,7 @@
 //! File domain.
 //!
-//! Concrete file capabilities and formats are intentionally absent during the
-//! project revision. They will be reintroduced only when their semantics are
-//! justified independently from a specific operating-system syscall path.
+//! File capabilities are introduced independently as their semantics are
+//! justified. For now the public surface contains only file printing.
+
+pub mod print;
+pub use print::print;
