@@ -20,7 +20,7 @@ use super::{
     relocation_table::RelocationTable,
     section_group::{Flags as SectionGroupFlags, SectionGroup},
     section_header::{self, SectionHeader},
-    segment_section::{ImageContribution, SegmentSection},
+    segment::contents::{ImageContribution, Section as SegmentSection},
     string_table::StringTable,
     symbol::{self, Symbol},
     symbol_table::SymbolTable,
