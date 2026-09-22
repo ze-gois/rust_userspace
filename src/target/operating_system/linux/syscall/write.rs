@@ -27,21 +27,25 @@ pub mod ok {
 }
 
 pub mod error {
-    ample::result!(Error; "MUnMap error"; usize; [
-        [0;  ERROR2;   Default;           usize; "Error"; "Something wicked this way comes"],
-        [1;  ERROR;   Error;             usize; "Error"; "Something wicked this way comes"],
-        [9;  EBADF;   BadFileDescriptor; usize;   "EBADF";     "Bad file descriptor"],
-        [14; EFAULT;  InvalidBuffer;     usize;  "EFAULT";    "Invalid buffer pointer"],
-        [27; EFBIG;   BufferTooLarge;    usize;   "EFBIG";     "Buffer too large"],
-        [4;  EINTR;   Interrupted;       usize;   "EINTR";     "System call was interrupted"],
-        [5;  EIO;     IOError;           usize;     "EIO";       "Input/output error"],
-        [28; ENOSPC;  NoSpaceLeft;       usize;  "ENOSPC";    "No space left on device"],
-        [32; EPIPE;   BrokenPipe;        usize;   "EPIPE";     "Broken pipe"],
+    ample::result!(Error; "Write error"; usize; [
+        [11; EAGAIN; WouldBlock; usize; "EAGAIN"; "Nonblocking write would block; EWOULDBLOCK is the socket alias"],
+        [9; EBADF; BadFileDescriptor; usize; "EBADF"; "File descriptor is invalid or not open for writing"],
+        [89; EDESTADDRREQ; DestinationAddressRequired; usize; "EDESTADDRREQ"; "Datagram socket has no peer address"],
+        [122; EDQUOT; QuotaExceeded; usize; "EDQUOT"; "User disk quota is exhausted"],
+        [14; EFAULT; InvalidBuffer; usize; "EFAULT"; "Buffer is outside the accessible address space"],
+        [27; EFBIG; FileTooLarge; usize; "EFBIG"; "Write would exceed the maximum file size or file-size limit"],
+        [4; EINTR; Interrupted; usize; "EINTR"; "Write was interrupted by a signal before data was written"],
+        [22; EINVAL; InvalidArgument; usize; "EINVAL"; "Object or direct-I/O alignment makes the write invalid"],
+        [5; EIO; InputOutput; usize; "EIO"; "Low-level input/output or write-back error occurred"],
+        [28; ENOSPC; NoSpaceLeft; usize; "ENOSPC"; "Device has no space for the data"],
+        [1; EPERM; OperationNotPermitted; usize; "EPERM"; "Operation was prevented, for example by a file seal"],
+        [32; EPIPE; BrokenPipe; usize; "EPIPE"; "Pipe or socket reading end is closed"],
+        [usize::MAX; UNKNOWN; Unknown; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
         pub fn from_no(no: usize) -> Self {
-            Error::Default(no)
+            Error::Unknown(no)
         }
     }
 }
