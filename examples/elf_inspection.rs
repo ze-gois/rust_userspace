@@ -193,6 +193,14 @@ fn main() {
             );
         }
 
+        if let Some(target) = object.relocation_target_section(index) {
+            println!(
+                "    sh_info: relocation target section={} name={:?}",
+                target.section_index,
+                object.section_name(target.section_index),
+            );
+        }
+
         if let Some(link_order) = object.link_order(index) {
             println!(
                 "    link order: metadata={} referenced={}",
