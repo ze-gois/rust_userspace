@@ -98,6 +98,17 @@ pub extern "C" fn entry(
             segment.program_header.flags.writable(),
             segment.program_header.flags.executable(),
         );
+
+        if let Some(sections) = object_file.sections_in_loadable_segment(index) {
+            for section in sections {
+                userspace::info!(
+                    "    section[{}] {:?} contribution={:?}\n",
+                    section.section_index,
+                    object_file.section_name(section.section_index),
+                    section.contribution,
+                );
+            }
+        }
     }
 
     if let Some(interpreter) = object_file.program_interpreter() {
