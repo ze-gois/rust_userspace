@@ -114,8 +114,8 @@ impl Stack {
                 "  auxv[{}] = {{ type: {}, acronym: {:?}, description: {:?}, raw: {:#x}, value: {:?} }}\n",
                 index,
                 auxiliary.raw_key(),
-                ample::traits::enums::Labeled::<ample::Origin>::acronym(&value),
-                ample::traits::enums::Labeled::<ample::Origin>::description(&value),
+                ample::traits::enums::Labeled::<crate::Origin>::acronym(&value),
+                ample::traits::enums::Labeled::<crate::Origin>::description(&value),
                 auxiliary.raw_value(),
                 value,
             );
