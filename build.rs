@@ -4,6 +4,10 @@ use std::path::PathBuf;
 use userspace_build::info;
 
 fn main() {
+    if env::var_os("CARGO_FEATURE_HOST_TESTS").is_some() {
+        return;
+    }
+
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
 
     let linker_script = PathBuf::from(&manifest_dir).join("linker.ld");
