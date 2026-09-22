@@ -8,4 +8,4 @@ cargo check \
   --features host_tests,with_std \
   --example elf_inspection
 
-cargo test   -Z build-std   --target x86_64-unknown-linux-gnu   --no-default-features   --features host_tests,with_std   --test elf_representation   --test elf_dynamic_initialization   --test elf_dynamic_flags   --test elf_relative_relocation   --test elf_dynamic_symbol_table_size   --test elf_dynamic_relative_relocation   --test elf_section_relative_relocation   --test elf_symbol_visibility   --test elf_section_link_order   --test elf_compression   --test elf_notes   --test elf_section_links
+cargo test   -Z build-std   --target x86_64-unknown-linux-gnu   --no-default-features   --features host_tests,with_std   --test elf_representation   --test elf_dynamic_initialization   --test elf_dynamic_flags   --test elf_relative_relocation   --test elf_dynamic_symbol_table_size   --test elf_dynamic_relative_relocation   --test elf_section_relative_relocation   --test elf_symbol_visibility   --test elf_section_link_order   --test elf_compression   --test elf_notes   --test elf_section_links   --test elf_section_group_members
