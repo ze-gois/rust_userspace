@@ -59,4 +59,52 @@ impl Stack {
     pub fn argc(&self) -> usize {
         self.arguments.len()
     }
+
+    pub fn print(&self) {
+        crate::info!("--- Linux Initial Stack ---\n");
+        crate::info!(
+            "former={:p} latter={:p} argc={} status={:?}\n",
+            self.former,
+            self.latter,
+            self.argc(),
+            self.status,
+        );
+
+        crate::info!("argv[{}]\n", self.arguments.len());
+        for (index, argument) in self.arguments.iter().enumerate() {
+            match argument.as_str() {
+                Some(value) => crate::info!("  argv[{}] = {:?}\n", index, value),
+                None => crate::info!(
+                    "  argv[{}] = <non-utf8 @ {:p}>\n",
+                    index,
+                    argument.pointer(),
+                ),
+            }
+        }
+
+        crate::info!("envp[{}]\n", self.environment.len());
+        for (index, variable) in self.environment.iter().enumerate() {
+            match variable.as_str() {
+                Some(value) => crate::info!("  envp[{}] = {:?}\n", index, value),
+                None => crate::info!(
+                    "  envp[{}] = <non-utf8 @ {:p}>\n",
+                    index,
+                    variable.pointer(),
+                ),
+            }
+        }
+
+        crate::info!("auxv[{}]\n", self.auxiliary.len());
+        for (index, auxiliary) in self.auxiliary.iter().enumerate() {
+            crate::info!(
+                "  auxv[{}] = {{ type: {}, raw: {:#x}, value: {:?} }}\n",
+                index,
+                auxiliary.raw_key(),
+                auxiliary.raw_value(),
+                auxiliary.value(),
+            );
+        }
+
+        crate::info!("---------------------------\n");
+    }
 }
