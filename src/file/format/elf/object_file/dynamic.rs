@@ -454,7 +454,6 @@ impl<'file> ObjectFile<'file> {
         let initialization_size = array.first(Tag::InitializationArraySize);
         match (initialization_array, initialization_size) {
             (Some(_), None) => return Err(ValidationError::InitializationArrayMissingSize),
-            (None, Some(_)) => return Err(ValidationError::InitializationArraySizeWithoutArray),
             (Some(_), Some(size)) if size.payload % pointer_size != 0 => {
                 return Err(ValidationError::InitializationArraySizeNotPointerMultiple)
             }
@@ -465,7 +464,6 @@ impl<'file> ObjectFile<'file> {
         let termination_size = array.first(Tag::TerminationArraySize);
         match (termination_array, termination_size) {
             (Some(_), None) => return Err(ValidationError::TerminationArrayMissingSize),
-            (None, Some(_)) => return Err(ValidationError::TerminationArraySizeWithoutArray),
             (Some(_), Some(size)) if size.payload % pointer_size != 0 => {
                 return Err(ValidationError::TerminationArraySizeNotPointerMultiple)
             }
@@ -477,9 +475,6 @@ impl<'file> ObjectFile<'file> {
         match (pre_initialization_array, pre_initialization_size) {
             (Some(_), None) => {
                 return Err(ValidationError::PreInitializationArrayMissingSize)
-            }
-            (None, Some(_)) => {
-                return Err(ValidationError::PreInitializationArraySizeWithoutArray)
             }
             (Some(_), Some(size)) if size.payload % pointer_size != 0 => {
                 return Err(ValidationError::PreInitializationArraySizeNotPointerMultiple)
