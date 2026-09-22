@@ -28,7 +28,6 @@ pub mod relocation;
 pub mod relocation_table;
 pub mod dynamic;
 pub mod dynamic_array;
-pub mod dynamic_table;
 pub mod hash;
 pub mod note;
 pub mod note_table;
