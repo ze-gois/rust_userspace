@@ -22,13 +22,18 @@ pub mod ok {
 }
 
 pub mod error {
-    ample::result!(Error; "MUnMap error"; usize; [
-        [1; ERROR; Default; usize; "Error"; "Something wicked this way comes"],
+    ample::result!(Error; "Close error"; usize; [
+        [9; EBADF; BadFileDescriptor; usize; "EBADF"; "File descriptor is not a valid open file descriptor"],
+        [4; EINTR; Interrupted; usize; "EINTR"; "Close was interrupted by a signal"],
+        [5; EIO; InputOutput; usize; "EIO"; "Input/output error occurred"],
+        [28; ENOSPC; NoSpaceLeft; usize; "ENOSPC"; "No space left on the device; may be reported late by close"],
+        [122; EDQUOT; QuotaExceeded; usize; "EDQUOT"; "Disk quota exceeded; may be reported late by close"],
+        [usize::MAX; UNKNOWN; Unknown; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
         pub fn from_no(no: usize) -> Self {
-            Error::Default(no)
+            Error::Unknown(no)
         }
     }
 }
