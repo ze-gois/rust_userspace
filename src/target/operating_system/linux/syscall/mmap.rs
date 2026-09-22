@@ -42,8 +42,6 @@ pub mod ok {
 }
 
 pub mod error {
-    const UNKNOWN_ERROR_DISCRIMINANT: usize = usize::MAX;
-
     ample::result!(Error; "MMap error"; usize; [
         [13; EACCES; PermissionDenied; usize; "EACCES"; "Mapping permissions conflict with file access or file type"],
         [11; EAGAIN; TryAgain; usize; "EAGAIN"; "File is locked or too much memory would be locked"],
@@ -56,7 +54,7 @@ pub mod error {
         [75; EOVERFLOW; Overflow; usize; "EOVERFLOW"; "Length and offset page counts overflow the supported range"],
         [1; EPERM; OperationNotPermitted; usize; "EPERM"; "Executable mapping, file seal, or huge-page policy forbids the mapping"],
         [26; ETXTBSY; TextFileBusy; usize; "ETXTBSY"; "MAP_DENYWRITE conflicts with a file open for writing"],
-        [UNKNOWN_ERROR_DISCRIMINANT; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [4096; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {

@@ -9,6 +9,7 @@ pub mod operating_system;
 pub mod result;
 
 pub use architecture as arch;
+pub use architecture::Arch;
 pub use operating_system as os;
 
 pub use result::{Error, Ok, Result};

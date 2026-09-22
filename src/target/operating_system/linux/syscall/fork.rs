@@ -25,13 +25,11 @@ pub mod ok {
 }
 
 pub mod error {
-    const UNKNOWN_ERROR_DISCRIMINANT: usize = usize::MAX;
-
     ample::result!(Error; "Fork error"; usize; [
         [11; EAGAIN; TryAgain; usize; "EAGAIN"; "A process, thread, PID, cgroup, or scheduler limit prevents fork"],
         [12; ENOMEM; OutOfMemory; usize; "ENOMEM"; "Kernel memory is insufficient or the PID namespace cannot create a child"],
         [38; ENOSYS; NotImplemented; usize; "ENOSYS"; "Fork is not supported on this platform"],
-        [UNKNOWN_ERROR_DISCRIMINANT; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [4096; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {

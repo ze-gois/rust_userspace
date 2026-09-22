@@ -24,15 +24,13 @@ pub mod ok {
 }
 
 pub mod error {
-    const UNKNOWN_ERROR_DISCRIMINANT: usize = usize::MAX;
-
     ample::result!(Error; "GetRandom error"; usize; [
         [11; EAGAIN; WouldBlock; usize; "EAGAIN"; "Requested entropy is unavailable and nonblocking behavior was requested"],
         [14; EFAULT; InvalidBuffer; usize; "EFAULT"; "Output buffer is outside the accessible address space"],
         [4; EINTR; Interrupted; usize; "EINTR"; "Request was interrupted by a signal"],
         [22; EINVAL; InvalidArgument; usize; "EINVAL"; "Invalid flags were supplied"],
         [38; ENOSYS; NotImplemented; usize; "ENOSYS"; "Kernel does not implement getrandom"],
-        [UNKNOWN_ERROR_DISCRIMINANT; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [4096; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {

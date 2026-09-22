@@ -9,7 +9,8 @@ pub mod syscall;
 // pub use syscall::*;
 
 pub mod page {
-    pub const SIZE: usize = 0x1000;
+    pub const BASE_SIZE: usize = 0x1000;
+    pub const SIZE: usize = BASE_SIZE;
 
     #[inline]
     pub fn align_down(value: u64) -> u64 {

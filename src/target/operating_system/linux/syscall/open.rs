@@ -40,8 +40,6 @@ pub mod ok {
 }
 
 pub mod error {
-    const UNKNOWN_ERROR_DISCRIMINANT: usize = usize::MAX;
-
     ample::result!(Error; "Open error"; usize; [
         [9; EBADF; BadFileDescriptor; usize; "EBADF"; "OpenAt received an invalid directory file descriptor for a relative path"],
         [13; EACCES; PermissionDenied; usize; "EACCES"; "Requested access or pathname search permission is denied"],
@@ -69,7 +67,7 @@ pub mod error {
         [30; EROFS; ReadOnlyFileSystem; usize; "EROFS"; "Write access was requested on a read-only filesystem"],
         [26; ETXTBSY; TextFileBusy; usize; "ETXTBSY"; "Executable, swap, or kernel-used file is busy"],
         [11; EWOULDBLOCK; WouldBlock; usize; "EWOULDBLOCK"; "Nonblocking open conflicts with an incompatible lease"],
-        [UNKNOWN_ERROR_DISCRIMINANT; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [4096; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {

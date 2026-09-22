@@ -22,12 +22,10 @@ pub mod ok {
 }
 
 pub mod error {
-    const UNKNOWN_ERROR_DISCRIMINANT: usize = usize::MAX;
-
     ample::result!(Error; "MUnMap error"; usize; [
         [22; EINVAL; InvalidArgument; usize; "EINVAL"; "Address is not page-aligned or length is zero"],
         [12; ENOMEM; OutOfMemory; usize; "ENOMEM"; "Unmapping would require additional mapping structures that cannot be allocated"],
-        [UNKNOWN_ERROR_DISCRIMINANT; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [4096; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
