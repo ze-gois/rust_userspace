@@ -7,6 +7,7 @@ use super::{
     dynamic::{self, Dynamic, Tag},
     dynamic_array::DynamicArray,
     dynamic_hash_table::DynamicHashTable,
+    dynamic_relocation_table::{Addend as DynamicRelocationAddend, DynamicRelocationTable, Purpose as DynamicRelocationPurpose},
     dynamic_symbol_table::DynamicSymbolTable,
     dynamic_table::DynamicTable,
     hash::HashTable,
@@ -538,6 +539,165 @@ impl<'file> ObjectFile<'file> {
             buckets,
             chains,
             self.dynamic_symbol_table_from_program_header(index)?,
+        ))
+    }
+
+    pub fn dynamic_relocation_tables_from_program_header(
+        &self,
+        index: usize,
+    ) -> Option<Vec<DynamicRelocationTable<'file>>> {
+        let array = self.dynamic_array_from_program_header(index)?;
+        let mut tables = Vec::new();
+
+        if let (Some(address), Some(size), Some(entry_size)) = (
+            array.first(Tag::Relocation).map(|entry| entry.payload),
+            array.first(Tag::RelocationSize).map(|entry| entry.payload),
+            array.first(Tag::RelocationEntrySize).map(|entry| entry.payload),
+        ) {
+            tables.push(self.dynamic_relocation_table_from_parts(
+                index,
+                address,
+                size,
+                entry_size,
+                DynamicRelocationAddend::Implicit,
+                DynamicRelocationPurpose::General,
+            )?);
+        }
+
+        if let (Some(address), Some(size), Some(entry_size)) = (
+            array
+                .first(Tag::RelocationWithAddend)
+                .map(|entry| entry.payload),
+            array
+                .first(Tag::RelocationWithAddendSize)
+                .map(|entry| entry.payload),
+            array
+                .first(Tag::RelocationWithAddendEntrySize)
+                .map(|entry| entry.payload),
+        ) {
+            tables.push(self.dynamic_relocation_table_from_parts(
+                index,
+                address,
+                size,
+                entry_size,
+                DynamicRelocationAddend::Explicit,
+                DynamicRelocationPurpose::General,
+            )?);
+        }
+
+        if let (Some(address), Some(size), Some(format)) = (
+            array.first(Tag::JumpRelocation).map(|entry| entry.payload),
+            array
+                .first(Tag::ProcedureLinkageTableRelocationSize)
+                .map(|entry| entry.payload),
+            array
+                .first(Tag::ProcedureLinkageTableRelocation)
+                .map(|entry| entry.payload),
+        ) {
+            let (addend, entry_size) = match Tag::from_raw(i64::try_from(format).ok()?) {
+                Tag::Relocation => (
+                    DynamicRelocationAddend::Implicit,
+                    array.first(Tag::RelocationEntrySize)?.payload,
+                ),
+                Tag::RelocationWithAddend => (
+                    DynamicRelocationAddend::Explicit,
+                    array.first(Tag::RelocationWithAddendEntrySize)?.payload,
+                ),
+                _ => return None,
+            };
+
+            tables.push(self.dynamic_relocation_table_from_parts(
+                index,
+                address,
+                size,
+                entry_size,
+                addend,
+                DynamicRelocationPurpose::ProcedureLinkageTable,
+            )?);
+        }
+
+        Some(tables)
+    }
+
+    fn dynamic_relocation_table_from_parts(
+        &self,
+        program_header_index: usize,
+        address: u64,
+        size: u64,
+        entry_size: u64,
+        addend: DynamicRelocationAddend,
+        purpose: DynamicRelocationPurpose,
+    ) -> Option<DynamicRelocationTable<'file>> {
+        let entry_size = usize::try_from(entry_size).ok()?;
+        let size = usize::try_from(size).ok()?;
+        if entry_size == 0 || size % entry_size != 0 {
+            return None;
+        }
+
+        let bytes = self.file_range_for_virtual_address(
+            address,
+            u64::try_from(size).ok()?,
+        )?;
+        let count = size / entry_size;
+        let mut relocations = Vec::with_capacity(count);
+
+        match (self.header.identification.class, addend) {
+            (Class::Class32, DynamicRelocationAddend::Implicit) => {
+                if entry_size < core::mem::size_of::<relocation::class_32::RelRepresentation>() {
+                    return None;
+                }
+
+                for relocation_index in 0..count {
+                    let offset = relocation_index.checked_mul(entry_size)?;
+                    let representation =
+                        read::<relocation::class_32::RelRepresentation>(bytes, offset)?;
+                    relocations.push(Relocation::from(representation));
+                }
+            }
+            (Class::Class32, DynamicRelocationAddend::Explicit) => {
+                if entry_size < core::mem::size_of::<relocation::class_32::RelaRepresentation>() {
+                    return None;
+                }
+
+                for relocation_index in 0..count {
+                    let offset = relocation_index.checked_mul(entry_size)?;
+                    let representation =
+                        read::<relocation::class_32::RelaRepresentation>(bytes, offset)?;
+                    relocations.push(Relocation::from(representation));
+                }
+            }
+            (Class::Class64, DynamicRelocationAddend::Implicit) => {
+                if entry_size < core::mem::size_of::<relocation::class_64::RelRepresentation>() {
+                    return None;
+                }
+
+                for relocation_index in 0..count {
+                    let offset = relocation_index.checked_mul(entry_size)?;
+                    let representation =
+                        read::<relocation::class_64::RelRepresentation>(bytes, offset)?;
+                    relocations.push(Relocation::from(representation));
+                }
+            }
+            (Class::Class64, DynamicRelocationAddend::Explicit) => {
+                if entry_size < core::mem::size_of::<relocation::class_64::RelaRepresentation>() {
+                    return None;
+                }
+
+                for relocation_index in 0..count {
+                    let offset = relocation_index.checked_mul(entry_size)?;
+                    let representation =
+                        read::<relocation::class_64::RelaRepresentation>(bytes, offset)?;
+                    relocations.push(Relocation::from(representation));
+                }
+            }
+            (Class::None | Class::Reserved(_), _) => return None,
+        }
+
+        Some(DynamicRelocationTable::new(
+            relocations,
+            self.dynamic_symbol_table_from_program_header(program_header_index)?,
+            addend,
+            purpose,
         ))
     }
 
