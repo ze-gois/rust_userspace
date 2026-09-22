@@ -30,6 +30,7 @@ pub enum ParseError {
     ProgramHeaderEntryTooSmall,
     SectionHeaderEntryTooSmall,
     InvalidHeader,
+    InvalidSectionHeaderTable,
     InvalidSectionNameStringTable,
 }
 
@@ -579,11 +580,20 @@ fn resolve_section_header_count(
     initial: Option<SectionHeader>,
 ) -> Result<usize, ParseError> {
     match header.section_header_count {
-        header::SectionHeaderCount::Direct(count) => Ok(count as usize),
+        header::SectionHeaderCount::Direct(count) => {
+            if header.section_header_offset == 0 {
+                return Err(ParseError::InvalidSectionHeaderTable);
+            }
+            Ok(count as usize)
+        }
         header::SectionHeaderCount::ZeroOrExtended if header.section_header_offset == 0 => Ok(0),
         header::SectionHeaderCount::ZeroOrExtended => {
             let initial = initial.ok_or(ParseError::Truncated)?;
-            usize::try_from(initial.size).map_err(|_| ParseError::Truncated)
+            let count = usize::try_from(initial.size).map_err(|_| ParseError::Truncated)?;
+            if count == 0 {
+                return Err(ParseError::InvalidSectionHeaderTable);
+            }
+            Ok(count)
         }
     }
 }
