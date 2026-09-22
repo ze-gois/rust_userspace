@@ -8,6 +8,8 @@ use super::{
     dynamic_table::DynamicTable,
     hash::HashTable,
     header::{self, Header},
+    note::Note,
+    note_table::NoteTable,
     identification::{Class, Data, Identification},
     program_header::{self, ProgramHeader},
     relocation::{self, Relocation},
@@ -433,6 +435,45 @@ impl<'file> ObjectFile<'file> {
         ))
     }
 
+    pub fn note_table(&self, section_index: usize) -> Option<NoteTable<'file>> {
+        let section = self.section(section_index)?;
+        if !matches!(section.header.r#type, section_header::Type::Note) {
+            return None;
+        }
+
+        let word_size = match self.header.identification.class {
+            Class::Class32 => 4usize,
+            Class::Class64 => 8usize,
+            Class::None | Class::Reserved(_) => return None,
+        };
+
+        let mut notes = Vec::new();
+        let mut offset = 0usize;
+
+        while offset < section.contents.len() {
+            let namesz = read_word(section.contents, offset, word_size)?;
+            offset = offset.checked_add(word_size)?;
+            let descsz = read_word(section.contents, offset, word_size)?;
+            offset = offset.checked_add(word_size)?;
+            let r#type = read_word(section.contents, offset, word_size)?;
+            offset = offset.checked_add(word_size)?;
+
+            let name_length = usize::try_from(namesz).ok()?;
+            let name_end = offset.checked_add(name_length)?;
+            let name = section.contents.get(offset..name_end)?;
+            offset = align(name_end, word_size)?;
+
+            let descriptor_length = usize::try_from(descsz).ok()?;
+            let descriptor_end = offset.checked_add(descriptor_length)?;
+            let descriptor = section.contents.get(offset..descriptor_end)?;
+            offset = align(descriptor_end, word_size)?;
+
+            notes.push(Note::new(name, r#type, descriptor));
+        }
+
+        Some(NoteTable::new(notes))
+    }
+
     pub fn compressed_section(&self, section_index: usize) -> Option<CompressedSection<'file>> {
         let section = self.section(section_index)?;
         if !section
@@ -462,6 +503,19 @@ impl<'file> ObjectFile<'file> {
             }
             Class::None | Class::Reserved(_) => None,
         }
+    }
+}
+
+fn align(value: usize, alignment: usize) -> Option<usize> {
+    let mask = alignment.checked_sub(1)?;
+    value.checked_add(mask).map(|value| value & !mask)
+}
+
+fn read_word(bytes: &[u8], offset: usize, word_size: usize) -> Option<u64> {
+    match word_size {
+        4 => read::<u32>(bytes, offset).map(u64::from),
+        8 => read::<u64>(bytes, offset),
+        _ => None,
     }
 }
 
