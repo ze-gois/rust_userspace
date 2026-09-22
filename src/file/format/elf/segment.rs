@@ -1,5 +1,7 @@
 //! ELF segment contents.
 
+pub mod contents;
+
 use super::program_header::ProgramHeader;
 
 #[derive(Debug, Clone, Copy)]
