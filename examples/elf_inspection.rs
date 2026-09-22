@@ -184,6 +184,15 @@ fn main() {
             );
         }
 
+        if let Some(link) = object.section_link(index) {
+            println!(
+                "    sh_link: meaning={:?} section={} name={:?}",
+                link.meaning,
+                link.linked_section_index,
+                object.section_name(link.linked_section_index),
+            );
+        }
+
         if let Some(link_order) = object.link_order(index) {
             println!(
                 "    link order: metadata={} referenced={}",
