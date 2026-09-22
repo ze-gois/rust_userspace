@@ -56,8 +56,9 @@ pub extern "C" fn entry(
     );
 
     userspace::info!(
-        "entry_file_offset={:?}\n",
+        "entry_file_offset={:?} lowest_load_virtual_address={:?}\n",
         object_file.file_offset_for_virtual_address(header.entry),
+        object_file.lowest_load_virtual_address(),
     );
 
     userspace::info!("program_headers[{}]\n", object_file.program_headers.len());
