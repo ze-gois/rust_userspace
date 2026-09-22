@@ -3,6 +3,9 @@ use crate::target::arch::{Arch, traits::Callable};
 pub mod flags;
 pub use flags::Flag;
 
+pub mod whence;
+pub use whence::Whence;
+
 hooking!(LSEEK);
 
 #[inline(always)]

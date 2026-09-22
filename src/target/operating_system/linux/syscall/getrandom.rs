@@ -1,5 +1,8 @@
 use crate::target::arch::{Arch, traits::Callable};
 
+pub mod flags;
+pub use flags::Flags;
+
 hooking!(GETRANDOM);
 
 pub fn getrandom(byte_buffer: *mut u8, byte_length: usize, flags: u32) -> crate::Result {

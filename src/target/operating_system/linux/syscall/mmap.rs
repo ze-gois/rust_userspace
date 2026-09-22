@@ -2,9 +2,13 @@ use crate::target::arch::{Arch, traits::Callable};
 
 pub mod flags;
 pub mod prot;
+pub mod protection;
+pub mod sharing;
 
 pub use flags::Flag;
 pub use prot::Prot;
+pub use protection::Protection;
+pub use sharing::Sharing;
 
 hooking!(MMAP);
 

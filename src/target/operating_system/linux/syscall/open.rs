@@ -1,5 +1,8 @@
 use crate::target::arch::{Arch, traits::Callable};
 
+pub mod access;
+pub use access::Access;
+
 pub mod flags;
 pub use flags::Flag;
 

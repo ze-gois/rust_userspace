@@ -4,6 +4,7 @@
 #![feature(generic_const_items)]
 pub struct Origin;
 
+pub mod memory;
 pub mod syscall;
 
 pub use crate::info;

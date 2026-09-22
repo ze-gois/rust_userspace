@@ -7,7 +7,6 @@
 pub mod architecture;
 pub mod operating_system;
 pub mod result;
-pub mod system;
 
 pub use architecture as arch;
 pub use operating_system as os;
