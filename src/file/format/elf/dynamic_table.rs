@@ -1,40 +1,39 @@
-//! ELF dynamic section.
+//! ELF dynamic section resolved through section-header relations.
 //!
-//! The section-header `sh_link` identifies the string table used by dynamic
-//! entries. The dynamic array terminates at the first `DT_NULL` entry.
-
-use ample::r#type::Vec;
+//! The section-header `sh_link` identifies the string table used by the
+//! dynamic array.
 
 use super::{
     dynamic::{Dynamic, Tag},
+    dynamic_array::DynamicArray,
     string_table::StringTable,
 };
 
 #[derive(Debug)]
 pub struct DynamicTable<'file> {
-    pub entries: Vec<Dynamic>,
+    pub array: DynamicArray,
     pub strings: StringTable<'file>,
 }
 
 impl<'file> DynamicTable<'file> {
-    pub const fn new(entries: Vec<Dynamic>, strings: StringTable<'file>) -> Self {
-        Self { entries, strings }
+    pub const fn new(array: DynamicArray, strings: StringTable<'file>) -> Self {
+        Self { array, strings }
     }
 
     pub fn len(&self) -> usize {
-        self.entries.len()
+        self.array.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.entries.is_empty()
+        self.array.is_empty()
     }
 
     pub fn get(&self, index: usize) -> Option<&Dynamic> {
-        self.entries.get(index)
+        self.array.get(index)
     }
 
     pub fn iter(&self) -> core::slice::Iter<'_, Dynamic> {
-        self.entries.iter()
+        self.array.iter()
     }
 
     pub fn string(&self, entry: &Dynamic) -> Option<&'file str> {
