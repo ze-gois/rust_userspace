@@ -3,7 +3,7 @@
 use ample::r#type::Vec;
 
 use super::{
-    parser::{parse_dynamic_array, read},
+    parser::{parse_dynamic_array, word},
     ObjectFile,
 };
 use super::super::{
@@ -29,7 +29,10 @@ use super::super::{
 impl<'file> ObjectFile<'file> {
     fn system_v_hash_counts(&self, address: u64) -> Option<(u32, u32)> {
         let bytes = self.file_range_for_virtual_address(address, 8)?;
-        Some((read::<u32>(bytes, 0)?, read::<u32>(bytes, 4)?))
+        Some((
+            word(bytes, 0, self.header.identification.data)?,
+            word(bytes, 4, self.header.identification.data)?,
+        ))
     }
 
     pub fn dynamic_array_from_program_header(&self, index: usize) -> Option<DynamicArray> {
@@ -48,6 +51,7 @@ impl<'file> ObjectFile<'file> {
         parse_dynamic_array(
             segment.file_image,
             self.header.identification.class,
+            self.header.identification.data,
             entry_size,
         )
     }
@@ -92,8 +96,11 @@ impl<'file> ObjectFile<'file> {
 
                 for symbol_index in 0..count {
                     let offset = symbol_index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<symbol::class_32::Representation>(symbol_bytes, offset)?;
+                    let representation = symbol::class_32::Representation::decode(
+                        symbol_bytes,
+                        offset,
+                        self.header.identification.data,
+                    )?;
                     symbols.push(Symbol::from(representation));
                 }
             }
@@ -104,8 +111,11 @@ impl<'file> ObjectFile<'file> {
 
                 for symbol_index in 0..count {
                     let offset = symbol_index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<symbol::class_64::Representation>(symbol_bytes, offset)?;
+                    let representation = symbol::class_64::Representation::decode(
+                        symbol_bytes,
+                        offset,
+                        self.header.identification.data,
+                    )?;
                     symbols.push(Symbol::from(representation));
                 }
             }
@@ -130,7 +140,7 @@ impl<'file> ObjectFile<'file> {
         for (symbol_index, symbol) in symbols.iter().enumerate() {
             let extended = if let Some(bytes) = extended_indices {
                 let offset = symbol_index.checked_mul(core::mem::size_of::<u32>())?;
-                Some(read::<u32>(bytes, offset)?)
+                Some(word(bytes, offset, self.header.identification.data)?)
             } else {
                 None
             };
@@ -176,13 +186,13 @@ impl<'file> ObjectFile<'file> {
         let mut offset = 8usize;
         let mut buckets = Vec::with_capacity(usize::try_from(bucket_count).ok()?);
         for _ in 0..bucket_count {
-            buckets.push(read::<u32>(bytes, offset)?);
+            buckets.push(word(bytes, offset, self.header.identification.data)?);
             offset = offset.checked_add(core::mem::size_of::<u32>())?;
         }
 
         let mut chains = Vec::with_capacity(usize::try_from(chain_count).ok()?);
         for _ in 0..chain_count {
-            chains.push(read::<u32>(bytes, offset)?);
+            chains.push(word(bytes, offset, self.header.identification.data)?);
             offset = offset.checked_add(core::mem::size_of::<u32>())?;
         }
 
@@ -299,8 +309,11 @@ impl<'file> ObjectFile<'file> {
 
                 for relocation_index in 0..count {
                     let offset = relocation_index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<relocation::class_32::RelRepresentation>(bytes, offset)?;
+                    let representation = relocation::class_32::RelRepresentation::decode(
+                        bytes,
+                        offset,
+                        self.header.identification.data,
+                    )?;
                     relocations.push(Relocation::from(representation));
                 }
             }
@@ -311,8 +324,11 @@ impl<'file> ObjectFile<'file> {
 
                 for relocation_index in 0..count {
                     let offset = relocation_index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<relocation::class_32::RelaRepresentation>(bytes, offset)?;
+                    let representation = relocation::class_32::RelaRepresentation::decode(
+                        bytes,
+                        offset,
+                        self.header.identification.data,
+                    )?;
                     relocations.push(Relocation::from(representation));
                 }
             }
@@ -323,8 +339,11 @@ impl<'file> ObjectFile<'file> {
 
                 for relocation_index in 0..count {
                     let offset = relocation_index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<relocation::class_64::RelRepresentation>(bytes, offset)?;
+                    let representation = relocation::class_64::RelRepresentation::decode(
+                        bytes,
+                        offset,
+                        self.header.identification.data,
+                    )?;
                     relocations.push(Relocation::from(representation));
                 }
             }
@@ -335,8 +354,11 @@ impl<'file> ObjectFile<'file> {
 
                 for relocation_index in 0..count {
                     let offset = relocation_index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<relocation::class_64::RelaRepresentation>(bytes, offset)?;
+                    let representation = relocation::class_64::RelaRepresentation::decode(
+                        bytes,
+                        offset,
+                        self.header.identification.data,
+                    )?;
                     relocations.push(Relocation::from(representation));
                 }
             }
