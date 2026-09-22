@@ -47,6 +47,7 @@ pub enum Tag {
     RelativeRelocationSize,
     RelativeRelocation,
     RelativeRelocationEntrySize,
+    SymbolTableSize,
     OperatingSystemSpecific(i64),
     ProcessorSpecific(i64),
     Reserved(i64),
@@ -92,6 +93,7 @@ impl Tag {
             35 => Self::RelativeRelocationSize,
             36 => Self::RelativeRelocation,
             37 => Self::RelativeRelocationEntrySize,
+            39 => Self::SymbolTableSize,
             0x6000_000d..=0x6fff_f000 => Self::OperatingSystemSpecific(raw),
             0x7000_0000..=0x7fff_ffff => Self::ProcessorSpecific(raw),
             _ => Self::Reserved(raw),
@@ -135,7 +137,8 @@ impl Tag {
             | Self::Flags
             | Self::PreInitializationArraySize
             | Self::RelativeRelocationSize
-            | Self::RelativeRelocationEntrySize => PayloadKind::Value,
+            | Self::RelativeRelocationEntrySize
+            | Self::SymbolTableSize => PayloadKind::Value,
             Self::OperatingSystemSpecific(_)
             | Self::ProcessorSpecific(_)
             | Self::Reserved(_) => PayloadKind::Unspecified,
