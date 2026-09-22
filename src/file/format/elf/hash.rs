@@ -2,29 +2,21 @@
 
 use ample::r#type::Vec;
 
-use super::symbol_table::SymbolTable;
-
 #[derive(Debug)]
-pub struct HashTable<'file> {
+pub struct HashTable {
     pub buckets: Vec<u32>,
     pub chains: Vec<u32>,
-    pub symbols: SymbolTable<'file>,
 }
 
-impl<'file> HashTable<'file> {
-    pub const fn new(
-        buckets: Vec<u32>,
-        chains: Vec<u32>,
-        symbols: SymbolTable<'file>,
-    ) -> Self {
-        Self {
-            buckets,
-            chains,
-            symbols,
-        }
+impl HashTable {
+    pub const fn new(buckets: Vec<u32>, chains: Vec<u32>) -> Self {
+        Self { buckets, chains }
     }
 
-    pub fn find(&self, name: &[u8]) -> Option<usize> {
+    pub fn find_index<F>(&self, name: &[u8], mut matches: F) -> Option<usize>
+    where
+        F: FnMut(usize, &[u8]) -> bool,
+    {
         if self.buckets.is_empty() {
             return None;
         }
@@ -32,8 +24,7 @@ impl<'file> HashTable<'file> {
         let mut index = *self.buckets.get(hash(name) as usize % self.buckets.len())? as usize;
 
         while index != 0 {
-            let symbol_name = self.symbols.name(index)?.as_bytes();
-            if symbol_name == name {
+            if matches(index, name) {
                 return Some(index);
             }
             index = *self.chains.get(index)? as usize;
