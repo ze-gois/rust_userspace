@@ -7,10 +7,14 @@ pub mod class_32;
 pub mod class_64;
 pub mod machine;
 pub mod r#type;
+pub mod section_header_count;
+pub mod section_name_string_table_index;
 pub mod version;
 
 pub use machine::Machine;
 pub use r#type::Type;
+pub use section_header_count::SectionHeaderCount;
+pub use section_name_string_table_index::SectionNameStringTableIndex;
 pub use version::Version;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -27,8 +31,8 @@ pub struct Header {
     pub program_header_entry_size: u16,
     pub program_header_count: u16,
     pub section_header_entry_size: u16,
-    pub section_header_count: u16,
-    pub section_name_string_table_index: super::section_header::Index,
+    pub section_header_count: SectionHeaderCount,
+    pub section_name_string_table_index: SectionNameStringTableIndex,
 }
 
 impl TryFrom<class_32::Representation> for Header {
@@ -52,9 +56,9 @@ impl TryFrom<class_32::Representation> for Header {
             program_header_entry_size: representation.e_phentsize,
             program_header_count: representation.e_phnum,
             section_header_entry_size: representation.e_shentsize,
-            section_header_count: representation.e_shnum,
+            section_header_count: SectionHeaderCount::from_raw(representation.e_shnum),
             section_name_string_table_index:
-                super::section_header::Index::from_raw(representation.e_shstrndx),
+                SectionNameStringTableIndex::from_raw(representation.e_shstrndx),
         })
     }
 }
@@ -80,9 +84,9 @@ impl TryFrom<class_64::Representation> for Header {
             program_header_entry_size: representation.e_phentsize,
             program_header_count: representation.e_phnum,
             section_header_entry_size: representation.e_shentsize,
-            section_header_count: representation.e_shnum,
+            section_header_count: SectionHeaderCount::from_raw(representation.e_shnum),
             section_name_string_table_index:
-                super::section_header::Index::from_raw(representation.e_shstrndx),
+                SectionNameStringTableIndex::from_raw(representation.e_shstrndx),
         })
     }
 }
