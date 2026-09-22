@@ -15,7 +15,7 @@ use super::{
     program_interpreter::ProgramInterpreter,
     relocation::{self, relative, Relocation},
     relocation_table::{RelocationTable, TargetSection as RelocationTargetSection},
-    section_group::{Flags as SectionGroupFlags, SectionGroup},
+    section_group::{Flags as SectionGroupFlags, Member as SectionGroupMember, SectionGroup},
     section::LinkOrder,
     section_link::{Meaning as SectionLinkMeaning, SectionLink},
     section_header::{self, SectionHeader},
@@ -791,6 +791,21 @@ impl<'file> ObjectFile<'file> {
 
         let _symbols = self.symbol_table(header.link as usize)?;
         Some(HashTable::new(buckets, chains))
+    }
+
+    pub fn section_group_members(
+        &self,
+        section_index: usize,
+    ) -> Option<Vec<SectionGroupMember<'file>>> {
+        let group = self.section_group(section_index)?;
+        let mut members = Vec::with_capacity(group.members.len());
+
+        for member_section_index in group.members.iter().copied() {
+            let section = self.section(member_section_index)?;
+            members.push(SectionGroupMember::new(member_section_index, section));
+        }
+
+        Some(members)
     }
 
     pub fn section_group(&self, section_index: usize) -> Option<SectionGroup<'file>> {
