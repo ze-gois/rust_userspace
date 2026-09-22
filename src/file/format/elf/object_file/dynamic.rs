@@ -91,13 +91,24 @@ impl<'file> ObjectFile<'file> {
         let array = self.dynamic_array_from_program_header(index)?;
         let strings = self.dynamic_string_table_from_program_header(index)?;
 
-        let hash_address = array.first(Tag::Hash)?.payload;
-        let (_, chain_count) = self.system_v_hash_counts(hash_address)?;
-
         let symbol_address = array.first(Tag::SymbolTable)?.payload;
         let entry_size = usize::try_from(array.first(Tag::SymbolEntrySize)?.payload).ok()?;
-        let count = usize::try_from(chain_count).ok()?;
-        let byte_size = count.checked_mul(entry_size)?;
+        if entry_size == 0 {
+            return None;
+        }
+
+        let byte_size = if let Some(size) = array.first(Tag::SymbolTableSize) {
+            usize::try_from(size.payload).ok()?
+        } else {
+            let hash_address = array.first(Tag::Hash)?.payload;
+            let (_, chain_count) = self.system_v_hash_counts(hash_address)?;
+            usize::try_from(chain_count).ok()?.checked_mul(entry_size)?
+        };
+
+        if byte_size % entry_size != 0 {
+            return None;
+        }
+        let count = byte_size / entry_size;
         let symbol_bytes = self.file_range_for_virtual_address(
             symbol_address,
             u64::try_from(byte_size).ok()?,
