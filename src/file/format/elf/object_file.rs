@@ -14,7 +14,7 @@ use super::{
     program_header_table_image::ProgramHeaderTableImage,
     program_interpreter::ProgramInterpreter,
     relocation::{self, relative, Relocation},
-    relocation_table::RelocationTable,
+    relocation_table::{RelocationTable, TargetSection as RelocationTargetSection},
     section_group::{Flags as SectionGroupFlags, SectionGroup},
     section::LinkOrder,
     section_link::{Meaning as SectionLinkMeaning, SectionLink},
@@ -612,6 +612,30 @@ impl<'file> ObjectFile<'file> {
         }
 
         Ok(())
+    }
+
+    pub fn relocation_target_section(
+        &self,
+        section_index: usize,
+    ) -> Option<RelocationTargetSection<'file>> {
+        let header = *self.section_headers.get(section_index)?;
+        if !matches!(
+            header.r#type,
+            section_header::Type::Relocation | section_header::Type::RelocationWithAddend
+        ) {
+            return None;
+        }
+
+        let target_section_index = usize::try_from(header.information).ok()?;
+        if target_section_index == section_header::Index::UNDEFINED.raw() as usize {
+            return None;
+        }
+
+        let target_section = self.section(target_section_index)?;
+        Some(RelocationTargetSection::new(
+            target_section_index,
+            target_section,
+        ))
     }
 
     pub fn relocation_table(&self, section_index: usize) -> Option<RelocationTable<'file>> {
