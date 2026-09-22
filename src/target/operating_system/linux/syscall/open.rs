@@ -38,24 +38,38 @@ pub mod ok {
 }
 
 pub mod error {
-    ample::result!(Error; "MUnMap error"; usize; [
-        [1;  ERROR;         Default;              usize;  "Error"; "Something wicked this way comes"],
-        [2;  ENOENT;        FileNotFound;       usize;  "ENOENT";       "File not found"],
-        [13; EACCES;        PermissionDenied;   usize;  "EACCES";       "Permission denied"],
-        [22; EINVAL;        InvalidPath;        usize;  "EINVAL";       "Invalid path"],
-        [20; ENOTDIR;       DirectoryNotFound;  usize;  "ENOTDIR";      "Directory not found"],
-        [40; ELOOP;         TooManySymlinks;    usize;  "ELOOP";        "Too many levels of symbolic links"],
-        [36; ENAMETOOLONG;  PathnameTooLong;    usize;  "ENAMETOOLONG"; "Pathname too long"],
-        [17; EEXIST;        FileExists;         usize;  "EEXIST";       "File exists"],
-        [24; EMFILE;        TooManyOpenFiles;   usize;  "EMFILE";       "Too many open files"],
-        [28; ENOSPC;        NoSpace;            usize;  "ENOSPC";       "No space left on device"],
-        [98; OPENAT;  OPENAT; usize; "OPENAT"; "WAITING"],
-        [99; OPENAT4;  OPENAT4; usize; "OPENAT"; "WAITING"],
+    ample::result!(Error; "Open error"; usize; [
+        [13; EACCES; PermissionDenied; usize; "EACCES"; "Requested access or pathname search permission is denied"],
+        [16; EBUSY; Busy; usize; "EBUSY"; "Exclusive open requested for a block device that is in use"],
+        [122; EDQUOT; QuotaExceeded; usize; "EDQUOT"; "Disk block or inode quota is exhausted"],
+        [17; EEXIST; AlreadyExists; usize; "EEXIST"; "Path exists while O_CREAT and O_EXCL were requested"],
+        [14; EFAULT; InvalidPathPointer; usize; "EFAULT"; "Path points outside the accessible address space"],
+        [27; EFBIG; FileTooLarge; usize; "EFBIG"; "File is too large to be opened on this interface"],
+        [4; EINTR; Interrupted; usize; "EINTR"; "Open was interrupted while waiting on a slow device"],
+        [22; EINVAL; InvalidArgument; usize; "EINVAL"; "Flags or pathname component are invalid"],
+        [21; EISDIR; IsDirectory; usize; "EISDIR"; "Path is a directory and write access was requested"],
+        [40; ELOOP; TooManySymbolicLinks; usize; "ELOOP"; "Too many symbolic links were encountered"],
+        [24; EMFILE; ProcessFileDescriptorLimit; usize; "EMFILE"; "Process file-descriptor limit was reached"],
+        [36; ENAMETOOLONG; NameTooLong; usize; "ENAMETOOLONG"; "Pathname is too long"],
+        [23; ENFILE; SystemFileDescriptorLimit; usize; "ENFILE"; "System-wide open-file limit was reached"],
+        [19; ENODEV; NoSuchDevice; usize; "ENODEV"; "Device special file has no corresponding device"],
+        [2; ENOENT; NotFound; usize; "ENOENT"; "Path or one of its components does not exist"],
+        [12; ENOMEM; OutOfMemory; usize; "ENOMEM"; "Insufficient kernel memory was available"],
+        [28; ENOSPC; NoSpaceLeft; usize; "ENOSPC"; "Device has no space for the file to be created"],
+        [20; ENOTDIR; NotDirectory; usize; "ENOTDIR"; "A pathname component that must be a directory is not one"],
+        [6; ENXIO; NoSuchDeviceOrAddress; usize; "ENXIO"; "Device, FIFO, or UNIX socket condition prevents opening"],
+        [95; EOPNOTSUPP; OperationNotSupported; usize; "EOPNOTSUPP"; "Filesystem does not support the requested operation"],
+        [75; EOVERFLOW; Overflow; usize; "EOVERFLOW"; "File metadata cannot be represented by this interface"],
+        [1; EPERM; OperationNotPermitted; usize; "EPERM"; "Operation is not permitted, for example because of O_NOATIME or a file seal"],
+        [30; EROFS; ReadOnlyFileSystem; usize; "EROFS"; "Write access was requested on a read-only filesystem"],
+        [26; ETXTBSY; TextFileBusy; usize; "ETXTBSY"; "Executable, swap, or kernel-used file is busy"],
+        [11; EWOULDBLOCK; WouldBlock; usize; "EWOULDBLOCK"; "Nonblocking open conflicts with an incompatible lease"],
+        [usize::MAX; UNKNOWN; Unknown; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
         pub fn from_no(no: usize) -> Self {
-            Error::Default(no)
+            Error::Unknown(no)
         }
     }
 }
