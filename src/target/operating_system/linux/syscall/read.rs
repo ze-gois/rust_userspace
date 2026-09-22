@@ -26,20 +26,20 @@ pub mod ok {
 }
 
 pub mod error {
-    ample::result!(Error; "MUnMap error"; usize; [
-        [1  ; ERROR  ; Default           ; usize ; "Error"  ; "Something wicked this way comes"],
-        [4  ; EINTR  ; Interrupted       ; usize ; "EINTR"  ; "System call was interrupted"],
-        [5  ; EIO    ; IOError           ; usize ; "EIO"    ; "Input/output error"],
-        [9  ; EBADF  ; BadFileDescriptor ; usize ; "EBADF"  ; "Bad file descriptor"],
-        [14 ; EFAULT ; InvalidBuffer     ; usize ; "EFAULT" ; "Invalid buffer pointer"],
-        [22 ; EINVAL ; InvalidCount      ; usize ; "EINVAL" ; "Invalid count"],
-        [21 ; EISDIR ; IsDirectory       ; usize ; "EISDIR" ; "Is a directory"],
-        [13 ; EACCES ; NotReadable       ; usize ; "EACCES" ; "File not open for reading"],
+    ample::result!(Error; "Read error"; usize; [
+        [11; EAGAIN; WouldBlock; usize; "EAGAIN"; "Nonblocking read would block; EWOULDBLOCK is the socket alias"],
+        [9; EBADF; BadFileDescriptor; usize; "EBADF"; "File descriptor is invalid or not open for reading"],
+        [14; EFAULT; InvalidBuffer; usize; "EFAULT"; "Buffer is outside the accessible address space"],
+        [4; EINTR; Interrupted; usize; "EINTR"; "Read was interrupted by a signal before data was read"],
+        [22; EINVAL; InvalidArgument; usize; "EINVAL"; "Object or direct-I/O alignment makes the read invalid"],
+        [5; EIO; InputOutput; usize; "EIO"; "Low-level input/output error occurred"],
+        [21; EISDIR; IsDirectory; usize; "EISDIR"; "File descriptor refers to a directory"],
+        [usize::MAX; UNKNOWN; Unknown; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
         pub fn from_no(no: usize) -> Self {
-            Error::Default(no)
+            Error::Unknown(no)
         }
     }
 }
