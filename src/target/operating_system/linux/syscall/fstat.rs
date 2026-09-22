@@ -25,11 +25,13 @@ pub mod ok {
 }
 
 pub mod error {
+    const UNKNOWN_ERROR_DISCRIMINANT: usize = usize::MAX;
+
     ample::result!(Error; "FStat error"; usize; [
         [9; EBADF; BadFileDescriptor; usize; "EBADF"; "File descriptor is not a valid open file descriptor"],
         [14; EFAULT; InvalidBuffer; usize; "EFAULT"; "Status buffer is outside the accessible address space"],
         [75; EOVERFLOW; Overflow; usize; "EOVERFLOW"; "File metadata cannot be represented by the stat structure"],
-        [usize::MAX; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [UNKNOWN_ERROR_DISCRIMINANT; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {

@@ -1,39 +1,20 @@
-// #[rustfmt::skip]
-// ample::enum_flag!(Flag, usize, "Map Flags",[
-//     [0o0;        RDONLY;         RDONLY;          "Shared";         "Shared"],
-//     [0o1;        WRONLY;         WRONLY;         "Private";        "Private"],
-//     [0o2;        RDWR;           RDWR;  "SharedValidate"; "SharedValidate"],
-//     [0o100;      CREAT;          CREAT;           "Fixed";          "Fixed"],
-//     [0o200;      EXCL;           EXCL;       "Anonymous";      "Anonymous"],
-//     [0o400;      NOCTTY;         NOCTTY;       "GrowsDown";      "GrowsDown"],
-//     [0o1000;     TRUNC;          TRUNC;       "DenyWrite";      "DenyWrite"],
-//     [0o2000;     APPEND;         APPEND;      "Executable";     "Executable"],
-//     [0o4000;     NONBLOCK;       NONBLOCK;          "Locked";         "Locked"],
-//     [0o10000;    DSYNC;          DSYNC;       "NoReserve";      "NoReserve"],
-//     [0o4010000;  SYNC;           SYNC;        "Populate";       "Populate"],
-//     [0o200000;   DIRECTORY;      DIRECTORY;        "NonBlock";       "NonBlock"],
-//     [0o400000;   NOFOLLOW;       NOFOLLOW;           "Stack";          "Stack"],
-//     [0o2000000;  CLOEXEC;        CLOEXEC;         "HugeTlb";        "HugeTlb"],
-// ]);
-
-#[rustfmt::skip]
-ample::enum_flag!(
+ample::flags!(
     i32;
-    "Open Flags";
-    pub enum Flag {
-        [0o0; RDONLY; RDONLY; "Read only"; "Read only"],
-        [0o1; WRONLY; WRONLY; "Write only"; "Write only"],
-        [0o2; RDWR;   RDWR;   "Read/Write"; "Read/Write"],
-        [0o100; CREAT; CREAT; "Create"; "Create file if not exists"],
-        [0o200; EXCL;  EXCL;  "Exclusive"; "Fail if exists"],
-        [0o400; NOCTTY; NOCTTY; "No controlling TTY"; "Do not assign controlling TTY"],
-        [0o1000; TRUNC; TRUNC; "Truncate"; "Truncate file if exists"],
-        [0o2000; APPEND; APPEND; "Append"; "Append mode"],
-        [0o4000; NONBLOCK; NONBLOCK; "Non-blocking"; "Non-blocking I/O"],
-        [0o10000; DSYNC; DSYNC; "DSync"; "Synchronized I/O"],
-        [0o4010000; SYNC; SYNC; "Sync"; "Synchronous writes"],
-        [0o200000; DIRECTORY; DIRECTORY; "Directory"; "Must be a directory"],
-        [0o400000; NOFOLLOW; NOFOLLOW; "No Follow"; "Do not follow symlinks"],
-        [0o2000000; CLOEXEC; CLOEXEC; "Close on exec"; "Close on exec"]
+    "Open flags";
+    pub struct Flag {
+        [0o0;       READ_ONLY;               O_RDONLY;    "O_RDONLY";    "Open for reading only"],
+        [0o1;       WRITE_ONLY;              O_WRONLY;    "O_WRONLY";    "Open for writing only"],
+        [0o2;       READ_WRITE;              O_RDWR;      "O_RDWR";      "Open for reading and writing"],
+        [0o100;     CREATE;                  O_CREAT;     "O_CREAT";     "Create file if it does not exist"],
+        [0o200;     EXCLUSIVE;               O_EXCL;      "O_EXCL";      "Require exclusive creation"],
+        [0o400;     NO_CONTROLLING_TERMINAL; O_NOCTTY;    "O_NOCTTY";    "Do not assign a controlling terminal"],
+        [0o1000;    TRUNCATE;                O_TRUNC;     "O_TRUNC";     "Truncate an existing regular file"],
+        [0o2000;    APPEND;                  O_APPEND;    "O_APPEND";    "Append each write"],
+        [0o4000;    NON_BLOCKING;            O_NONBLOCK;  "O_NONBLOCK";  "Use non-blocking I/O"],
+        [0o10000;   DATA_SYNCHRONIZED;       O_DSYNC;     "O_DSYNC";     "Synchronized data I/O"],
+        [0o4010000; SYNCHRONIZED;            O_SYNC;      "O_SYNC";      "Synchronized file I/O"],
+        [0o200000;  DIRECTORY;               O_DIRECTORY; "O_DIRECTORY"; "Require a directory"],
+        [0o400000;  NO_FOLLOW;               O_NOFOLLOW;  "O_NOFOLLOW";  "Do not follow the final symbolic link"],
+        [0o2000000; CLOSE_ON_EXECUTE;        O_CLOEXEC;   "O_CLOEXEC";   "Close on successful exec"]
     }
 );

@@ -26,6 +26,8 @@ pub mod ok {
 }
 
 pub mod error {
+    const UNKNOWN_ERROR_DISCRIMINANT: usize = usize::MAX;
+
     ample::result!(Error; "Read error"; usize; [
         [11; EAGAIN; WouldBlock; usize; "EAGAIN"; "Nonblocking read would block; EWOULDBLOCK is the socket alias"],
         [9; EBADF; BadFileDescriptor; usize; "EBADF"; "File descriptor is invalid or not open for reading"],
@@ -34,7 +36,7 @@ pub mod error {
         [22; EINVAL; InvalidArgument; usize; "EINVAL"; "Object or direct-I/O alignment makes the read invalid"],
         [5; EIO; InputOutput; usize; "EIO"; "Low-level input/output error occurred"],
         [21; EISDIR; IsDirectory; usize; "EISDIR"; "File descriptor refers to a directory"],
-        [usize::MAX; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [UNKNOWN_ERROR_DISCRIMINANT; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {

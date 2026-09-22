@@ -30,6 +30,8 @@ pub mod ok {
 }
 
 pub mod error {
+    const UNKNOWN_ERROR_DISCRIMINANT: usize = usize::MAX;
+
     ample::result!(Error; "Execve error"; usize; [
         [7; E2BIG; ArgumentListTooLong; usize; "E2BIG"; "Argument and environment data or executable path is too large"],
         [13; EACCES; PermissionDenied; usize; "EACCES"; "Search or execute permission is denied, file is unsuitable, or filesystem is noexec"],
@@ -49,7 +51,7 @@ pub mod error {
         [20; ENOTDIR; NotDirectory; usize; "ENOTDIR"; "A pathname component is not a directory"],
         [1; EPERM; OperationNotPermitted; usize; "EPERM"; "Filesystem, process state, or capability rules forbid execution"],
         [26; ETXTBSY; TextFileBusy; usize; "ETXTBSY"; "Executable is open for writing by one or more processes"],
-        [usize::MAX; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [UNKNOWN_ERROR_DISCRIMINANT; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {

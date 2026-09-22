@@ -1,97 +1,22 @@
-#[rustfmt::skip]
-ample::enum_flag!(
+ample::flags!(
     usize;
-    "Map Flags";
-    pub enum Flag {
-        [0x01;      Shared;         SHARED;          "Shared";         "Shared"],
-        [0x02;      Private;        PRIVATE;         "Private";        "Private"],
-        [0x03;      SharedValidate; SHAREDVALIDATE;  "SharedValidate"; "SharedValidate"],
-        [0x10;      Fixed;          FIXED;           "Fixed";          "Fixed"],
-        [0x20;      Anonymous;      ANONYMOUS;       "Anonymous";      "Anonymous"],
-        [0x0100;    GrowsDown;      GROWSDOWN;       "GrowsDown";      "GrowsDown"],
-        [0x0800;    DenyWrite;      DENYWRITE;       "DenyWrite";      "DenyWrite"],
-        [0x1000;    Executable;     EXECUTABLE;      "Executable";     "Executable"],
-        [0x2000;    Locked;         LOCKED;          "Locked";         "Locked"],
-        [0x4000;    NoReserve;      NORESERVE;       "NoReserve";      "NoReserve"],
-        [0x8000;    Populate;       POPULATE;        "Populate";       "Populate"],
-        [0x10000;   NonBlock;       NONBLOCK;        "NonBlock";       "NonBlock"],
-        [0x20000;   Stack;          STACK;           "Stack";          "Stack"],
-        [0x40000;   HugeTlb;        HUGETLB;         "HugeTlb";        "HugeTlb"],
-        [0x80000;   Sync;           SYNC;            "Sync";           "Sync"],
-        [0x100000;  FixedNoReplace; FIXEDNOREPLACE;  "FixedNoReplace"; "FixedNoReplace"]
+    "Memory mapping flags";
+    pub struct Flag {
+        [0x01;      SHARED;                    MAP_SHARED;           "MAP_SHARED";           "Share updates"],
+        [0x02;      PRIVATE;                   MAP_PRIVATE;          "MAP_PRIVATE";          "Create a private copy-on-write mapping"],
+        [0x03;      SHARED_VALIDATE;           MAP_SHARED_VALIDATE; "MAP_SHARED_VALIDATE";  "Share updates and validate extension flags"],
+        [0x10;      FIXED;                     MAP_FIXED;            "MAP_FIXED";            "Place mapping at requested address"],
+        [0x20;      ANONYMOUS;                 MAP_ANONYMOUS;        "MAP_ANONYMOUS";        "Create a mapping not backed by a file"],
+        [0x0100;    GROWS_DOWN;                MAP_GROWSDOWN;        "MAP_GROWSDOWN";        "Mapping may grow downward"],
+        [0x0800;    DENY_WRITE;                MAP_DENYWRITE;        "MAP_DENYWRITE";        "Legacy deny-write flag"],
+        [0x1000;    EXECUTABLE;                MAP_EXECUTABLE;       "MAP_EXECUTABLE";       "Legacy executable-file flag"],
+        [0x2000;    LOCKED;                    MAP_LOCKED;           "MAP_LOCKED";           "Request locked pages"],
+        [0x4000;    NO_RESERVE;                MAP_NORESERVE;        "MAP_NORESERVE";        "Do not reserve swap space"],
+        [0x8000;    POPULATE;                  MAP_POPULATE;         "MAP_POPULATE";         "Populate page tables"],
+        [0x10000;   NON_BLOCKING;              MAP_NONBLOCK;         "MAP_NONBLOCK";         "Do not block while populating"],
+        [0x20000;   STACK;                     MAP_STACK;            "MAP_STACK";            "Mapping intended for a stack"],
+        [0x40000;   HUGE_TRANSLATION_LOOKASIDE_BUFFER; MAP_HUGETLB; "MAP_HUGETLB";          "Use huge pages"],
+        [0x80000;   SYNCHRONIZED;              MAP_SYNC;             "MAP_SYNC";             "Synchronous mapping semantics"],
+        [0x100000;  FIXED_WITHOUT_REPLACEMENT; MAP_FIXED_NOREPLACE; "MAP_FIXED_NOREPLACE"; "Do not replace an existing mapping"]
     }
 );
-
-// #[repr(i32)]
-// #[derive(Clone, Copy)]
-// pub enum Flag {
-//     Shared = 0x01,
-//     Private = 0x02,
-//     SharedValidate = 0x03,
-//     Fixed = 0x10,
-//     Anonymous = 0x20,
-//     GrowsDown = 0x0100,
-//     DenyWrite = 0x0800,
-//     Executable = 0x1000,
-//     Locked = 0x2000,
-//     NoReserve = 0x4000,
-//     Populate = 0x8000,
-//     NonBlock = 0x10000,
-//     Stack = 0x20000,
-//     HugeTlb = 0x40000,
-//     Sync = 0x80000,
-//     FixedNoReplace = 0x100000,
-// }
-
-// impl Flag {
-//     pub fn to(self) -> i32 {
-//         self as i32
-//     }
-// }
-
-// impl core::ops::BitOr for Flag {
-//     type Output = i32;
-
-//     fn bitor(self, rhs: Self) -> Self::Output {
-//         self.to() | rhs.to()
-//     }
-// }
-
-// impl core::ops::BitOr<i32> for Flag {
-//     type Output = i32;
-
-//     fn bitor(self, rhs: i32) -> Self::Output {
-//         self.to() | rhs
-//     }
-// }
-
-// #[repr(i32)]
-// #[derive(Clone, Copy)]
-// pub enum Prot {
-//     None = 0,
-//     Read = 1,
-//     Write = 2,
-//     Exec = 4,
-// }
-
-// impl Prot {
-//     pub fn to(self) -> i32 {
-//         self as i32
-//     }
-// }
-
-// impl core::ops::BitOr for Prot {
-//     type Output = i32;
-
-//     fn bitor(self, rhs: Self) -> Self::Output {
-//         self.to() | rhs.to()
-//     }
-// }
-
-// impl core::ops::BitOr<i32> for Prot {
-//     type Output = i32;
-
-//     fn bitor(self, rhs: i32) -> Self::Output {
-//         self.to() | rhs
-//     }
-// }

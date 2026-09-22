@@ -29,13 +29,15 @@ pub mod ok {
 }
 
 pub mod error {
+    const UNKNOWN_ERROR_DISCRIMINANT: usize = usize::MAX;
+
     ample::result!(Error; "LSeek error"; usize; [
         [9; EBADF; BadFileDescriptor; usize; "EBADF"; "File descriptor is not open"],
         [22; EINVAL; InvalidArgument; usize; "EINVAL"; "Whence is invalid or the resulting offset is invalid"],
         [6; ENXIO; NoSuchDeviceOrAddress; usize; "ENXIO"; "SEEK_DATA or SEEK_HOLE request is beyond available data"],
         [75; EOVERFLOW; Overflow; usize; "EOVERFLOW"; "Resulting file offset cannot be represented"],
         [29; ESPIPE; IllegalSeek; usize; "ESPIPE"; "File descriptor refers to a pipe, socket, FIFO, or other non-seekable object"],
-        [usize::MAX; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [UNKNOWN_ERROR_DISCRIMINANT; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {

@@ -24,11 +24,13 @@ pub mod ok {
 }
 
 pub mod error {
+    const UNKNOWN_ERROR_DISCRIMINANT: usize = usize::MAX;
+
     ample::result!(Error; "MProtect error"; usize; [
         [13; EACCES; PermissionDenied; usize; "EACCES"; "Requested protection conflicts with access allowed by the underlying memory object"],
         [22; EINVAL; InvalidArgument; usize; "EINVAL"; "Address, alignment, or protection flags are invalid"],
         [12; ENOMEM; OutOfMemory; usize; "ENOMEM"; "Address range is unmapped or kernel mapping resources are unavailable"],
-        [usize::MAX; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [UNKNOWN_ERROR_DISCRIMINANT; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {

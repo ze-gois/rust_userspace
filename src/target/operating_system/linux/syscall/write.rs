@@ -27,6 +27,8 @@ pub mod ok {
 }
 
 pub mod error {
+    const UNKNOWN_ERROR_DISCRIMINANT: usize = usize::MAX;
+
     ample::result!(Error; "Write error"; usize; [
         [11; EAGAIN; WouldBlock; usize; "EAGAIN"; "Nonblocking write would block; EWOULDBLOCK is the socket alias"],
         [9; EBADF; BadFileDescriptor; usize; "EBADF"; "File descriptor is invalid or not open for writing"],
@@ -40,7 +42,7 @@ pub mod error {
         [28; ENOSPC; NoSpaceLeft; usize; "ENOSPC"; "Device has no space for the data"],
         [1; EPERM; OperationNotPermitted; usize; "EPERM"; "Operation was prevented, for example by a file seal"],
         [32; EPIPE; BrokenPipe; usize; "EPIPE"; "Pipe or socket reading end is closed"],
-        [usize::MAX; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
+        [UNKNOWN_ERROR_DISCRIMINANT; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
