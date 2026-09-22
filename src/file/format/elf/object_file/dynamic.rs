@@ -409,9 +409,9 @@ impl<'file> ObjectFile<'file> {
                 .first(Tag::PreInitializationArraySize)
                 .map(|entry| entry.payload),
         ) {
-            (None, None) => None,
-            (address, size) => Some(PreInitialization::new(
-                self.dynamic_function_pointer_array(address, size)?,
+            (None, _) => None,
+            (Some(address), size) => Some(PreInitialization::new(
+                self.dynamic_function_pointer_array(Some(address), size)?,
             )),
         };
 
@@ -497,7 +497,7 @@ impl<'file> ObjectFile<'file> {
         size: Option<u64>,
     ) -> Option<Vec<FunctionPointer>> {
         match (address, size) {
-            (None, None) => Some(Vec::new()),
+            (None, _) => Some(Vec::new()),
             (Some(address), Some(size)) => {
                 let pointer_size = match self.header.identification.class {
                     Class::Class32 => 4usize,
