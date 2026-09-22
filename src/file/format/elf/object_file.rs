@@ -538,6 +538,25 @@ impl<'file> ObjectFile<'file> {
         ))
     }
 
+    pub fn symbol_section(
+        &self,
+        symbol_table_section_index: usize,
+        symbol_index: usize,
+    ) -> Option<super::section::Section<'file>> {
+        let symbols = self.symbol_table(symbol_table_section_index)?;
+        let section_index = match symbols.section_index(symbol_index)? {
+            symbol::ResolvedSectionIndex::Section(index) => index,
+            symbol::ResolvedSectionIndex::Undefined
+            | symbol::ResolvedSectionIndex::ProcessorSpecific(_)
+            | symbol::ResolvedSectionIndex::OperatingSystemSpecific(_)
+            | symbol::ResolvedSectionIndex::Absolute
+            | symbol::ResolvedSectionIndex::Common
+            | symbol::ResolvedSectionIndex::Reserved(_) => return None,
+        };
+
+        self.section(section_index)
+    }
+
     pub fn relative_relocation_table(
         &self,
         section_index: usize,
