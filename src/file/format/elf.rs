@@ -17,3 +17,5 @@ pub mod section;
 pub mod segment;
 pub mod string_table;
 pub mod symbol;
+pub mod object_file;
+pub use object_file::{ObjectFile, ParseError};
