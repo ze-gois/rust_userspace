@@ -25,3 +25,7 @@ pub mod relocation_table;
 pub mod dynamic_table;
 pub mod section_group;
 pub mod note_table;
+pub mod loadable_segment;
+pub mod program_interpreter;
+pub mod program_header_table_image;
+pub mod thread_local_storage;
