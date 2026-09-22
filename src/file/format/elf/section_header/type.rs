@@ -19,6 +19,7 @@ pub enum Type {
     PreInitializationArray,
     Group,
     SymbolTableSectionIndex,
+    RelativeRelocation,
     OperatingSystemSpecific(u32),
     ProcessorSpecific(u32),
     ApplicationSpecific(u32),
@@ -45,6 +46,7 @@ impl Type {
             16 => Self::PreInitializationArray,
             17 => Self::Group,
             18 => Self::SymbolTableSectionIndex,
+            19 => Self::RelativeRelocation,
             0x6000_0000..=0x6fff_ffff => Self::OperatingSystemSpecific(raw),
             0x7000_0000..=0x7fff_ffff => Self::ProcessorSpecific(raw),
             0x8000_0000..=0xffff_ffff => Self::ApplicationSpecific(raw),
@@ -71,6 +73,7 @@ impl Type {
             Self::PreInitializationArray => 16,
             Self::Group => 17,
             Self::SymbolTableSectionIndex => 18,
+            Self::RelativeRelocation => 19,
             Self::OperatingSystemSpecific(raw)
             | Self::ProcessorSpecific(raw)
             | Self::ApplicationSpecific(raw)
