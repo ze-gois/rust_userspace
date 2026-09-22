@@ -4,6 +4,9 @@
 //! structures. Class is expressed by the module namespace rather than by
 //! abbreviating every Rust identifier.
 
+pub mod decoder;
+pub use decoder::Decoder;
+
 pub mod class_32 {
     pub type Address = u32;
     pub type Offset = u32;
