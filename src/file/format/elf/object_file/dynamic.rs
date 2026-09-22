@@ -8,6 +8,16 @@ use super::{
 };
 use super::super::{
     dynamic::{self, Tag},
+    header,
+    initialization_termination::{
+        FunctionAddress,
+        FunctionPointer,
+        Functions as InitializationAndTerminationFunctions,
+        Initialization,
+        PreInitialization,
+        Termination,
+    },
+    representation::Decoder,
     dynamic_array::DynamicArray,
     dynamic_hash_table::DynamicHashTable,
     dynamic_relocation_table::{
@@ -371,6 +381,164 @@ impl<'file> ObjectFile<'file> {
             addend,
             purpose,
         ))
+    }
+
+    pub fn initialization_and_termination_functions_from_program_header(
+        &self,
+        index: usize,
+    ) -> Option<InitializationAndTerminationFunctions> {
+        let array = self.dynamic_array_from_program_header(index)?;
+
+        let initialization = Initialization::new(
+            array
+                .first(Tag::Initialization)
+                .map(|entry| FunctionAddress::new(entry.payload)),
+            self.dynamic_function_pointer_array(
+                array.first(Tag::InitializationArray).map(|entry| entry.payload),
+                array
+                    .first(Tag::InitializationArraySize)
+                    .map(|entry| entry.payload),
+            )?,
+        );
+
+        let pre_initialization = match (
+            array
+                .first(Tag::PreInitializationArray)
+                .map(|entry| entry.payload),
+            array
+                .first(Tag::PreInitializationArraySize)
+                .map(|entry| entry.payload),
+        ) {
+            (None, None) => None,
+            (address, size) => Some(PreInitialization::new(
+                self.dynamic_function_pointer_array(address, size)?,
+            )),
+        };
+
+        let termination = Termination::new(
+            self.dynamic_function_pointer_array(
+                array.first(Tag::TerminationArray).map(|entry| entry.payload),
+                array
+                    .first(Tag::TerminationArraySize)
+                    .map(|entry| entry.payload),
+            )?,
+            array
+                .first(Tag::Termination)
+                .map(|entry| FunctionAddress::new(entry.payload)),
+        );
+
+        Some(InitializationAndTerminationFunctions::new(
+            pre_initialization,
+            initialization,
+            termination,
+        ))
+    }
+
+    pub fn validate_dynamic_initialization_and_termination(
+        &self,
+        index: usize,
+    ) -> Result<(), dynamic::validation::ValidationError> {
+        use dynamic::validation::ValidationError;
+
+        let Some(array) = self.dynamic_array_from_program_header(index) else {
+            return Ok(());
+        };
+
+        let pointer_size = match self.header.identification.class {
+            Class::Class32 => 4u64,
+            Class::Class64 => 8u64,
+            Class::None | Class::Reserved(_) => return Ok(()),
+        };
+
+        let initialization_array = array.first(Tag::InitializationArray);
+        let initialization_size = array.first(Tag::InitializationArraySize);
+        match (initialization_array, initialization_size) {
+            (Some(_), None) => return Err(ValidationError::InitializationArrayMissingSize),
+            (None, Some(_)) => return Err(ValidationError::InitializationArraySizeWithoutArray),
+            (Some(_), Some(size)) if size.payload % pointer_size != 0 => {
+                return Err(ValidationError::InitializationArraySizeNotPointerMultiple)
+            }
+            _ => {}
+        }
+
+        let termination_array = array.first(Tag::TerminationArray);
+        let termination_size = array.first(Tag::TerminationArraySize);
+        match (termination_array, termination_size) {
+            (Some(_), None) => return Err(ValidationError::TerminationArrayMissingSize),
+            (None, Some(_)) => return Err(ValidationError::TerminationArraySizeWithoutArray),
+            (Some(_), Some(size)) if size.payload % pointer_size != 0 => {
+                return Err(ValidationError::TerminationArraySizeNotPointerMultiple)
+            }
+            _ => {}
+        }
+
+        let pre_initialization_array = array.first(Tag::PreInitializationArray);
+        let pre_initialization_size = array.first(Tag::PreInitializationArraySize);
+        match (pre_initialization_array, pre_initialization_size) {
+            (Some(_), None) => {
+                return Err(ValidationError::PreInitializationArrayMissingSize)
+            }
+            (None, Some(_)) => {
+                return Err(ValidationError::PreInitializationArraySizeWithoutArray)
+            }
+            (Some(_), Some(size)) if size.payload % pointer_size != 0 => {
+                return Err(ValidationError::PreInitializationArraySizeNotPointerMultiple)
+            }
+            _ => {}
+        }
+
+        if matches!(self.header.r#type, header::Type::SharedObject)
+            && pre_initialization_array.is_some()
+        {
+            return Err(ValidationError::PreInitializationInSharedObject);
+        }
+
+        Ok(())
+    }
+
+    fn dynamic_function_pointer_array(
+        &self,
+        address: Option<u64>,
+        size: Option<u64>,
+    ) -> Option<Vec<FunctionPointer>> {
+        match (address, size) {
+            (None, None) => Some(Vec::new()),
+            (Some(address), Some(size)) => {
+                let pointer_size = match self.header.identification.class {
+                    Class::Class32 => 4usize,
+                    Class::Class64 => 8usize,
+                    Class::None | Class::Reserved(_) => return None,
+                };
+                let size = usize::try_from(size).ok()?;
+                if size % pointer_size != 0 {
+                    return None;
+                }
+
+                let bytes = self.file_range_for_virtual_address(
+                    address,
+                    u64::try_from(size).ok()?,
+                )?;
+                let mut pointers = Vec::with_capacity(size / pointer_size);
+
+                for pointer_index in 0..(size / pointer_size) {
+                    let offset = pointer_index.checked_mul(pointer_size)?;
+                    let mut decoder = Decoder::new(
+                        bytes,
+                        offset,
+                        self.header.identification.data,
+                    )?;
+                    let value = match self.header.identification.class {
+                        Class::Class32 => u64::from(decoder.word()?),
+                        Class::Class64 => decoder.xword()?,
+                        Class::None | Class::Reserved(_) => return None,
+                    };
+                    pointers.push(FunctionPointer::new(value));
+                }
+
+                Some(pointers)
+            }
+            _ => None,
+        }
     }
 
     pub fn shared_object_dependencies_from_program_header(
