@@ -275,8 +275,7 @@ impl<'file> ObjectFile<'file> {
                     section_header::Type::SymbolTableSectionIndex
                 ) && candidate.link as usize == section_index
             })
-            .map(|(index, _)| self.section(index))
-            .transpose()?;
+            .and_then(|(index, _)| self.section(index));
 
         let mut section_indices = Vec::with_capacity(count);
 
