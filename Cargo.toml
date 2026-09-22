@@ -128,3 +128,8 @@ github-actions = { repository = "ze-gois/rust_userspace" }
 name = "elf_representation"
 path = "tests/elf_representation.rs"
 required-features = ["host_tests"]
+
+[[test]]
+name = "elf_dynamic_initialization"
+path = "tests/elf_dynamic_initialization.rs"
+required-features = ["host_tests"]
