@@ -22,12 +22,12 @@ pub mod ok {
 
 pub mod error {
     ample::result!(Error; "GetRandom error"; usize; [
-        [1; ERROR; Default; usize; "Error"; "Something wicked this way comes"],
-        [4; EINTR; Interrupted; usize; "EINTR"; "System call was interrupted"],
-        [14; EFAULT; InvalidBuffer; usize; "EFAULT"; "Invalid buffer pointer"],
-        [22; EINVAL; InvalidFlags; usize; "EINVAL"; "Invalid flags"],
-        [11; EAGAIN; WouldBlock; usize; "EAGAIN"; "Randomness is not ready"],
-        [13; EPERM; PermissionDenied; usize; "EPERM"; "Operation not permitted"],
+        [11; EAGAIN; WouldBlock; usize; "EAGAIN"; "Requested entropy is unavailable and nonblocking behavior was requested"],
+        [14; EFAULT; InvalidBuffer; usize; "EFAULT"; "Output buffer is outside the accessible address space"],
+        [4; EINTR; Interrupted; usize; "EINTR"; "Request was interrupted by a signal"],
+        [22; EINVAL; InvalidArgument; usize; "EINVAL"; "Invalid flags were supplied"],
+        [38; ENOSYS; NotImplemented; usize; "ENOSYS"; "Kernel does not implement getrandom"],
+        [usize::MAX; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
