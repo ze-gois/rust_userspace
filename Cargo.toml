@@ -77,8 +77,8 @@ path = "src/entry.rs"
 test = false
 doctest = true
 bench = false
-required-features = []        # nenhuma feature obrigatória
-doc = true                     # gera docs
+required-features = ["no_std"]
+doc = true
 
 [dependencies]
 ample = { version = "0.2.2" }
