@@ -6,7 +6,27 @@
 
 use ample::r#type::Vec;
 
-use super::{relocation::Relocation, symbol_table::SymbolTable};
+use super::{
+    relocation::Relocation,
+    section::Section,
+    symbol_table::SymbolTable,
+};
+
+
+#[derive(Debug, Clone, Copy)]
+pub struct TargetSection<'file> {
+    pub section_index: usize,
+    pub section: Section<'file>,
+}
+
+impl<'file> TargetSection<'file> {
+    pub const fn new(section_index: usize, section: Section<'file>) -> Self {
+        Self {
+            section_index,
+            section,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct RelocationTable<'file> {
