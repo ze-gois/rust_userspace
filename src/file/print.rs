@@ -32,7 +32,7 @@ pub fn print(file_path: &str) {
 
     let mut buffer = [0u8; BUFFER_CAPACITY];
 
-    loop {
+    'printing: loop {
         let read_length = match syscall::read(
             file_descriptor,
             buffer.as_mut_ptr(),
@@ -54,7 +54,7 @@ pub fn print(file_path: &str) {
         while written < read_length {
             let write_length = match syscall::write(
                 1,
-                unsafe { buffer.as_ptr().add(written) },
+                buffer[written..read_length].as_ptr(),
                 read_length - written,
             ) {
                 core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
@@ -62,14 +62,11 @@ pub fn print(file_path: &str) {
                         crate::target::os::syscall::write::Ok::Default(write_length),
                     )),
                 ))) => write_length,
-                _ => {
-                    written = read_length;
-                    0
-                }
+                _ => break 'printing,
             };
 
             if write_length == 0 {
-                break;
+                break 'printing;
             }
 
             written += write_length;
