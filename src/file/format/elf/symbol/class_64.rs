@@ -1,4 +1,7 @@
-use super::super::representation::class_64 as representation;
+use super::super::{
+    identification::Data,
+    representation::{class_64 as representation, Decoder},
+};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -9,6 +12,20 @@ pub struct Representation {
     pub st_shndx: representation::Half,
     pub st_value: representation::Address,
     pub st_size: representation::Xword,
+}
+
+impl Representation {
+    pub fn decode(bytes: &[u8], offset: usize, data: Data) -> Option<Self> {
+        let mut decoder = Decoder::new(bytes, offset, data)?;
+        Some(Self {
+            st_name: decoder.word()?,
+            st_info: decoder.byte()?,
+            st_other: decoder.byte()?,
+            st_shndx: decoder.half()?,
+            st_value: decoder.xword()?,
+            st_size: decoder.xword()?,
+        })
+    }
 }
 
 impl From<Representation> for super::Symbol {
