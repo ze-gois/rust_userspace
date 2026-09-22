@@ -106,10 +106,12 @@ pub extern "C" fn entry(
         };
 
         userspace::info!(
-            "  section[{}] {:?}: symbols[{}]\n",
+            "  section[{}] {:?}: symbols[{}] local={} non_local={}\n",
             section_index,
             object_file.section_name(section_index),
             symbol_table.len(),
+            symbol_table.local_symbols().len(),
+            symbol_table.non_local_symbols().len(),
         );
 
         const SYMBOL_PREVIEW: usize = 32;
