@@ -3,7 +3,12 @@
 pub struct AtFlag(isize);
 
 impl AtFlag {
-    pub const CURRENT_WORKING_DIRECTORY: Self = Self(AT_FDCWD);
+    pub const FDCWD: Self = Self(AT_FDCWD);
+    pub const REMOVEDIR: Self = Self(AT_REMOVEDIR);
+    pub const SYMLINK_FOLLOW: Self = Self(AT_SYMLINK_FOLLOW);
+    pub const SYMLINK_NOFOLLOW: Self = Self(AT_SYMLINK_NOFOLLOW);
+
+    pub const CURRENT_WORKING_DIRECTORY: Self = Self::FDCWD;
     pub const REMOVE_DIRECTORY: Self = Self(AT_REMOVEDIR);
     pub const SYMBOLIC_LINK_FOLLOW: Self = Self(AT_SYMLINK_FOLLOW);
     pub const SYMBOLIC_LINK_NO_FOLLOW: Self = Self(AT_SYMLINK_NOFOLLOW);
@@ -14,6 +19,10 @@ impl AtFlag {
 
     pub const fn raw(self) -> isize {
         self.0
+    }
+
+    pub const fn to(self) -> isize {
+        self.raw()
     }
 }
 

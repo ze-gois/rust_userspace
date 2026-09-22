@@ -18,3 +18,9 @@ ample::flags!(
         [0o2000000; CLOSE_ON_EXECUTE;        O_CLOEXEC;   "O_CLOEXEC";   "Close on successful exec"]
     }
 );
+
+impl Flag {
+    pub const RDONLY: Self = Self::READ_ONLY;
+    pub const WRONLY: Self = Self::WRITE_ONLY;
+    pub const RDWR: Self = Self::READ_WRITE;
+}
