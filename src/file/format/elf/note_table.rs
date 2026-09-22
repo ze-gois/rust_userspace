@@ -1,8 +1,8 @@
 //! ELF note entries.
 //!
-//! Notes are variable-length records. Their fixed-size fields and padding use
-//! the word size prescribed by the ELF class; the name and descriptor lengths
-//! exclude padding.
+//! Notes are variable-length records. Their fixed-size fields are 32-bit
+//! words in both ELF classes. Name and descriptor padding follows the
+//! class-specific note alignment, and their lengths exclude that padding.
 
 use ample::r#type::Vec;
 
