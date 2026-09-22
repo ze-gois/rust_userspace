@@ -6,6 +6,8 @@ use super::{
     header::{self, Header},
     identification::{Class, Data, Identification},
     program_header::{self, ProgramHeader},
+    relocation::{self, Relocation},
+    relocation_table::RelocationTable,
     section_header::{self, SectionHeader},
     string_table::StringTable,
     symbol::{self, Symbol},
@@ -226,6 +228,80 @@ impl<'file> ObjectFile<'file> {
         }
 
         Some(SymbolTable::new(symbols, strings, header.information as usize))
+    }
+
+    pub fn relocation_table(&self, section_index: usize) -> Option<RelocationTable<'file>> {
+        let header = *self.section_headers.get(section_index)?;
+        let with_addend = match header.r#type {
+            section_header::Type::Relocation => false,
+            section_header::Type::RelocationWithAddend => true,
+            _ => return None,
+        };
+
+        let section = self.section(section_index)?;
+        let symbols = self.symbol_table(header.link as usize)?;
+        let entry_size = usize::try_from(header.entry_size).ok()?;
+
+        if entry_size == 0 || section.contents.len() % entry_size != 0 {
+            return None;
+        }
+
+        let count = section.contents.len() / entry_size;
+        let mut relocations = Vec::with_capacity(count);
+
+        match (self.header.identification.class, with_addend) {
+            (Class::Class32, false) => {
+                if entry_size < core::mem::size_of::<relocation::class_32::RelRepresentation>() {
+                    return None;
+                }
+                for index in 0..count {
+                    let offset = index.checked_mul(entry_size)?;
+                    let representation =
+                        read::<relocation::class_32::RelRepresentation>(section.contents, offset)?;
+                    relocations.push(Relocation::from(representation));
+                }
+            }
+            (Class::Class32, true) => {
+                if entry_size < core::mem::size_of::<relocation::class_32::RelaRepresentation>() {
+                    return None;
+                }
+                for index in 0..count {
+                    let offset = index.checked_mul(entry_size)?;
+                    let representation =
+                        read::<relocation::class_32::RelaRepresentation>(section.contents, offset)?;
+                    relocations.push(Relocation::from(representation));
+                }
+            }
+            (Class::Class64, false) => {
+                if entry_size < core::mem::size_of::<relocation::class_64::RelRepresentation>() {
+                    return None;
+                }
+                for index in 0..count {
+                    let offset = index.checked_mul(entry_size)?;
+                    let representation =
+                        read::<relocation::class_64::RelRepresentation>(section.contents, offset)?;
+                    relocations.push(Relocation::from(representation));
+                }
+            }
+            (Class::Class64, true) => {
+                if entry_size < core::mem::size_of::<relocation::class_64::RelaRepresentation>() {
+                    return None;
+                }
+                for index in 0..count {
+                    let offset = index.checked_mul(entry_size)?;
+                    let representation =
+                        read::<relocation::class_64::RelaRepresentation>(section.contents, offset)?;
+                    relocations.push(Relocation::from(representation));
+                }
+            }
+            (Class::None | Class::Reserved(_), _) => return None,
+        }
+
+        Some(RelocationTable::new(
+            relocations,
+            symbols,
+            header.information as usize,
+        ))
     }
 }
 
