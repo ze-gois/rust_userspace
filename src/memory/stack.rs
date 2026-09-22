@@ -84,13 +84,25 @@ impl Stack {
 
         crate::info!("envp[{}]\n", self.environment.len());
         for (index, variable) in self.environment.iter().enumerate() {
-            match variable.as_str() {
-                Some(value) => crate::info!("  envp[{}] = {:?}\n", index, value),
-                None => crate::info!(
-                    "  envp[{}] = <non-utf8 @ {:p}>\n",
+            match variable.pair() {
+                Some((key, value)) => crate::info!(
+                    "  envp[{}] = {{ key: {:?}, value: {:?} }}\n",
                     index,
-                    variable.pointer(),
+                    key,
+                    value,
                 ),
+                None => match variable.as_str() {
+                    Some(raw) => crate::info!(
+                        "  envp[{}] = {{ raw: {:?}, separator: false }}\n",
+                        index,
+                        raw,
+                    ),
+                    None => crate::info!(
+                        "  envp[{}] = <non-utf8 @ {:p}>\n",
+                        index,
+                        variable.pointer(),
+                    ),
+                },
             }
         }
 
