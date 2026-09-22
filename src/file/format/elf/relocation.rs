@@ -3,6 +3,7 @@
 pub mod class_32;
 pub mod class_64;
 pub mod r#type;
+pub mod relative;
 
 pub use r#type::Type;
 
