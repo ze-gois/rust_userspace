@@ -5,6 +5,7 @@ use ample::r#type::Vec;
 use super::{
     compression::{self, CompressedSection, CompressionHeader},
     dynamic::{self, Dynamic, Tag},
+    dynamic_array::DynamicArray,
     dynamic_table::DynamicTable,
     hash::HashTable,
     header::{self, Header},
@@ -336,6 +337,74 @@ impl<'file> ObjectFile<'file> {
         Ok(())
     }
 
+    pub fn file_offset_for_virtual_address(&self, address: u64) -> Option<u64> {
+        for header in &self.program_headers {
+            if !matches!(header.r#type, program_header::Type::Load) {
+                continue;
+            }
+
+            let end = header.virtual_address.checked_add(header.file_size)?;
+            if address < header.virtual_address || address >= end {
+                continue;
+            }
+
+            let displacement = address.checked_sub(header.virtual_address)?;
+            return header.offset.checked_add(displacement);
+        }
+
+        None
+    }
+
+    pub fn file_range_for_virtual_address(
+        &self,
+        address: u64,
+        size: u64,
+    ) -> Option<&'file [u8]> {
+        let offset = self.file_offset_for_virtual_address(address)?;
+        range(self.bytes, offset, size)
+    }
+
+    pub fn dynamic_array_from_program_header(&self, index: usize) -> Option<DynamicArray> {
+        let program_header = *self.program_headers.get(index)?;
+        if !matches!(program_header.r#type, program_header::Type::Dynamic) {
+            return None;
+        }
+
+        let segment = self.segment(index)?;
+        let entry_size = match self.header.identification.class {
+            Class::Class32 => core::mem::size_of::<dynamic::class_32::Representation>(),
+            Class::Class64 => core::mem::size_of::<dynamic::class_64::Representation>(),
+            Class::None | Class::Reserved(_) => return None,
+        };
+
+        parse_dynamic_array(
+            segment.file_image,
+            self.header.identification.class,
+            entry_size,
+        )
+    }
+
+    pub fn dynamic_string_table_from_program_header(
+        &self,
+        index: usize,
+    ) -> Option<StringTable<'file>> {
+        let array = self.dynamic_array_from_program_header(index)?;
+        let address = array.first(Tag::StringTable)?.payload;
+        let size = array.first(Tag::StringTableSize)?.payload;
+        let bytes = self.file_range_for_virtual_address(address, size)?;
+        Some(StringTable::new(bytes))
+    }
+
+    pub fn note_table_from_program_header(&self, index: usize) -> Option<NoteTable<'file>> {
+        let program_header = *self.program_headers.get(index)?;
+        if !matches!(program_header.r#type, program_header::Type::Note) {
+            return None;
+        }
+
+        let segment = self.segment(index)?;
+        parse_note_table(segment.file_image, self.header.identification.class)
+    }
+
     pub fn section_name_string_table(&self) -> Option<StringTable<'file>> {
         let index = self.section_name_string_table_index?;
         let section = self.section(index)?;
@@ -544,47 +613,14 @@ impl<'file> ObjectFile<'file> {
             return None;
         }
 
-        let count = section.contents.len() / entry_size;
-        let mut entries = Vec::with_capacity(count);
-
-        match self.header.identification.class {
-            Class::Class32 => {
-                if entry_size < core::mem::size_of::<dynamic::class_32::Representation>() {
-                    return None;
-                }
-                for index in 0..count {
-                    let offset = index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<dynamic::class_32::Representation>(section.contents, offset)?;
-                    let entry = Dynamic::from(representation);
-                    let end = matches!(entry.tag, Tag::Null);
-                    entries.push(entry);
-                    if end {
-                        break;
-                    }
-                }
-            }
-            Class::Class64 => {
-                if entry_size < core::mem::size_of::<dynamic::class_64::Representation>() {
-                    return None;
-                }
-                for index in 0..count {
-                    let offset = index.checked_mul(entry_size)?;
-                    let representation =
-                        read::<dynamic::class_64::Representation>(section.contents, offset)?;
-                    let entry = Dynamic::from(representation);
-                    let end = matches!(entry.tag, Tag::Null);
-                    entries.push(entry);
-                    if end {
-                        break;
-                    }
-                }
-            }
-            Class::None | Class::Reserved(_) => return None,
-        }
+        let array = parse_dynamic_array(
+            section.contents,
+            self.header.identification.class,
+            entry_size,
+        )?;
 
         Some(DynamicTable::new(
-            entries,
+            array,
             StringTable::new(strings_section.contents),
         ))
     }
@@ -657,37 +693,7 @@ impl<'file> ObjectFile<'file> {
             return None;
         }
 
-        let word_size = match self.header.identification.class {
-            Class::Class32 => 4usize,
-            Class::Class64 => 8usize,
-            Class::None | Class::Reserved(_) => return None,
-        };
-
-        let mut notes = Vec::new();
-        let mut offset = 0usize;
-
-        while offset < section.contents.len() {
-            let namesz = read_word(section.contents, offset, word_size)?;
-            offset = offset.checked_add(word_size)?;
-            let descsz = read_word(section.contents, offset, word_size)?;
-            offset = offset.checked_add(word_size)?;
-            let r#type = read_word(section.contents, offset, word_size)?;
-            offset = offset.checked_add(word_size)?;
-
-            let name_length = usize::try_from(namesz).ok()?;
-            let name_end = offset.checked_add(name_length)?;
-            let name = section.contents.get(offset..name_end)?;
-            offset = align(name_end, word_size)?;
-
-            let descriptor_length = usize::try_from(descsz).ok()?;
-            let descriptor_end = offset.checked_add(descriptor_length)?;
-            let descriptor = section.contents.get(offset..descriptor_end)?;
-            offset = align(descriptor_end, word_size)?;
-
-            notes.push(Note::new(name, r#type, descriptor));
-        }
-
-        Some(NoteTable::new(notes))
+        parse_note_table(section.contents, self.header.identification.class)
     }
 
     pub fn compressed_section(&self, section_index: usize) -> Option<CompressedSection<'file>> {
@@ -720,6 +726,93 @@ impl<'file> ObjectFile<'file> {
             Class::None | Class::Reserved(_) => None,
         }
     }
+}
+
+fn parse_dynamic_array(
+    bytes: &[u8],
+    class: Class,
+    entry_size: usize,
+) -> Option<DynamicArray> {
+    if entry_size == 0 || bytes.len() % entry_size != 0 {
+        return None;
+    }
+
+    let count = bytes.len() / entry_size;
+    let mut entries = Vec::with_capacity(count);
+
+    match class {
+        Class::Class32 => {
+            if entry_size < core::mem::size_of::<dynamic::class_32::Representation>() {
+                return None;
+            }
+
+            for index in 0..count {
+                let offset = index.checked_mul(entry_size)?;
+                let representation =
+                    read::<dynamic::class_32::Representation>(bytes, offset)?;
+                let entry = Dynamic::from(representation);
+                let end = matches!(entry.tag, Tag::Null);
+                entries.push(entry);
+                if end {
+                    break;
+                }
+            }
+        }
+        Class::Class64 => {
+            if entry_size < core::mem::size_of::<dynamic::class_64::Representation>() {
+                return None;
+            }
+
+            for index in 0..count {
+                let offset = index.checked_mul(entry_size)?;
+                let representation =
+                    read::<dynamic::class_64::Representation>(bytes, offset)?;
+                let entry = Dynamic::from(representation);
+                let end = matches!(entry.tag, Tag::Null);
+                entries.push(entry);
+                if end {
+                    break;
+                }
+            }
+        }
+        Class::None | Class::Reserved(_) => return None,
+    }
+
+    Some(DynamicArray::new(entries))
+}
+
+fn parse_note_table<'file>(bytes: &'file [u8], class: Class) -> Option<NoteTable<'file>> {
+    let word_size = match class {
+        Class::Class32 => 4usize,
+        Class::Class64 => 8usize,
+        Class::None | Class::Reserved(_) => return None,
+    };
+
+    let mut notes = Vec::new();
+    let mut offset = 0usize;
+
+    while offset < bytes.len() {
+        let namesz = read_word(bytes, offset, word_size)?;
+        offset = offset.checked_add(word_size)?;
+        let descsz = read_word(bytes, offset, word_size)?;
+        offset = offset.checked_add(word_size)?;
+        let r#type = read_word(bytes, offset, word_size)?;
+        offset = offset.checked_add(word_size)?;
+
+        let name_length = usize::try_from(namesz).ok()?;
+        let name_end = offset.checked_add(name_length)?;
+        let name = bytes.get(offset..name_end)?;
+        offset = align(name_end, word_size)?;
+
+        let descriptor_length = usize::try_from(descsz).ok()?;
+        let descriptor_end = offset.checked_add(descriptor_length)?;
+        let descriptor = bytes.get(offset..descriptor_end)?;
+        offset = align(descriptor_end, word_size)?;
+
+        notes.push(Note::new(name, r#type, descriptor));
+    }
+
+    Some(NoteTable::new(notes))
 }
 
 fn initial_section_header_32(
