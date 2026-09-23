@@ -26,9 +26,37 @@ impl<'file> SharedObjectDependency<'file> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SearchDirectory<'file> {
+    Pathname(&'file str),
+    CurrentDirectory,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SearchPath<'file> {
     RunPath(&'file str),
     RuntimeSearchPath(&'file str),
+}
+
+impl<'file> SearchPath<'file> {
+    pub const fn value(self) -> &'file str {
+        match self {
+            Self::RunPath(value) | Self::RuntimeSearchPath(value) => value,
+        }
+    }
+
+    pub fn directories(self) -> Vec<SearchDirectory<'file>> {
+        let mut directories = Vec::new();
+
+        for directory in self.value().split(':') {
+            if directory.is_empty() {
+                directories.push(SearchDirectory::CurrentDirectory);
+            } else {
+                directories.push(SearchDirectory::Pathname(directory));
+            }
+        }
+
+        directories
+    }
 }
 
 #[derive(Debug)]
