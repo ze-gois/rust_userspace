@@ -1257,6 +1257,15 @@ impl<'file> ObjectFile<'file> {
                             value: extended,
                         });
                     }
+
+                    if representation.st_shndx == section_header::Index::EXTENDED.raw()
+                        && extended < section_header::Index::LOWER_RESERVED.raw() as u32
+                    {
+                        return Err(ValidationError::ExtendedSectionIndexBelowReservedRange {
+                            index,
+                            value: extended,
+                        });
+                    }
                 }
             }
             Class::Class64 => {
@@ -1278,6 +1287,15 @@ impl<'file> ObjectFile<'file> {
                         && extended != 0
                     {
                         return Err(ValidationError::SectionIndexTableUnexpectedValue {
+                            index,
+                            value: extended,
+                        });
+                    }
+
+                    if representation.st_shndx == section_header::Index::EXTENDED.raw()
+                        && extended < section_header::Index::LOWER_RESERVED.raw() as u32
+                    {
+                        return Err(ValidationError::ExtendedSectionIndexBelowReservedRange {
                             index,
                             value: extended,
                         });
