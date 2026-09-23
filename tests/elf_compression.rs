@@ -92,7 +92,7 @@ fn rejects_allocated_compressed_section_in_executable() {
 
     assert_eq!(
         object.validate_compressed_section(1),
-        Err(ValidationError::AllocatedCompressedSection),
+        Err(ValidationError::AllocatedCompressedSectionInExecutableOrSharedObject),
     );
     assert!(object.compressed_section(1).is_none());
 }
@@ -111,25 +111,19 @@ fn rejects_compressed_nobits_section() {
 
 
 #[test]
-fn rejects_allocated_compressed_section_in_relocatable_object() {
+fn allows_allocated_compressed_section_in_relocatable_object() {
     let bytes = fixture(1, 1, 0x2 | 0x800);
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
 
-    assert_eq!(
-        object.validate_compressed_section(1),
-        Err(ValidationError::AllocatedCompressedSection),
-    );
+    assert_eq!(object.validate_compressed_section(1), Ok(()));
 }
 
 #[test]
-fn rejects_allocated_compressed_section_in_core_object() {
+fn allows_allocated_compressed_section_in_core_object() {
     let bytes = fixture(4, 1, 0x2 | 0x800);
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
 
-    assert_eq!(
-        object.validate_compressed_section(1),
-        Err(ValidationError::AllocatedCompressedSection),
-    );
+    assert_eq!(object.validate_compressed_section(1), Ok(()));
 }
 
 #[test]
