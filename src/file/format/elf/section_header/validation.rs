@@ -21,5 +21,6 @@ pub enum Error {
     AddressMisaligned { index: usize },
     SectionOutsideFile { index: usize },
     SectionsOverlap { first: usize, second: usize },
+    InvalidSectionNameStringTableType { index: usize },
     InvalidSectionName { index: usize, name_index: u32 },
 }
