@@ -6,7 +6,7 @@
 
 use ample::r#type::Vec;
 
-use super::program_header::Flags;
+use super::{base_address::BaseAddress, program_header::Flags};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
@@ -14,6 +14,7 @@ pub enum Error {
     FileImageUnavailable { index: usize },
     VirtualAddressRangeOverflow { index: usize },
     MemoryImageSizeUnsupported { index: usize, size: u64 },
+    LoadTimeVirtualAddressOverflow { index: usize },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -67,6 +68,39 @@ impl<'file> Segment<'file> {
         bytes.extend(core::iter::repeat(0).take(zero_fill_size));
 
         Ok(bytes)
+    }
+
+    pub fn load_time_virtual_address(
+        &self,
+        base_address: BaseAddress,
+    ) -> Result<u64, Error> {
+        base_address
+            .relocate_virtual_address(self.link_time_virtual_address)
+            .ok_or(Error::LoadTimeVirtualAddressOverflow {
+                index: self.program_header_index,
+            })
+    }
+
+    pub fn zero_fill_load_time_virtual_address(
+        &self,
+        base_address: BaseAddress,
+    ) -> Result<u64, Error> {
+        base_address
+            .relocate_virtual_address(self.zero_fill.link_time_virtual_address)
+            .ok_or(Error::LoadTimeVirtualAddressOverflow {
+                index: self.program_header_index,
+            })
+    }
+
+    pub fn load_time_end_virtual_address(
+        &self,
+        base_address: BaseAddress,
+    ) -> Result<u64, Error> {
+        base_address
+            .relocate_virtual_address(self.link_time_end_virtual_address)
+            .ok_or(Error::LoadTimeVirtualAddressOverflow {
+                index: self.program_header_index,
+            })
     }
 }
 
