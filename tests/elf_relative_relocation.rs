@@ -1,11 +1,11 @@
 use userspace::file::format::elf::{
     dynamic::{PayloadKind, Tag},
     identification::{Class, Data},
-    memory_image::{MemoryImage, Region},
+    memory_image::{MemoryImage, MemoryImageWriter, Region, RegionWriter},
     relocation::relative::{
         class_32, class_64, Entry, ExpansionError, RelocationFactor, RepresentationError,
-        StorageUnit, StorageUnitRepresentation, StorageUnitWrite, Table, VirtualAddressError,
-        WriteError,
+        ApplicationError, StorageUnit, StorageUnitRepresentation, StorageUnitWrite, Table,
+        VirtualAddressError, WriteError,
     },
     section_header,
 };
@@ -698,4 +698,111 @@ fn rejects_relative_relocation_load_address_overflow_before_memory_read() {
             },
         )),
     );
+}
+
+
+#[test]
+fn applies_relative_relocation_storage_unit_write() {
+    let mut bytes = [0u8; 16];
+    let mut regions = ample::r#type::Vec::new();
+    regions.push(RegionWriter::new(0x500000, &mut bytes));
+    let mut image = MemoryImageWriter::new(regions);
+
+    let write = StorageUnitWrite {
+        link_time_virtual_address: 0x400008,
+        load_time_virtual_address: 0x500008,
+        representation: StorageUnitRepresentation::Class64(
+            0x1234_5678_9abc_def0u64.to_le_bytes(),
+        ),
+    };
+
+    assert_eq!(write.apply(&mut image), Ok(()));
+    drop(image);
+
+    assert_eq!(
+        &bytes[8..16],
+        &0x1234_5678_9abc_def0u64.to_le_bytes(),
+    );
+}
+
+#[test]
+fn applies_relative_relocation_write_at_load_time_address_only() {
+    let mut link_time_bytes = [0u8; 8];
+    let mut load_time_bytes = [0u8; 8];
+
+    let mut regions = ample::r#type::Vec::new();
+    regions.push(RegionWriter::new(0x400000, &mut link_time_bytes));
+    regions.push(RegionWriter::new(0x500000, &mut load_time_bytes));
+    let mut image = MemoryImageWriter::new(regions);
+
+    let write = StorageUnitWrite {
+        link_time_virtual_address: 0x400000,
+        load_time_virtual_address: 0x500000,
+        representation: StorageUnitRepresentation::Class64(
+            0x55aa_55aa_55aa_55aau64.to_le_bytes(),
+        ),
+    };
+
+    assert_eq!(write.apply(&mut image), Ok(()));
+    drop(image);
+
+    assert_eq!(link_time_bytes, [0; 8]);
+    assert_eq!(
+        load_time_bytes,
+        0x55aa_55aa_55aa_55aau64.to_le_bytes(),
+    );
+}
+
+#[test]
+fn rejects_relative_relocation_write_outside_memory_image() {
+    let mut bytes = [0u8; 8];
+    let mut regions = ample::r#type::Vec::new();
+    regions.push(RegionWriter::new(0x600000, &mut bytes));
+    let mut image = MemoryImageWriter::new(regions);
+
+    let write = StorageUnitWrite {
+        link_time_virtual_address: 0x400000,
+        load_time_virtual_address: 0x500000,
+        representation: StorageUnitRepresentation::Class64(
+            0x1000u64.to_le_bytes(),
+        ),
+    };
+
+    assert_eq!(
+        write.apply(&mut image),
+        Err(ApplicationError::StorageUnitUnavailable {
+            load_time_virtual_address: 0x500000,
+        }),
+    );
+    drop(image);
+    assert_eq!(bytes, [0; 8]);
+}
+
+#[test]
+fn applied_relative_relocation_write_matches_planned_representation() {
+    let table = Table::new(vec![Entry::Address(0x400000)], Class::Class64);
+    let source = 0x1000u64.to_le_bytes();
+
+    let mut read_regions = ample::r#type::Vec::new();
+    read_regions.push(Region::new(0x500000, &source));
+    let read_image = MemoryImage::new(read_regions);
+    let factor = RelocationFactor::from_virtual_addresses(0x500000, 0x400000);
+
+    let writes = table
+        .storage_unit_writes_from_memory_image(
+            &read_image,
+            Data::LeastSignificantByteFirst,
+            factor,
+        )
+        .expect("RELR write must plan");
+
+    let mut loaded = source;
+    let mut write_regions = ample::r#type::Vec::new();
+    write_regions.push(RegionWriter::new(0x500000, &mut loaded));
+    let mut write_image = MemoryImageWriter::new(write_regions);
+
+    assert_eq!(writes[0].apply(&mut write_image), Ok(()));
+    drop(write_image);
+
+    assert_eq!(loaded, 0x101000u64.to_le_bytes());
 }
