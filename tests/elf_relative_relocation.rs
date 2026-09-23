@@ -120,7 +120,7 @@ fn expands_elf64_relative_relocation_bitmaps() {
             0x400008,
             0x400010,
             0x500000,
-            0x500008,
+            0x500010,
         ]),
     );
 }
