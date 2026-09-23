@@ -1,7 +1,7 @@
 use ample::r#type::Vec;
 
 use userspace::file::format::elf::memory_image::{
-    MemoryImage, MemoryImageWriter, Region, RegionWriter,
+    MemoryImage, MemoryImageWriter, Region, RegionWriter, WriteError,
 };
 
 #[test]
@@ -57,7 +57,7 @@ fn writes_bytes_to_loaded_memory_region() {
     regions.push(RegionWriter::new(0x4000, &mut bytes));
     let mut image = MemoryImageWriter::new(regions);
 
-    assert!(image.write(0x4001, &[0xaa, 0xbb, 0xcc]));
+    assert_eq!(image.write(0x4001, &[0xaa, 0xbb, 0xcc]), Ok(()));
     drop(image);
     assert_eq!(bytes, [0x00, 0xaa, 0xbb, 0xcc, 0x00, 0x00]);
 }
@@ -69,8 +69,20 @@ fn rejects_write_outside_loaded_memory_regions() {
     regions.push(RegionWriter::new(0x5000, &mut bytes));
     let mut image = MemoryImageWriter::new(regions);
 
-    assert!(!image.write(0x4fff, &[1]));
-    assert!(!image.write(0x5004, &[1]));
+    assert_eq!(
+        image.write(0x4fff, &[1]),
+        Err(WriteError::Unavailable {
+            virtual_address: 0x4fff,
+            size: 1,
+        }),
+    );
+    assert_eq!(
+        image.write(0x5004, &[1]),
+        Err(WriteError::Unavailable {
+            virtual_address: 0x5004,
+            size: 1,
+        }),
+    );
     drop(image);
     assert_eq!(bytes, [0; 4]);
 }
@@ -84,7 +96,13 @@ fn does_not_join_write_across_memory_regions() {
     regions.push(RegionWriter::new(0x1002, &mut second));
     let mut image = MemoryImageWriter::new(regions);
 
-    assert!(!image.write(0x1001, &[1, 2]));
+    assert_eq!(
+        image.write(0x1001, &[1, 2]),
+        Err(WriteError::Unavailable {
+            virtual_address: 0x1001,
+            size: 2,
+        }),
+    );
     drop(image);
     assert_eq!(first, [0; 2]);
     assert_eq!(second, [0; 2]);
