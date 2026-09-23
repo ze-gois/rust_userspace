@@ -350,3 +350,82 @@ fn rejects_storage_unit_representation_without_data_encoding() {
         Err(RepresentationError::UnsupportedData(Data::Reserved(7))),
     );
 }
+
+
+#[test]
+fn decodes_elf32_storage_unit_representation_by_byte_order() {
+    let little = StorageUnitRepresentation::Class32([0x78, 0x56, 0x34, 0x12]);
+    let big = StorageUnitRepresentation::Class32([0x12, 0x34, 0x56, 0x78]);
+
+    assert_eq!(
+        little.decode(Data::LeastSignificantByteFirst),
+        Ok(StorageUnit::Class32(0x1234_5678)),
+    );
+    assert_eq!(
+        big.decode(Data::MostSignificantByteFirst),
+        Ok(StorageUnit::Class32(0x1234_5678)),
+    );
+}
+
+#[test]
+fn decodes_elf64_storage_unit_representation_by_byte_order() {
+    let little = StorageUnitRepresentation::Class64([
+        0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01,
+    ]);
+    let big = StorageUnitRepresentation::Class64([
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
+    ]);
+
+    assert_eq!(
+        little.decode(Data::LeastSignificantByteFirst),
+        Ok(StorageUnit::Class64(0x0123_4567_89ab_cdef)),
+    );
+    assert_eq!(
+        big.decode(Data::MostSignificantByteFirst),
+        Ok(StorageUnit::Class64(0x0123_4567_89ab_cdef)),
+    );
+}
+
+#[test]
+fn storage_unit_representation_round_trips_elf32() {
+    let storage_unit = StorageUnit::Class32(0x89ab_cdef);
+
+    for data in [
+        Data::LeastSignificantByteFirst,
+        Data::MostSignificantByteFirst,
+    ] {
+        let representation = storage_unit
+            .representation(data)
+            .expect("ELF32 storage unit must serialize");
+        assert_eq!(representation.decode(data), Ok(storage_unit));
+    }
+}
+
+#[test]
+fn storage_unit_representation_round_trips_elf64() {
+    let storage_unit = StorageUnit::Class64(0x0123_4567_89ab_cdef);
+
+    for data in [
+        Data::LeastSignificantByteFirst,
+        Data::MostSignificantByteFirst,
+    ] {
+        let representation = storage_unit
+            .representation(data)
+            .expect("ELF64 storage unit must serialize");
+        assert_eq!(representation.decode(data), Ok(storage_unit));
+    }
+}
+
+#[test]
+fn rejects_storage_unit_decoding_without_data_encoding() {
+    let representation = StorageUnitRepresentation::Class32([0; 4]);
+
+    assert_eq!(
+        representation.decode(Data::None),
+        Err(RepresentationError::UnsupportedData(Data::None)),
+    );
+    assert_eq!(
+        representation.decode(Data::Reserved(7)),
+        Err(RepresentationError::UnsupportedData(Data::Reserved(7))),
+    );
+}
