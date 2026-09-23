@@ -1,5 +1,11 @@
 //! ELF string table.
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ValidationError {
+    MissingInitialNull,
+    MissingFinalNull,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct StringTable<'file> {
     bytes: &'file [u8],
@@ -12,6 +18,22 @@ impl<'file> StringTable<'file> {
 
     pub const fn bytes(&self) -> &'file [u8] {
         self.bytes
+    }
+
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        if self.bytes.is_empty() {
+            return Ok(());
+        }
+
+        if self.bytes.first() != Some(&0) {
+            return Err(ValidationError::MissingInitialNull);
+        }
+
+        if self.bytes.last() != Some(&0) {
+            return Err(ValidationError::MissingFinalNull);
+        }
+
+        Ok(())
     }
 
     pub fn get(&self, index: usize) -> Option<&'file [u8]> {
