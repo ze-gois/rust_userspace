@@ -27,4 +27,11 @@ impl BaseAddress {
     pub const fn value(self) -> u64 {
         self.0
     }
+
+    pub const fn relocate_virtual_address(
+        self,
+        link_time_virtual_address: u64,
+    ) -> Option<u64> {
+        link_time_virtual_address.checked_add(self.0)
+    }
 }
