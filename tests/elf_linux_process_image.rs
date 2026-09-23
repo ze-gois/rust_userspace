@@ -16,7 +16,9 @@ const SYMBOL_SIZE: u64 = 24;
 const RELOCATION_OFFSET: u64 = SYMBOL_OFFSET + SYMBOL_SIZE;
 const RELOCATION_SIZE: u64 = 24;
 const TARGET_OFFSET: u64 = 0x180;
-const TOTAL_SIZE: u64 = TARGET_OFFSET + 8;
+const ENTRY_OFFSET: u64 = 0x190;
+const ENTRY_SIZE: usize = 6;
+const TOTAL_SIZE: u64 = ENTRY_OFFSET + ENTRY_SIZE as u64;
 const PAGE_SIZE: usize = 0x1000;
 
 fn half(bytes: &mut Vec<u8>, value: u16) {
@@ -103,6 +105,7 @@ fn fixture(machine: u16, relocation_type: u32) -> Vec<u8> {
 
     bytes.resize(TARGET_OFFSET as usize, 0);
     xword(&mut bytes, 0);
+    bytes.resize(TOTAL_SIZE as usize, 0);
 
     assert_eq!(bytes.len(), TOTAL_SIZE as usize);
     bytes
@@ -149,4 +152,45 @@ fn rejects_foreign_machine_before_exposing_process_mapping() {
         process_image::map(&object, PAGE_SIZE),
         Err(Error::UnsupportedMachine { machine: 183 }),
     ));
+}
+
+
+#[test]
+fn does_not_expose_entry_outside_executable_load_segment() {
+    let bytes = fixture(62, 8);
+    let object = ObjectFile::parse(&bytes).expect("fixture must parse");
+    let mapping = process_image::map(&object, PAGE_SIZE)
+        .expect("x86_64 ELF process image must map");
+
+    assert_eq!(mapping.entry_address(&object), None);
+    assert!(mapping.unmap());
+}
+
+#[test]
+fn executes_callable_entry_from_mapped_elf_object() {
+    let mut bytes = fixture(62, 8);
+
+    // e_entry.
+    bytes[24..32].copy_from_slice(&ENTRY_OFFSET.to_le_bytes());
+
+    // First PT_LOAD p_flags = PF_R | PF_X.
+    bytes[68..72].copy_from_slice(&5u32.to_le_bytes());
+
+    // mov eax, 42; ret
+    bytes[ENTRY_OFFSET as usize..ENTRY_OFFSET as usize + ENTRY_SIZE]
+        .copy_from_slice(&[0xb8, 42, 0, 0, 0, 0xc3]);
+
+    let object = ObjectFile::parse(&bytes).expect("fixture must parse");
+    let mapping = process_image::map(&object, PAGE_SIZE)
+        .expect("executable x86_64 ELF process image must map");
+    let entry = mapping
+        .entry_address(&object)
+        .expect("e_entry must resolve inside executable PT_LOAD");
+
+    let returned = unsafe {
+        userspace::target::architecture::entry_point::call(entry)
+    };
+
+    assert_eq!(returned, 42);
+    assert!(mapping.unmap());
 }
