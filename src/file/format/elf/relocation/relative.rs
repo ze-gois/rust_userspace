@@ -4,6 +4,7 @@ use ample::r#type::Vec;
 
 use super::super::{
     identification::{Class, Data},
+    memory_image::MemoryImage,
     representation::{class_32 as representation_32, class_64 as representation_64, Decoder},
 };
 
@@ -168,6 +169,10 @@ pub enum WriteError {
         index: usize,
         class: Class,
     },
+    StorageUnitUnavailable {
+        index: usize,
+        load_time_virtual_address: u64,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -243,6 +248,57 @@ impl Table {
 
         Ok(writes)
     }
+    pub fn storage_unit_writes_from_memory_image(
+        &self,
+        memory_image: &MemoryImage<'_>,
+        data: Data,
+        factor: RelocationFactor,
+    ) -> Result<Vec<StorageUnitWrite>, WriteError> {
+        let link_time_virtual_addresses = self
+            .virtual_addresses()
+            .map_err(WriteError::Expansion)?;
+        let storage_unit_size = match self.class {
+            Class::Class32 => core::mem::size_of::<representation_32::Address>(),
+            Class::Class64 => core::mem::size_of::<representation_64::Address>(),
+            Class::None | Class::Reserved(_) => {
+                return Err(WriteError::Expansion(ExpansionError::UnsupportedClass))
+            }
+        };
+
+        let mut storage_units = Vec::with_capacity(link_time_virtual_addresses.len());
+
+        for (index, link_time_virtual_address) in
+            link_time_virtual_addresses.iter().copied().enumerate()
+        {
+            let load_time_virtual_address = factor
+                .relocate_virtual_address(link_time_virtual_address)
+                .map_err(WriteError::VirtualAddress)?;
+            let bytes = memory_image
+                .bytes(load_time_virtual_address, storage_unit_size)
+                .ok_or(WriteError::StorageUnitUnavailable {
+                    index,
+                    load_time_virtual_address,
+                })?;
+
+            let representation = match self.class {
+                Class::Class32 => StorageUnitRepresentation::Class32(
+                    bytes
+                        .try_into()
+                        .expect("ELF32 storage-unit width established above"),
+                ),
+                Class::Class64 => StorageUnitRepresentation::Class64(
+                    bytes
+                        .try_into()
+                        .expect("ELF64 storage-unit width established above"),
+                ),
+                Class::None | Class::Reserved(_) => unreachable!(),
+            };
+            storage_units.push(representation);
+        }
+
+        self.storage_unit_writes(&storage_units, data, factor)
+    }
+
     pub const fn new(entries: Vec<Entry>, class: Class) -> Self {
         Self { entries, class }
     }
