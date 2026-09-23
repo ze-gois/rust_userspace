@@ -96,6 +96,13 @@ impl<'file> ObjectFile<'file> {
             }
         }
 
+        if !matches!(
+            self.header.r#type,
+            header::Type::Executable | header::Type::SharedObject
+        ) {
+            return Ok(());
+        }
+
         let string_table = array
             .first(Tag::StringTable)
             .ok_or(ValidationError::MissingStringTable)?;
