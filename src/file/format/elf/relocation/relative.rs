@@ -19,7 +19,7 @@ pub enum SectionValidationError {
 pub enum ExpansionError {
     UnsupportedClass,
     BitmapWithoutAddress,
-    AddressOverflow,
+    VirtualAddressOverflow,
 }
 
 #[derive(Debug)]
@@ -45,7 +45,7 @@ impl Table {
         self.entries.iter()
     }
 
-    pub fn addresses(&self) -> Result<Vec<u64>, ExpansionError> {
+    pub fn virtual_addresses(&self) -> Result<Vec<u64>, ExpansionError> {
         let (address_size, bitmap_storage_units) = match self.class {
             Class::Class32 => (4u64, 31u32),
             Class::Class64 => (8u64, 63u32),
@@ -62,7 +62,7 @@ impl Table {
                     next_address = Some(
                         address
                             .checked_add(address_size)
-                            .ok_or(ExpansionError::AddressOverflow)?,
+                            .ok_or(ExpansionError::VirtualAddressOverflow)?,
                     );
                 }
                 Entry::Bitmap(bitmap) => {
@@ -77,20 +77,20 @@ impl Table {
                         let storage_unit_index = u64::from(bitmap_bit - 1);
                         let displacement = storage_unit_index
                             .checked_mul(address_size)
-                            .ok_or(ExpansionError::AddressOverflow)?;
+                            .ok_or(ExpansionError::VirtualAddressOverflow)?;
                         let address = block_address
                             .checked_add(displacement)
-                            .ok_or(ExpansionError::AddressOverflow)?;
+                            .ok_or(ExpansionError::VirtualAddressOverflow)?;
                         addresses.push(address);
                     }
 
                     let block_size = u64::from(bitmap_storage_units)
                         .checked_mul(address_size)
-                        .ok_or(ExpansionError::AddressOverflow)?;
+                        .ok_or(ExpansionError::VirtualAddressOverflow)?;
                     next_address = Some(
                         block_address
                             .checked_add(block_size)
-                            .ok_or(ExpansionError::AddressOverflow)?,
+                            .ok_or(ExpansionError::VirtualAddressOverflow)?,
                     );
                 }
             }
