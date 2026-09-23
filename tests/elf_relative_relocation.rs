@@ -567,6 +567,19 @@ fn propagates_relative_relocation_storage_unit_representation_error() {
 
 
 #[test]
+fn derives_relative_relocation_factor_from_base_address() {
+    let base_address = BaseAddress::calculate(0x500000, 0x400000, 0x1000)
+        .expect("base address must calculate");
+    let factor = RelocationFactor::from_base_address(base_address);
+
+    assert_eq!(factor.value(), base_address.value() as i128);
+    assert_eq!(
+        factor.relocate_virtual_address(0x401000),
+        Ok(0x501000),
+    );
+}
+
+#[test]
 fn relocates_relative_relocation_virtual_address_to_load_time() {
     let factor = RelocationFactor::from_virtual_addresses(0x500000, 0x400000);
 
@@ -974,7 +987,7 @@ fn relative_relocation_operates_on_materialized_program_image() {
         .expect("program memory image must materialize");
 
     let table = Table::new(vec![Entry::Address(0x400000)], Class::Class64);
-    let factor = RelocationFactor::from_virtual_addresses(0x500000, 0x400000);
+    let factor = RelocationFactor::from_base_address(base_address);
 
     let writes = {
         let memory = owned.as_memory_image();
