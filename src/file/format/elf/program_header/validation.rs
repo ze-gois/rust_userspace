@@ -11,4 +11,13 @@ pub enum Error {
     MultipleProgramHeaderTableImages,
     ProgramHeaderTableImageAfterLoad { index: usize },
     SharedLibrarySegment { index: usize },
+    ReservedSegmentType { index: usize, raw: u32 },
+    SegmentAlignmentNotPowerOfTwo { index: usize },
+    SegmentAddressOffsetIncongruent { index: usize },
+    SegmentFileImageOutsideFile { index: usize },
+    InterpreterNotNullTerminated { index: usize },
+    ThreadLocalStorageFileImageLargerThanTemplate { index: usize },
+    ThreadLocalStorageFlagsNotReadOnly { index: usize, flags: u32 },
+    ProgramHeaderTableImageMismatch { index: usize },
+    ProgramHeaderTableNotLoaded { index: usize },
 }
