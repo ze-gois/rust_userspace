@@ -1,7 +1,9 @@
 use userspace::file::format::elf::{
     dynamic::{PayloadKind, Tag},
     identification::{Class, Data},
-    relocation::relative::{class_32, class_64, Entry, ExpansionError, Table},
+    relocation::relative::{
+        class_32, class_64, Entry, ExpansionError, RelocationFactor, Table,
+    },
     section_header,
 };
 
@@ -146,4 +148,32 @@ fn rejects_relative_relocation_address_expansion_overflow() {
         table.virtual_addresses(),
         Err(ExpansionError::VirtualAddressOverflow),
     );
+}
+
+
+#[test]
+fn computes_positive_relative_relocation_factor() {
+    let factor = RelocationFactor::from_virtual_addresses(0x500000, 0x400000);
+
+    assert_eq!(factor.value(), 0x100000);
+    assert!(!factor.is_zero());
+}
+
+#[test]
+fn computes_zero_relative_relocation_factor() {
+    let factor = RelocationFactor::from_virtual_addresses(0x400000, 0x400000);
+
+    assert_eq!(factor.value(), 0);
+    assert!(factor.is_zero());
+}
+
+#[test]
+fn computes_negative_relative_relocation_factor_without_loss() {
+    let factor = RelocationFactor::from_virtual_addresses(0x1000, 0xffff_ffff_ffff_f000);
+
+    assert_eq!(
+        factor.value(),
+        0x1000i128 - 0xffff_ffff_ffff_f000u64 as i128,
+    );
+    assert!(!factor.is_zero());
 }
