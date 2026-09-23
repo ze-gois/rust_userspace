@@ -106,3 +106,51 @@ fn rejects_information_link_outside_section_table() {
         }),
     );
 }
+
+
+#[test]
+fn accepts_merge_section_with_integral_entries() {
+    let mut bytes = fixture(0x10, 0, 1);
+
+    // Section [1] size and entry size live at offsets +32 and +56.
+    let header_offset = 64 + 64;
+    bytes[header_offset + 32..header_offset + 40]
+        .copy_from_slice(&8u64.to_le_bytes());
+    bytes[header_offset + 56..header_offset + 64]
+        .copy_from_slice(&4u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    assert_eq!(object.validate_section_headers(), Ok(()));
+}
+
+#[test]
+fn rejects_merge_or_strings_section_with_zero_entry_size() {
+    for flags in [0x10u64, 0x20u64, 0x30u64] {
+        let bytes = fixture(flags, 0, 1);
+        let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+        assert_eq!(
+            object.validate_section_headers(),
+            Err(ValidationError::MergeOrStringsEntrySizeZero { index: 1 }),
+        );
+    }
+}
+
+#[test]
+fn rejects_merge_or_strings_section_with_partial_entry() {
+    for flags in [0x10u64, 0x20u64, 0x30u64] {
+        let mut bytes = fixture(flags, 0, 1);
+        let header_offset = 64 + 64;
+        bytes[header_offset + 32..header_offset + 40]
+            .copy_from_slice(&7u64.to_le_bytes());
+        bytes[header_offset + 56..header_offset + 64]
+            .copy_from_slice(&4u64.to_le_bytes());
+
+        let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+        assert_eq!(
+            object.validate_section_headers(),
+            Err(ValidationError::MergeOrStringsSizeNotEntryMultiple { index: 1 }),
+        );
+    }
+}
