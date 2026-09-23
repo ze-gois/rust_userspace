@@ -1387,6 +1387,94 @@ impl<'file> ObjectFile<'file> {
         ))
     }
 
+    pub fn validate_relocation_section(
+        &self,
+        section_index: usize,
+    ) -> Result<(), relocation::ValidationError> {
+        use relocation::ValidationError;
+
+        let Some(header) = self.section_headers.get(section_index).copied() else {
+            return Ok(());
+        };
+
+        let with_addend = match header.r#type {
+            section_header::Type::Relocation => false,
+            section_header::Type::RelocationWithAddend => true,
+            _ => return Ok(()),
+        };
+
+        let expected_entry_size = match (self.header.identification.class, with_addend) {
+            (Class::Class32, false) => {
+                core::mem::size_of::<relocation::class_32::RelRepresentation>() as u64
+            }
+            (Class::Class32, true) => {
+                core::mem::size_of::<relocation::class_32::RelaRepresentation>() as u64
+            }
+            (Class::Class64, false) => {
+                core::mem::size_of::<relocation::class_64::RelRepresentation>() as u64
+            }
+            (Class::Class64, true) => {
+                core::mem::size_of::<relocation::class_64::RelaRepresentation>() as u64
+            }
+            (Class::None | Class::Reserved(_), _) => return Ok(()),
+        };
+
+        if header.entry_size != expected_entry_size {
+            return Err(ValidationError::EntrySizeMismatch {
+                expected: expected_entry_size,
+                actual: header.entry_size,
+            });
+        }
+
+        if header.entry_size == 0 || header.size % header.entry_size != 0 {
+            return Err(ValidationError::SizeNotEntryMultiple);
+        }
+
+        let symbols = self
+            .symbol_table(header.link as usize)
+            .ok_or(ValidationError::InvalidAssociatedSymbolTable {
+                section_index: header.link as usize,
+            })?;
+
+        let relocations = self
+            .relocation_table(section_index)
+            .ok_or(ValidationError::SizeNotEntryMultiple)?;
+
+        for (entry_index, relocation) in relocations.relocations.iter().enumerate() {
+            if relocation.symbol_index as usize >= symbols.len() {
+                return Err(ValidationError::SymbolIndexOutOfBounds {
+                    entry_index,
+                    symbol_index: relocation.symbol_index,
+                });
+            }
+        }
+
+        if matches!(self.header.r#type, super::header::Type::Relocatable) {
+            let target_section_index = header.information as usize;
+            if target_section_index == section_header::Index::UNDEFINED.raw() as usize {
+                return Err(ValidationError::MissingTargetSectionInRelocatableObject);
+            }
+
+            let target = self
+                .section_headers
+                .get(target_section_index)
+                .ok_or(ValidationError::MissingTargetSectionInRelocatableObject)?;
+
+            for (entry_index, relocation) in relocations.relocations.iter().enumerate() {
+                if relocation.offset >= target.size {
+                    return Err(ValidationError::OffsetOutsideTargetSection {
+                        entry_index,
+                        offset: relocation.offset,
+                        target_section_index,
+                        target_size: target.size,
+                    });
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn relocation_table(&self, section_index: usize) -> Option<RelocationTable<'file>> {
         let header = *self.section_headers.get(section_index)?;
         let with_addend = match header.r#type {
