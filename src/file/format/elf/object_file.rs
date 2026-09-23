@@ -297,7 +297,55 @@ impl<'file> ObjectFile<'file> {
             }
         }
 
+        let mut dynamic_section_index = None;
+        let mut hash_section_index = None;
+
         for (index, header) in self.section_headers.iter().enumerate() {
+            if index != 0 && matches!(header.r#type, section_header::Type::Null) {
+                continue;
+            }
+
+            if let section_header::Type::Reserved(raw) = header.r#type {
+                return Err(ValidationError::ReservedSectionType { index, raw });
+            }
+
+            let undefined_flags = header.flags.raw() & !Flags::DEFINED_MASK;
+            if undefined_flags != 0 {
+                return Err(ValidationError::UndefinedFlagsSet {
+                    index,
+                    flags: undefined_flags,
+                });
+            }
+
+            if !header.flags.contains(Flags::ALLOCATE) && header.address != 0 {
+                return Err(ValidationError::NonAllocatedSectionAddressNotZero {
+                    index,
+                    address: header.address,
+                });
+            }
+
+            match header.r#type {
+                section_header::Type::Dynamic => {
+                    if let Some(first) = dynamic_section_index {
+                        return Err(ValidationError::MultipleDynamicSections {
+                            first,
+                            second: index,
+                        });
+                    }
+                    dynamic_section_index = Some(index);
+                }
+                section_header::Type::Hash => {
+                    if let Some(first) = hash_section_index {
+                        return Err(ValidationError::MultipleHashSections {
+                            first,
+                            second: index,
+                        });
+                    }
+                    hash_section_index = Some(index);
+                }
+                _ => {}
+            }
+
             if header.alignment > 1 && !header.alignment.is_power_of_two() {
                 return Err(ValidationError::AlignmentNotPowerOfTwo { index });
             }
@@ -397,6 +445,10 @@ impl<'file> ObjectFile<'file> {
                     index: string_table_index,
                 })?;
             for (index, header) in self.section_headers.iter().enumerate() {
+                if index != 0 && matches!(header.r#type, section_header::Type::Null) {
+                    continue;
+                }
+
                 if strings.get(header.name_index as usize).is_none() {
                     return Err(ValidationError::InvalidSectionName {
                         index,
