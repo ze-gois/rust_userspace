@@ -28,4 +28,6 @@ pub enum Error {
     ReservedSectionType { index: usize, raw: u32 },
     MultipleDynamicSections { first: usize, second: usize },
     MultipleHashSections { first: usize, second: usize },
+    MultipleSymbolTables { first: usize, second: usize },
+    MultipleDynamicSymbolTables { first: usize, second: usize },
 }
