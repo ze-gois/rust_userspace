@@ -12,6 +12,7 @@ pub const VERSION_INDEX: usize = 6;
 pub const OS_ABI_INDEX: usize = 7;
 pub const ABI_VERSION_INDEX: usize = 8;
 pub const PADDING_INDEX: usize = 9;
+pub const PADDING_SIZE: usize = SIZE - PADDING_INDEX;
 
 pub const MAGIC: [u8; 4] = [0x7f, b'E', b'L', b'F'];
 
@@ -91,6 +92,7 @@ pub struct Identification {
     pub version: u8,
     pub operating_system_abi: OperatingSystemAbi,
     pub abi_version: u8,
+    pub padding: [u8; PADDING_SIZE],
 }
 
 impl Identification {
@@ -99,12 +101,15 @@ impl Identification {
             return None;
         }
 
+        let padding = bytes[PADDING_INDEX..].try_into().ok()?;
+
         Some(Self {
             class: Class::from_raw(bytes[CLASS_INDEX]),
             data: Data::from_raw(bytes[DATA_INDEX]),
             version: bytes[VERSION_INDEX],
             operating_system_abi: OperatingSystemAbi::from_raw(bytes[OS_ABI_INDEX]),
             abi_version: bytes[ABI_VERSION_INDEX],
+            padding,
         })
     }
 }
