@@ -261,3 +261,46 @@ fn rejects_multiple_hash_sections() {
         }),
     );
 }
+
+
+#[test]
+fn rejects_multiple_symbol_tables() {
+    let mut bytes = fixture(0, 0, 1);
+    bytes[60..62].copy_from_slice(&3u16.to_le_bytes());
+
+    let first_header_offset = 64 + 64;
+    bytes[first_header_offset + 4..first_header_offset + 8]
+        .copy_from_slice(&2u32.to_le_bytes());
+    section_header(&mut bytes, 2, 0, 0, 1);
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_headers(),
+        Err(ValidationError::MultipleSymbolTables {
+            first: 1,
+            second: 2,
+        }),
+    );
+}
+
+#[test]
+fn rejects_multiple_dynamic_symbol_tables() {
+    let mut bytes = fixture(0, 0, 1);
+    bytes[60..62].copy_from_slice(&3u16.to_le_bytes());
+
+    let first_header_offset = 64 + 64;
+    bytes[first_header_offset + 4..first_header_offset + 8]
+        .copy_from_slice(&11u32.to_le_bytes());
+    section_header(&mut bytes, 11, 0, 0, 1);
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_headers(),
+        Err(ValidationError::MultipleDynamicSymbolTables {
+            first: 1,
+            second: 2,
+        }),
+    );
+}
