@@ -18,6 +18,22 @@ pub enum SectionValidationError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RepresentationError {
     ValueOutOfRange { value: i128 },
+    UnsupportedData(Data),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StorageUnitRepresentation {
+    Class32([u8; 4]),
+    Class64([u8; 8]),
+}
+
+impl StorageUnitRepresentation {
+    pub const fn bytes(&self) -> &[u8] {
+        match self {
+            Self::Class32(bytes) => bytes,
+            Self::Class64(bytes) => bytes,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,6 +68,27 @@ impl StorageUnit {
                     .map_err(|_| RepresentationError::ValueOutOfRange { value })?;
                 Ok(Self::Class64(value))
             }
+        }
+    }
+
+    pub const fn representation(
+        self,
+        data: Data,
+    ) -> Result<StorageUnitRepresentation, RepresentationError> {
+        match (self, data) {
+            (Self::Class32(value), Data::LeastSignificantByteFirst) => {
+                Ok(StorageUnitRepresentation::Class32(value.to_le_bytes()))
+            }
+            (Self::Class32(value), Data::MostSignificantByteFirst) => {
+                Ok(StorageUnitRepresentation::Class32(value.to_be_bytes()))
+            }
+            (Self::Class64(value), Data::LeastSignificantByteFirst) => {
+                Ok(StorageUnitRepresentation::Class64(value.to_le_bytes()))
+            }
+            (Self::Class64(value), Data::MostSignificantByteFirst) => {
+                Ok(StorageUnitRepresentation::Class64(value.to_be_bytes()))
+            }
+            (_, Data::None | Data::Reserved(_)) => Err(RepresentationError::UnsupportedData(data)),
         }
     }
 }
