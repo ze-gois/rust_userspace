@@ -33,6 +33,10 @@ pub enum ValidationError {
         section_index: usize,
         symbol_index: usize,
     },
+    LinkOrderTargetOutOfBounds {
+        section_index: usize,
+        target_section_index: usize,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
