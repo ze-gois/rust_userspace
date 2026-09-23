@@ -390,7 +390,7 @@ impl<'file> ObjectFile<'file> {
             let string_is_meaningful = match entry.tag {
                 Tag::Needed | Tag::RunPath => true,
                 Tag::SharedObjectName => matches!(self.header.r#type, header::Type::SharedObject),
-                Tag::RuntimeSearchPath => matches!(self.header.r#type, header::Type::Executable),
+                Tag::RPath => matches!(self.header.r#type, header::Type::Executable),
                 _ => false,
             };
 
@@ -968,9 +968,9 @@ impl<'file> ObjectFile<'file> {
         } else {
             None
         };
-        let runtime_search_path = if matches!(self.header.r#type, header::Type::Executable) {
+        let rpath = if matches!(self.header.r#type, header::Type::Executable) {
             array
-                .first(Tag::RuntimeSearchPath)
+                .first(Tag::RPath)
                 .and_then(|entry| strings.get_str(entry.payload as usize))
         } else {
             None
@@ -982,7 +982,7 @@ impl<'file> ObjectFile<'file> {
         Some(SharedObjectDependencies::new(
             needed,
             shared_object_name,
-            runtime_search_path,
+            rpath,
             run_path,
         ))
     }

@@ -135,13 +135,13 @@ pub enum SearchDirectory<'file> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SearchPath<'file> {
     RunPath(&'file str),
-    RuntimeSearchPath(&'file str),
+    RPath(&'file str),
 }
 
 impl<'file> SearchPath<'file> {
     pub const fn value(self) -> &'file str {
         match self {
-            Self::RunPath(value) | Self::RuntimeSearchPath(value) => value,
+            Self::RunPath(value) | Self::RPath(value) => value,
         }
     }
 
@@ -151,7 +151,7 @@ impl<'file> SearchPath<'file> {
     ) -> Result<String, OriginSubstitutionError> {
         match self {
             Self::RunPath(value) => substitute_origin(value, origin_directory),
-            Self::RuntimeSearchPath(value) => Ok(String::from(value)),
+            Self::RPath(value) => Ok(String::from(value)),
         }
     }
 
@@ -174,7 +174,7 @@ impl<'file> SearchPath<'file> {
 pub struct SharedObjectDependencies<'file> {
     pub needed: Vec<SharedObjectDependency<'file>>,
     pub shared_object_name: Option<&'file str>,
-    pub runtime_search_path: Option<&'file str>,
+    pub rpath: Option<&'file str>,
     pub run_path: Option<&'file str>,
 }
 
@@ -182,22 +182,22 @@ impl<'file> SharedObjectDependencies<'file> {
     pub const fn new(
         needed: Vec<SharedObjectDependency<'file>>,
         shared_object_name: Option<&'file str>,
-        runtime_search_path: Option<&'file str>,
+        rpath: Option<&'file str>,
         run_path: Option<&'file str>,
     ) -> Self {
         Self {
             needed,
             shared_object_name,
-            runtime_search_path,
+            rpath,
             run_path,
         }
     }
 
     pub const fn search_path(&self) -> Option<SearchPath<'file>> {
-        match (self.run_path, self.runtime_search_path) {
+        match (self.run_path, self.rpath) {
             (Some(run_path), _) => Some(SearchPath::RunPath(run_path)),
-            (None, Some(runtime_search_path)) => {
-                Some(SearchPath::RuntimeSearchPath(runtime_search_path))
+            (None, Some(rpath)) => {
+                Some(SearchPath::RPath(rpath))
             }
             (None, None) => None,
         }

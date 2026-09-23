@@ -123,13 +123,13 @@ fn keeps_shared_object_identity_and_search_metadata_separate_from_needed_depende
         .expect("shared object dependencies must resolve");
 
     assert_eq!(dependencies.shared_object_name, Some("self.so"));
-    assert_eq!(dependencies.runtime_search_path, None);
+    assert_eq!(dependencies.rpath, None);
     assert_eq!(dependencies.run_path, Some("/lib"));
     assert_eq!(dependencies.search_path(), Some(SearchPath::RunPath("/lib")));
 }
 
 #[test]
-fn ignores_runtime_search_path_in_shared_object() {
+fn ignores_rpath_in_shared_object() {
     let mut bytes = fixture();
     let tag = dynamic_entry_offset(5);
     bytes[tag..tag + 8].copy_from_slice(&15i64.to_le_bytes());
@@ -140,13 +140,13 @@ fn ignores_runtime_search_path_in_shared_object() {
         .expect("shared object dependencies must resolve");
 
     assert_eq!(dependencies.shared_object_name, Some("self.so"));
-    assert_eq!(dependencies.runtime_search_path, None);
+    assert_eq!(dependencies.rpath, None);
     assert_eq!(dependencies.run_path, None);
     assert_eq!(dependencies.search_path(), None);
 }
 
 #[test]
-fn ignores_shared_object_name_and_uses_runtime_search_path_in_executable() {
+fn ignores_shared_object_name_and_uses_rpath_in_executable() {
     let mut bytes = fixture();
     bytes[16..18].copy_from_slice(&2u16.to_le_bytes());
 
@@ -159,16 +159,16 @@ fn ignores_shared_object_name_and_uses_runtime_search_path_in_executable() {
         .expect("shared object dependencies must resolve");
 
     assert_eq!(dependencies.shared_object_name, None);
-    assert_eq!(dependencies.runtime_search_path, Some("/lib"));
+    assert_eq!(dependencies.rpath, Some("/lib"));
     assert_eq!(dependencies.run_path, None);
     assert_eq!(
         dependencies.search_path(),
-        Some(SearchPath::RuntimeSearchPath("/lib")),
+        Some(SearchPath::RPath("/lib")),
     );
 }
 
 #[test]
-fn run_path_takes_precedence_over_runtime_search_path() {
+fn run_path_takes_precedence_over_rpath() {
     let mut bytes = fixture();
     bytes[16..18].copy_from_slice(&2u16.to_le_bytes());
 
@@ -181,7 +181,7 @@ fn run_path_takes_precedence_over_runtime_search_path() {
         .shared_object_dependencies_from_program_header(1)
         .expect("shared object dependencies must resolve");
 
-    assert_eq!(dependencies.runtime_search_path, Some("liba.so"));
+    assert_eq!(dependencies.rpath, Some("liba.so"));
     assert_eq!(dependencies.run_path, Some("/lib"));
     assert_eq!(dependencies.search_path(), Some(SearchPath::RunPath("/lib")));
 }
@@ -224,7 +224,7 @@ fn resolves_dependency_search_path_directories_in_order() {
 
 #[test]
 fn empty_dependency_search_path_means_current_directory() {
-    let search_path = SearchPath::RuntimeSearchPath("");
+    let search_path = SearchPath::RPath("");
 
     assert_eq!(
         search_path.directories(),
@@ -248,16 +248,16 @@ fn substitutes_origin_in_needed_dependency_name() {
 }
 
 #[test]
-fn substitutes_origin_in_run_path_but_not_deprecated_runtime_search_path() {
+fn substitutes_origin_in_run_path_but_not_deprecated_rpath() {
     let run_path = SearchPath::RunPath("$ORIGIN/lib:/usr/lib");
     assert_eq!(
         run_path.value_with_origin("/opt/application"),
         Ok(String::from("/opt/application/lib:/usr/lib")),
     );
 
-    let runtime_search_path = SearchPath::RuntimeSearchPath("$ORIGIN/lib:/usr/lib");
+    let rpath = SearchPath::RPath("$ORIGIN/lib:/usr/lib");
     assert_eq!(
-        runtime_search_path.value_with_origin("/opt/application"),
+        rpath.value_with_origin("/opt/application"),
         Ok(String::from("$ORIGIN/lib:/usr/lib")),
     );
 }
