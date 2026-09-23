@@ -1165,6 +1165,89 @@ impl<'file> ObjectFile<'file> {
         Ok(())
     }
 
+    pub fn validate_symbol_table(
+        &self,
+        symbol_table_section_index: usize,
+    ) -> Result<(), super::symbol_table::ValidationError> {
+        use super::{
+            header::Type as ObjectType,
+            symbol::{ResolvedSectionIndex, Type as SymbolType},
+            symbol_table::ValidationError,
+        };
+
+        let symbols = self
+            .symbol_table(symbol_table_section_index)
+            .ok_or(ValidationError::InvalidSymbolTableSection {
+                section_index: symbol_table_section_index,
+            })?;
+
+        symbols.validate()?;
+
+        for (index, symbol) in symbols.symbols.iter().enumerate() {
+            let resolved = symbols
+                .section_index(index)
+                .ok_or(ValidationError::InvalidSymbolTableSection {
+                    section_index: symbol_table_section_index,
+                })?;
+
+            match resolved {
+                ResolvedSectionIndex::Section(section_index) => {
+                    if section_index >= self.section_headers.len() {
+                        return Err(ValidationError::SectionIndexOutOfBounds {
+                            index,
+                            section_index,
+                        });
+                    }
+                }
+                ResolvedSectionIndex::Reserved(raw) => {
+                    return Err(ValidationError::ReservedSectionIndex { index, raw });
+                }
+                ResolvedSectionIndex::Common => {
+                    if !matches!(self.header.r#type, ObjectType::Relocatable) {
+                        return Err(
+                            ValidationError::CommonSectionIndexOutsideRelocatableObject {
+                                index,
+                            },
+                        );
+                    }
+
+                    if symbol.value > 1 && !symbol.value.is_power_of_two() {
+                        return Err(ValidationError::CommonAlignmentNotPowerOfTwo {
+                            index,
+                            alignment: symbol.value,
+                        });
+                    }
+                }
+                ResolvedSectionIndex::Undefined
+                | ResolvedSectionIndex::ProcessorSpecific(_)
+                | ResolvedSectionIndex::OperatingSystemSpecific(_)
+                | ResolvedSectionIndex::Absolute => {}
+            }
+
+            if matches!(symbol.r#type, SymbolType::Common) {
+                match self.header.r#type {
+                    ObjectType::Relocatable => {
+                        if !matches!(resolved, ResolvedSectionIndex::Common) {
+                            return Err(ValidationError::CommonSymbolWithoutCommonSection {
+                                index,
+                            });
+                        }
+                    }
+                    ObjectType::Executable | ObjectType::SharedObject => {
+                        if !matches!(resolved, ResolvedSectionIndex::Section(_)) {
+                            return Err(ValidationError::CommonSymbolWithoutAllocatedSection {
+                                index,
+                            });
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn symbol_section(
         &self,
         symbol_table_section_index: usize,
