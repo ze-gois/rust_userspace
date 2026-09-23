@@ -10,12 +10,14 @@ pub mod r#type;
 pub mod section_header_count;
 pub mod section_name_string_table_index;
 pub mod version;
+pub mod validation;
 
 pub use machine::Machine;
 pub use r#type::Type;
 pub use section_header_count::SectionHeaderCount;
 pub use section_name_string_table_index::SectionNameStringTableIndex;
 pub use version::Version;
+pub use validation::Error as ValidationError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Header {
