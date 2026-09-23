@@ -1,7 +1,7 @@
 use userspace::file::format::elf::{
     dynamic::{PayloadKind, Tag},
-    identification::Data,
-    relocation::relative::{class_32, class_64, Entry},
+    identification::{Class, Data},
+    relocation::relative::{class_32, class_64, Entry, ExpansionError, Table},
     section_header,
 };
 
@@ -75,5 +75,75 @@ fn decodes_elf64_relative_relocation_entries_by_byte_order() {
     assert_eq!(
         Entry::from(bitmap),
         Entry::Bitmap(0x8000_0000_0000_0003)
+    );
+}
+
+
+#[test]
+fn expands_elf32_relative_relocation_bitmaps() {
+    let table = Table::new(
+        vec![
+            Entry::Address(0x1000),
+            Entry::Bitmap(0b1011),
+            Entry::Bitmap(0b11),
+        ],
+        Class::Class32,
+    );
+
+    assert_eq!(
+        table.addresses(),
+        Ok(vec![
+            0x1000,
+            0x1004,
+            0x100c,
+            0x1080,
+        ]),
+    );
+}
+
+#[test]
+fn expands_elf64_relative_relocation_bitmaps() {
+    let table = Table::new(
+        vec![
+            Entry::Address(0x400000),
+            Entry::Bitmap(0b111),
+            Entry::Address(0x500000),
+            Entry::Bitmap(0b101),
+        ],
+        Class::Class64,
+    );
+
+    assert_eq!(
+        table.addresses(),
+        Ok(vec![
+            0x400000,
+            0x400008,
+            0x400010,
+            0x500000,
+            0x500008,
+        ]),
+    );
+}
+
+#[test]
+fn rejects_relative_relocation_bitmap_without_address() {
+    let table = Table::new(vec![Entry::Bitmap(3)], Class::Class64);
+
+    assert_eq!(
+        table.addresses(),
+        Err(ExpansionError::BitmapWithoutAddress),
+    );
+}
+
+#[test]
+fn rejects_relative_relocation_address_expansion_overflow() {
+    let table = Table::new(
+        vec![Entry::Address(u64::MAX - 1)],
+        Class::Class64,
+    );
+
+    assert_eq!(
+        table.addresses(),
+        Err(ExpansionError::AddressOverflow),
     );
 }
