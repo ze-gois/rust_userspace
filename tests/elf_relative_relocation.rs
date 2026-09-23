@@ -3,7 +3,7 @@ use userspace::file::format::elf::{
     identification::{Class, Data},
     relocation::relative::{
         class_32, class_64, Entry, ExpansionError, RelocationFactor, RepresentationError,
-        StorageUnit, Table,
+        StorageUnit, StorageUnitRepresentation, Table,
     },
     section_header,
 };
@@ -282,5 +282,71 @@ fn zero_factor_representation_preserves_storage_unit() {
     assert_eq!(
         StorageUnit::Class64(0x1234_5678_9abc_def0).relocated(factor),
         Ok(StorageUnit::Class64(0x1234_5678_9abc_def0)),
+    );
+}
+
+
+#[test]
+fn represents_elf32_storage_unit_little_endian() {
+    let storage_unit = StorageUnit::Class32(0x1234_5678);
+
+    assert_eq!(
+        storage_unit.representation(Data::LeastSignificantByteFirst),
+        Ok(StorageUnitRepresentation::Class32([0x78, 0x56, 0x34, 0x12])),
+    );
+}
+
+#[test]
+fn represents_elf32_storage_unit_big_endian() {
+    let storage_unit = StorageUnit::Class32(0x1234_5678);
+
+    assert_eq!(
+        storage_unit.representation(Data::MostSignificantByteFirst),
+        Ok(StorageUnitRepresentation::Class32([0x12, 0x34, 0x56, 0x78])),
+    );
+}
+
+#[test]
+fn represents_elf64_storage_unit_little_and_big_endian() {
+    let storage_unit = StorageUnit::Class64(0x0123_4567_89ab_cdef);
+
+    assert_eq!(
+        storage_unit.representation(Data::LeastSignificantByteFirst),
+        Ok(StorageUnitRepresentation::Class64([
+            0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01,
+        ])),
+    );
+    assert_eq!(
+        storage_unit.representation(Data::MostSignificantByteFirst),
+        Ok(StorageUnitRepresentation::Class64([
+            0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
+        ])),
+    );
+}
+
+#[test]
+fn storage_unit_representation_exposes_exact_width_bytes() {
+    let class_32 = StorageUnit::Class32(1)
+        .representation(Data::LeastSignificantByteFirst)
+        .expect("ELF32 storage unit must serialize");
+    let class_64 = StorageUnit::Class64(1)
+        .representation(Data::LeastSignificantByteFirst)
+        .expect("ELF64 storage unit must serialize");
+
+    assert_eq!(class_32.bytes().len(), 4);
+    assert_eq!(class_64.bytes().len(), 8);
+}
+
+#[test]
+fn rejects_storage_unit_representation_without_data_encoding() {
+    let storage_unit = StorageUnit::Class64(0x1234);
+
+    assert_eq!(
+        storage_unit.representation(Data::None),
+        Err(RepresentationError::UnsupportedData(Data::None)),
+    );
+    assert_eq!(
+        storage_unit.representation(Data::Reserved(7)),
+        Err(RepresentationError::UnsupportedData(Data::Reserved(7))),
     );
 }
