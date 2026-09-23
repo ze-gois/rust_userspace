@@ -1,4 +1,7 @@
-use userspace::file::format::elf::ObjectFile;
+use userspace::file::format::elf::{
+    shared_object_dependencies::SearchPath,
+    ObjectFile,
+};
 
 const BASE: u64 = 0x400000;
 const HEADER_SIZE: u64 = 64;
@@ -29,6 +32,10 @@ fn xword(bytes: &mut Vec<u8>, value: u64) {
 fn dynamic_entry(bytes: &mut Vec<u8>, tag: i64, payload: u64) {
     sxword(bytes, tag);
     xword(bytes, payload);
+}
+
+fn dynamic_entry_offset(index: usize) -> usize {
+    DYNAMIC_OFFSET as usize + index * 16
 }
 
 fn fixture() -> Vec<u8> {
@@ -116,4 +123,63 @@ fn keeps_shared_object_identity_and_search_metadata_separate_from_needed_depende
     assert_eq!(dependencies.shared_object_name, Some("self.so"));
     assert_eq!(dependencies.runtime_search_path, None);
     assert_eq!(dependencies.run_path, Some("/lib"));
+    assert_eq!(dependencies.search_path(), Some(SearchPath::RunPath("/lib")));
+}
+
+#[test]
+fn ignores_runtime_search_path_in_shared_object() {
+    let mut bytes = fixture();
+    let tag = dynamic_entry_offset(5);
+    bytes[tag..tag + 8].copy_from_slice(&15i64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let dependencies = object
+        .shared_object_dependencies_from_program_header(1)
+        .expect("shared object dependencies must resolve");
+
+    assert_eq!(dependencies.shared_object_name, Some("self.so"));
+    assert_eq!(dependencies.runtime_search_path, None);
+    assert_eq!(dependencies.run_path, None);
+    assert_eq!(dependencies.search_path(), None);
+}
+
+#[test]
+fn ignores_shared_object_name_and_uses_runtime_search_path_in_executable() {
+    let mut bytes = fixture();
+    bytes[16..18].copy_from_slice(&2u16.to_le_bytes());
+
+    let tag = dynamic_entry_offset(5);
+    bytes[tag..tag + 8].copy_from_slice(&15i64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let dependencies = object
+        .shared_object_dependencies_from_program_header(1)
+        .expect("shared object dependencies must resolve");
+
+    assert_eq!(dependencies.shared_object_name, None);
+    assert_eq!(dependencies.runtime_search_path, Some("/lib"));
+    assert_eq!(dependencies.run_path, None);
+    assert_eq!(
+        dependencies.search_path(),
+        Some(SearchPath::RuntimeSearchPath("/lib")),
+    );
+}
+
+#[test]
+fn run_path_takes_precedence_over_runtime_search_path() {
+    let mut bytes = fixture();
+    bytes[16..18].copy_from_slice(&2u16.to_le_bytes());
+
+    let rpath = dynamic_entry_offset(3);
+    bytes[rpath..rpath + 8].copy_from_slice(&15i64.to_le_bytes());
+    bytes[rpath + 8..rpath + 16].copy_from_slice(&1u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let dependencies = object
+        .shared_object_dependencies_from_program_header(1)
+        .expect("shared object dependencies must resolve");
+
+    assert_eq!(dependencies.runtime_search_path, Some("liba.so"));
+    assert_eq!(dependencies.run_path, Some("/lib"));
+    assert_eq!(dependencies.search_path(), Some(SearchPath::RunPath("/lib")));
 }
