@@ -6,7 +6,11 @@
 
 use ample::r#type::Vec;
 
-use super::{base_address::BaseAddress, program_header::Flags};
+use super::{
+    base_address::BaseAddress,
+    memory_image::{OwnedMemoryImage, OwnedRegion},
+    program_header::Flags,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
@@ -165,5 +169,25 @@ impl<'file> ProgramImage<'file> {
             lowest_link_time_virtual_address,
             maximum_page_size,
         })
+    }
+
+    pub fn materialize_memory_image(
+        &self,
+        base_address: BaseAddress,
+    ) -> Result<OwnedMemoryImage, Error> {
+        let mut regions = Vec::with_capacity(self.segments.len());
+
+        for segment in self.segments.iter() {
+            let load_time_virtual_address =
+                segment.load_time_virtual_address(base_address)?;
+            let bytes = segment.memory_image_bytes()?;
+
+            regions.push(OwnedRegion::new(
+                load_time_virtual_address,
+                bytes,
+            ));
+        }
+
+        Ok(OwnedMemoryImage::new(regions))
     }
 }
