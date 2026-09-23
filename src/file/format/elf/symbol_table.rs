@@ -21,6 +21,14 @@ pub enum ValidationError {
     MissingSectionIndexTable,
     SectionIndexTableSizeMismatch,
     SectionIndexTableUnexpectedValue { index: usize, value: u32 },
+    UndefinedOtherBits { index: usize, bits: u8 },
+    ReservedBinding { index: usize, raw: u8 },
+    ReservedType { index: usize, raw: u8 },
+    ReservedVisibility { index: usize, raw: u8 },
+    InvalidNameIndex { index: usize, name_index: u32 },
+    LocalProtectedVisibility { index: usize },
+    FileSymbolNotLocal { index: usize },
+    FileSymbolNotAbsolute { index: usize },
 }
 
 #[derive(Debug)]
@@ -55,6 +63,7 @@ impl<'file> SymbolTable<'file> {
             || !matches!(undefined.binding, Binding::Local)
             || !matches!(undefined.r#type, Type::None)
             || !matches!(undefined.visibility, Visibility::Default)
+            || undefined.other_bits != 0
             || !matches!(self.section_indices.first(), Some(ResolvedSectionIndex::Undefined))
         {
             return Err(ValidationError::InvalidUndefinedSymbol);
@@ -73,6 +82,53 @@ impl<'file> SymbolTable<'file> {
                 }
             } else if matches!(symbol.binding, Binding::Local) {
                 return Err(ValidationError::LocalSymbolAtOrAfterFirstNonLocal { index });
+            }
+
+            if symbol.other_bits != 0 {
+                return Err(ValidationError::UndefinedOtherBits {
+                    index,
+                    bits: symbol.other_bits,
+                });
+            }
+
+            if let Binding::Reserved(raw) = symbol.binding {
+                return Err(ValidationError::ReservedBinding { index, raw });
+            }
+
+            if let Type::Reserved(raw) = symbol.r#type {
+                return Err(ValidationError::ReservedType { index, raw });
+            }
+
+            if let Visibility::Reserved(raw) = symbol.visibility {
+                return Err(ValidationError::ReservedVisibility { index, raw });
+            }
+
+            if symbol.name_index != 0
+                && self.strings.get(symbol.name_index as usize).is_none()
+            {
+                return Err(ValidationError::InvalidNameIndex {
+                    index,
+                    name_index: symbol.name_index,
+                });
+            }
+
+            if matches!(symbol.binding, Binding::Local)
+                && matches!(symbol.visibility, Visibility::Protected)
+            {
+                return Err(ValidationError::LocalProtectedVisibility { index });
+            }
+
+            if matches!(symbol.r#type, Type::File) {
+                if !matches!(symbol.binding, Binding::Local) {
+                    return Err(ValidationError::FileSymbolNotLocal { index });
+                }
+
+                if !matches!(
+                    self.section_indices.get(index),
+                    Some(ResolvedSectionIndex::Absolute)
+                ) {
+                    return Err(ValidationError::FileSymbolNotAbsolute { index });
+                }
             }
         }
 
