@@ -306,3 +306,66 @@ fn rejects_program_segment_load_time_virtual_address_overflow() {
         Err(Error::LoadTimeVirtualAddressOverflow { index: 0 }),
     );
 }
+
+
+#[test]
+fn finds_lowest_program_image_link_time_virtual_address() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let image = object.program_image().expect("program image must build");
+
+    assert_eq!(image.lowest_link_time_virtual_address(), Some(0x400000));
+}
+
+#[test]
+fn calculates_program_image_base_address_from_lowest_load_segment() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let image = object.program_image().expect("program image must build");
+
+    let base_address = image
+        .base_address(0x700123, 0x1000)
+        .expect("program image base address must calculate");
+
+    assert_eq!(base_address.value(), 0x300000);
+}
+
+#[test]
+fn rejects_program_image_base_address_without_load_segments() {
+    let image = userspace::file::format::elf::program_image::ProgramImage::new(
+        ample::r#type::Vec::new(),
+    );
+
+    assert_eq!(
+        image.base_address(0x700000, 0x1000),
+        Err(Error::NoLoadSegments),
+    );
+}
+
+#[test]
+fn rejects_invalid_program_image_maximum_page_size() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let image = object.program_image().expect("program image must build");
+
+    assert_eq!(
+        image.base_address(0x700000, 3),
+        Err(Error::InvalidMaximumPageSize { size: 3 }),
+    );
+}
+
+#[test]
+fn rejects_program_image_base_address_underflow() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let image = object.program_image().expect("program image must build");
+
+    assert_eq!(
+        image.base_address(0x1000, 0x1000),
+        Err(Error::BaseAddressUnderflow {
+            memory_load_address: 0x1000,
+            lowest_link_time_virtual_address: 0x400000,
+            maximum_page_size: 0x1000,
+        }),
+    );
+}
