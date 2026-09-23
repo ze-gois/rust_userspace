@@ -378,7 +378,24 @@ impl<'file> ObjectFile<'file> {
             }
         }
 
-        if let Some(strings) = self.section_name_string_table() {
+        if let Some(string_table_index) = self.section_name_string_table_index {
+            let string_table_header = self
+                .section_headers
+                .get(string_table_index)
+                .ok_or(ValidationError::InvalidSectionNameStringTableType {
+                    index: string_table_index,
+                })?;
+            if !matches!(string_table_header.r#type, section_header::Type::StringTable) {
+                return Err(ValidationError::InvalidSectionNameStringTableType {
+                    index: string_table_index,
+                });
+            }
+
+            let strings = self
+                .section_name_string_table()
+                .ok_or(ValidationError::InvalidSectionNameStringTableType {
+                    index: string_table_index,
+                })?;
             for (index, header) in self.section_headers.iter().enumerate() {
                 if strings.get(header.name_index as usize).is_none() {
                     return Err(ValidationError::InvalidSectionName {
@@ -591,6 +608,9 @@ impl<'file> ObjectFile<'file> {
     pub fn section_name_string_table(&self) -> Option<StringTable<'file>> {
         let index = self.section_name_string_table_index?;
         let section = self.section(index)?;
+        if !matches!(section.header.r#type, section_header::Type::StringTable) {
+            return None;
+        }
         Some(StringTable::new(section.contents))
     }
 
