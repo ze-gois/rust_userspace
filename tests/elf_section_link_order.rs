@@ -1,4 +1,7 @@
-use userspace::file::format::elf::ObjectFile;
+use userspace::file::format::elf::{
+    section_link::ValidationError,
+    ObjectFile,
+};
 
 fn half(bytes: &mut Vec<u8>, value: u16) { bytes.extend_from_slice(&value.to_le_bytes()); }
 fn word(bytes: &mut Vec<u8>, value: u32) { bytes.extend_from_slice(&value.to_le_bytes()); }
@@ -83,6 +86,20 @@ fn ignores_section_without_link_order_flag() {
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
 
     assert!(object.link_order(2).is_none());
+}
+
+#[test]
+fn validates_link_order_target_bounds() {
+    let bytes = fixture(true, 7);
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_links(),
+        Err(ValidationError::LinkOrderTargetOutOfBounds {
+            section_index: 2,
+            target_section_index: 7,
+        }),
+    );
 }
 
 #[test]
