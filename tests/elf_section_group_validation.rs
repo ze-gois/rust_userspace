@@ -277,3 +277,64 @@ fn rejects_section_group_signature_outside_symbol_table() {
         }),
     );
 }
+
+
+#[test]
+fn rejects_external_information_link_to_group_member() {
+    let mut bytes = fixture();
+
+    // Section [1] is outside the group. Make sh_info a section reference to member [4].
+    let section_header_offset = SECTION_HEADER_OFFSET as usize + 64;
+    bytes[section_header_offset + 8..section_header_offset + 16]
+        .copy_from_slice(&0x40u64.to_le_bytes());
+    bytes[section_header_offset + 44..section_header_offset + 48]
+        .copy_from_slice(&4u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_groups(),
+        Err(ValidationError::ExternalNonSymbolReferenceToMember {
+            source_index: 1,
+            member_index: 4,
+        }),
+    );
+}
+
+#[test]
+fn rejects_external_link_order_reference_to_group_member() {
+    let mut bytes = fixture();
+
+    // Section [1] is outside the group. Make sh_link a section reference to member [4].
+    let section_header_offset = SECTION_HEADER_OFFSET as usize + 64;
+    bytes[section_header_offset + 8..section_header_offset + 16]
+        .copy_from_slice(&0x80u64.to_le_bytes());
+    bytes[section_header_offset + 40..section_header_offset + 44]
+        .copy_from_slice(&4u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_groups(),
+        Err(ValidationError::ExternalNonSymbolReferenceToMember {
+            source_index: 1,
+            member_index: 4,
+        }),
+    );
+}
+
+#[test]
+fn permits_non_symbol_reference_within_same_group() {
+    let mut bytes = fixture();
+
+    // Member [4] references member [5] through SHF_INFO_LINK; both are in group [3].
+    let section_header_offset = SECTION_HEADER_OFFSET as usize + 4 * 64;
+    bytes[section_header_offset + 8..section_header_offset + 16]
+        .copy_from_slice(&0x240u64.to_le_bytes());
+    bytes[section_header_offset + 44..section_header_offset + 48]
+        .copy_from_slice(&5u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(object.validate_section_groups(), Ok(()));
+}
