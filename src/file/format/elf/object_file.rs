@@ -243,6 +243,7 @@ impl<'file> ObjectFile<'file> {
         let mut program_header_table_image_seen = false;
         let mut previous_load: Option<(usize, u64)> = None;
         let mut program_header_table_image_index = None;
+        let mut dynamic_seen = false;
 
         for (index, header) in self.program_headers.iter().enumerate() {
             if matches!(header.r#type, Type::Null) {
@@ -310,6 +311,9 @@ impl<'file> ObjectFile<'file> {
 
                     previous_load = Some((index, header.virtual_address));
                 }
+                Type::Dynamic => {
+                    dynamic_seen = true;
+                }
                 Type::Interpreter => {
                     if interpreter_seen {
                         return Err(ValidationError::MultipleInterpreters);
@@ -369,6 +373,13 @@ impl<'file> ObjectFile<'file> {
                 }
                 _ => {}
             }
+        }
+
+        if matches!(self.header.r#type, super::header::Type::Executable)
+            && dynamic_seen
+            && !interpreter_seen
+        {
+            return Err(ValidationError::DynamicExecutableMissingInterpreter);
         }
 
         if let Some(index) = program_header_table_image_index {
