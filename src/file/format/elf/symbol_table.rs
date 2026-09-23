@@ -8,8 +8,17 @@ use ample::r#type::Vec;
 
 use super::{
     string_table::StringTable,
-    symbol::{ResolvedSectionIndex, Symbol},
+    symbol::{Binding, ResolvedSectionIndex, Symbol, Type, Visibility},
 };
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ValidationError {
+    MissingUndefinedSymbol,
+    InvalidUndefinedSymbol,
+    FirstNonLocalIndexOutOfBounds { index: usize },
+    NonLocalSymbolBeforeFirstNonLocal { index: usize },
+    LocalSymbolAtOrAfterFirstNonLocal { index: usize },
+}
 
 #[derive(Debug)]
 pub struct SymbolTable<'file> {
@@ -32,6 +41,39 @@ impl<'file> SymbolTable<'file> {
             section_indices,
             first_non_local_index,
         }
+    }
+
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        let undefined = self.symbols.first().ok_or(ValidationError::MissingUndefinedSymbol)?;
+
+        if undefined.name_index != 0
+            || undefined.value != 0
+            || undefined.size != 0
+            || !matches!(undefined.binding, Binding::Local)
+            || !matches!(undefined.r#type, Type::None)
+            || !matches!(undefined.visibility, Visibility::Default)
+            || !matches!(self.section_indices.first(), Some(ResolvedSectionIndex::Undefined))
+        {
+            return Err(ValidationError::InvalidUndefinedSymbol);
+        }
+
+        if self.first_non_local_index > self.symbols.len() {
+            return Err(ValidationError::FirstNonLocalIndexOutOfBounds {
+                index: self.first_non_local_index,
+            });
+        }
+
+        for (index, symbol) in self.symbols.iter().enumerate() {
+            if index < self.first_non_local_index {
+                if !matches!(symbol.binding, Binding::Local) {
+                    return Err(ValidationError::NonLocalSymbolBeforeFirstNonLocal { index });
+                }
+            } else if matches!(symbol.binding, Binding::Local) {
+                return Err(ValidationError::LocalSymbolAtOrAfterFirstNonLocal { index });
+            }
+        }
+
+        Ok(())
     }
 
     pub fn section_index(&self, index: usize) -> Option<ResolvedSectionIndex> {
