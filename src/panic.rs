@@ -6,7 +6,7 @@ use core::panic::PanicInfo;
 pub fn panic(_info: &PanicInfo) -> ! {
     #[cfg(target_os = "linux")]
     {
-        crate::target::system::operating::linux::syscall::exit(101)
+        crate::target::operating_system::syscall::exit(101)
     }
 
     #[cfg(not(target_os = "linux"))]

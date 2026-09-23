@@ -10,24 +10,24 @@ pub extern "C" fn entry(
 
     let Some(argument_0) = stack.arguments.get(0) else {
         userspace::info!("argv[0] is absent\n");
-        userspace::target::os::syscall::exit(1)
+        userspace::target::operating_system::syscall::exit(1)
     };
 
     let Some(path) = argument_0.as_c_str() else {
         userspace::info!("argv[0] is not a valid C string\n");
-        userspace::target::os::syscall::exit(1)
+        userspace::target::operating_system::syscall::exit(1)
     };
 
     let Some(bytes) = userspace::file::read(path) else {
         userspace::info!("failed to read argv[0]\n");
-        userspace::target::os::syscall::exit(1)
+        userspace::target::operating_system::syscall::exit(1)
     };
 
     let object_file = match userspace::file::format::elf::ObjectFile::parse(&bytes) {
         Ok(object_file) => object_file,
         Err(error) => {
             userspace::info!("failed to parse argv[0] as ELF: {:?}\n", error);
-            userspace::target::os::syscall::exit(1)
+            userspace::target::operating_system::syscall::exit(1)
         }
     };
 
@@ -332,5 +332,5 @@ pub extern "C" fn entry(
 
     userspace::info!("-----------------------\n");
 
-    userspace::target::os::syscall::exit(0)
+    userspace::target::operating_system::syscall::exit(0)
 }
