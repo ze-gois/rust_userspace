@@ -7,6 +7,7 @@ pub enum Error {
     ObjectVersionNotCurrent { version: u32 },
     ReservedObjectType { raw: u16 },
     HeaderSizeTooSmall { size: u16, minimum: u16 },
+    HeaderSizeExceedsFile { size: u16 },
     ProgramHeaderOffsetWithoutTable { offset: u64 },
     ProgramHeaderTableWithoutOffset { count: u16 },
     SectionHeaderOffsetWithoutTable { offset: u64 },
