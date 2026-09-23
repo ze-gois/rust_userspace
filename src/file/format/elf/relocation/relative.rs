@@ -16,6 +16,32 @@ pub enum SectionValidationError {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StorageUnit {
+    Class32(u32),
+    Class64(u64),
+}
+
+impl StorageUnit {
+    pub const fn value(self) -> u64 {
+        match self {
+            Self::Class32(value) => value as u64,
+            Self::Class64(value) => value,
+        }
+    }
+
+    pub const fn relocate(self, factor: RelocationFactor) -> Self {
+        match self {
+            Self::Class32(value) => {
+                Self::Class32(value.wrapping_add(factor.value() as u32))
+            }
+            Self::Class64(value) => {
+                Self::Class64(value.wrapping_add(factor.value() as u64))
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RelocationFactor(i128);
 
 impl RelocationFactor {
