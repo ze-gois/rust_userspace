@@ -20,6 +20,7 @@ pub struct Symbol {
     pub binding: Binding,
     pub r#type: Type,
     pub visibility: Visibility,
+    pub other_bits: u8,
     pub section_index: super::section_header::Index,
 }
 
