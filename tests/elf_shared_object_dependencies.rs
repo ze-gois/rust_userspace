@@ -1,5 +1,5 @@
 use userspace::file::format::elf::{
-    shared_object_dependencies::SearchPath,
+    shared_object_dependencies::{SearchPath, SharedObjectDependency},
     ObjectFile,
 };
 
@@ -182,4 +182,25 @@ fn run_path_takes_precedence_over_runtime_search_path() {
     assert_eq!(dependencies.runtime_search_path, Some("liba.so"));
     assert_eq!(dependencies.run_path, Some("/lib"));
     assert_eq!(dependencies.search_path(), Some(SearchPath::RunPath("/lib")));
+}
+
+#[test]
+fn distinguishes_direct_dependency_pathnames_from_names_that_require_search() {
+    let name = SharedObjectDependency::new(2, "liba.so");
+    assert_eq!(name.direct_pathname(), None);
+    assert!(name.requires_search());
+
+    let absolute_pathname = SharedObjectDependency::new(3, "/usr/lib/liba.so");
+    assert_eq!(
+        absolute_pathname.direct_pathname(),
+        Some("/usr/lib/liba.so"),
+    );
+    assert!(!absolute_pathname.requires_search());
+
+    let relative_pathname = SharedObjectDependency::new(4, "directory/liba.so");
+    assert_eq!(
+        relative_pathname.direct_pathname(),
+        Some("directory/liba.so"),
+    );
+    assert!(!relative_pathname.requires_search());
 }
