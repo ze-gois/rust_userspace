@@ -65,11 +65,40 @@ impl Mapping {
         self.page_size
     }
 
-    pub fn entry_address(&self, link_time_entry: u64) -> Option<*const u8> {
+    pub fn entry_address(
+        &self,
+        object_file: &ObjectFile<'_>,
+    ) -> Option<*const u8> {
+        let link_time_entry = object_file.header.entry;
+
+        let executable = object_file.program_headers.iter().any(|header| {
+            if !matches!(header.r#type, program_header::Type::Load)
+                || !header.flags.executable()
+            {
+                return false;
+            }
+
+            let Some(end) = header
+                .virtual_address
+                .checked_add(header.memory_size)
+            else {
+                return false;
+            };
+
+            link_time_entry >= header.virtual_address
+                && link_time_entry < end
+        });
+
+        if !executable {
+            return None;
+        }
+
         let address = self
             .base_address
             .relocate_virtual_address(link_time_entry)?;
-        usize::try_from(address).ok().map(|address| address as *const u8)
+        usize::try_from(address)
+            .ok()
+            .map(|address| address as *const u8)
     }
 
     pub fn unmap(self) -> bool {

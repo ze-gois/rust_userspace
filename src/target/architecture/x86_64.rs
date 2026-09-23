@@ -4,6 +4,7 @@
 #![feature(generic_const_items)]
 
 pub mod callable;
+pub mod entry_point;
 pub mod result;
 pub mod syscall;
 // pub use syscall::*;
