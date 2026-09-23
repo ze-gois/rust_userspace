@@ -22,6 +22,12 @@ pub enum RepresentationError {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RelativeRelocationWrite {
+    pub virtual_address: u64,
+    pub representation: StorageUnitRepresentation,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StorageUnitRepresentation {
     Class32([u8; 4]),
     Class64([u8; 8]),
@@ -135,6 +141,16 @@ impl RelocationFactor {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EffectError {
+    Expansion(ExpansionError),
+    Representation(RepresentationError),
+    StorageUnitCountMismatch {
+        addresses: usize,
+        storage_units: usize,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExpansionError {
     UnsupportedClass,
     BitmapWithoutAddress,
@@ -148,6 +164,47 @@ pub struct Table {
 }
 
 impl Table {
+    pub fn writes_from_storage_units(
+        &self,
+        storage_units: &[StorageUnitRepresentation],
+        data: Data,
+        factor: RelocationFactor,
+    ) -> Result<Vec<RelativeRelocationWrite>, EffectError> {
+        let virtual_addresses = self
+            .virtual_addresses()
+            .map_err(EffectError::Expansion)?;
+
+        if virtual_addresses.len() != storage_units.len() {
+            return Err(EffectError::StorageUnitCountMismatch {
+                addresses: virtual_addresses.len(),
+                storage_units: storage_units.len(),
+            });
+        }
+
+        let mut writes = Vec::with_capacity(virtual_addresses.len());
+
+        for (virtual_address, representation) in virtual_addresses
+            .into_iter()
+            .zip(storage_units.iter().copied())
+        {
+            let storage_unit = representation
+                .decode(data)
+                .map_err(EffectError::Representation)?;
+            let relocated = storage_unit
+                .relocated(factor)
+                .map_err(EffectError::Representation)?;
+            let representation = relocated
+                .representation(data)
+                .map_err(EffectError::Representation)?;
+
+            writes.push(RelativeRelocationWrite {
+                virtual_address,
+                representation,
+            });
+        }
+
+        Ok(writes)
+    }
     pub const fn new(entries: Vec<Entry>, class: Class) -> Self {
         Self { entries, class }
     }
