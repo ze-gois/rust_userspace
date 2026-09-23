@@ -3,6 +3,7 @@
 use ample::r#type::Vec;
 
 use super::super::{
+    base_address::BaseAddress,
     identification::{Class, Data},
     memory_image::{self, MemoryImage, MemoryImageWriter},
     representation::{class_32 as representation_32, class_64 as representation_64, Decoder},
@@ -181,6 +182,10 @@ impl RelocationFactor {
             actual_load_time_virtual_address as i128
                 - link_time_virtual_address as i128,
         )
+    }
+
+    pub const fn from_base_address(base_address: BaseAddress) -> Self {
+        Self(base_address.value() as i128)
     }
 
     pub const fn value(self) -> i128 {
