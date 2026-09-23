@@ -215,6 +215,35 @@ impl<'file> ObjectFile<'file> {
         Ok(())
     }
 
+    pub fn validate_section_headers(
+        &self,
+    ) -> Result<(), section_header::ValidationError> {
+        use section_header::{Flags, ValidationError};
+
+        for (index, header) in self.section_headers.iter().enumerate() {
+            if header.alignment > 1 && !header.alignment.is_power_of_two() {
+                return Err(ValidationError::AlignmentNotPowerOfTwo { index });
+            }
+
+            if header.flags.contains(Flags::INFORMATION_LINK) {
+                let target = usize::try_from(header.information)
+                    .map_err(|_| ValidationError::InformationLinkOutOfBounds {
+                        index,
+                        target: usize::MAX,
+                    })?;
+
+                if target >= self.section_headers.len() {
+                    return Err(ValidationError::InformationLinkOutOfBounds {
+                        index,
+                        target,
+                    });
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn lowest_load_virtual_address(&self) -> Option<u64> {
         self.program_headers
             .iter()
