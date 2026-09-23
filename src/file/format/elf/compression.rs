@@ -11,7 +11,7 @@ pub use r#type::Type;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValidationError {
-    AllocatedCompressedSectionInExecutableOrSharedObject,
+    AllocatedCompressedSection,
     NoBitsCompressedSection,
     MissingCompressionHeader,
     UncompressedAlignmentNotPowerOfTwo,
