@@ -567,6 +567,160 @@ impl<'file> ObjectFile<'file> {
         ))
     }
 
+    pub fn validate_symbol_table_section_indices(
+        &self,
+        symbol_table_section_index: usize,
+    ) -> Result<(), super::symbol_table::ValidationError> {
+        use super::symbol_table::ValidationError;
+
+        let header = self
+            .section_headers
+            .get(symbol_table_section_index)
+            .ok_or(ValidationError::MissingSectionIndexTable)?;
+
+        if !matches!(
+            header.r#type,
+            section_header::Type::SymbolTable | section_header::Type::DynamicSymbolTable
+        ) {
+            return Ok(());
+        }
+
+        let symbol_section = self
+            .section(symbol_table_section_index)
+            .ok_or(ValidationError::SectionIndexTableSizeMismatch)?;
+        let entry_size = usize::try_from(header.entry_size)
+            .ok()
+            .filter(|entry_size| *entry_size != 0)
+            .ok_or(ValidationError::SectionIndexTableSizeMismatch)?;
+        if symbol_section.contents.len() % entry_size != 0 {
+            return Err(ValidationError::SectionIndexTableSizeMismatch);
+        }
+        let symbol_count = symbol_section.contents.len() / entry_size;
+
+        let companion = self
+            .section_headers
+            .iter()
+            .enumerate()
+            .find(|(_, candidate)| {
+                matches!(
+                    candidate.r#type,
+                    section_header::Type::SymbolTableSectionIndex
+                ) && candidate.link as usize == symbol_table_section_index
+            })
+            .and_then(|(index, _)| self.section(index));
+
+        let symbols = self.symbol_table(symbol_table_section_index);
+        if symbols.is_none() {
+            let mut requires_extended = false;
+            match self.header.identification.class {
+                Class::Class32 => {
+                    for index in 0..symbol_count {
+                        let offset = index
+                            .checked_mul(entry_size)
+                            .ok_or(ValidationError::SectionIndexTableSizeMismatch)?;
+                        let representation = symbol::class_32::Representation::decode(
+                            symbol_section.contents,
+                            offset,
+                            self.header.identification.data,
+                        )
+                        .ok_or(ValidationError::SectionIndexTableSizeMismatch)?;
+                        if representation.st_shndx == section_header::Index::EXTENDED.raw() {
+                            requires_extended = true;
+                            break;
+                        }
+                    }
+                }
+                Class::Class64 => {
+                    for index in 0..symbol_count {
+                        let offset = index
+                            .checked_mul(entry_size)
+                            .ok_or(ValidationError::SectionIndexTableSizeMismatch)?;
+                        let representation = symbol::class_64::Representation::decode(
+                            symbol_section.contents,
+                            offset,
+                            self.header.identification.data,
+                        )
+                        .ok_or(ValidationError::SectionIndexTableSizeMismatch)?;
+                        if representation.st_shndx == section_header::Index::EXTENDED.raw() {
+                            requires_extended = true;
+                            break;
+                        }
+                    }
+                }
+                Class::None | Class::Reserved(_) => return Ok(()),
+            }
+
+            if requires_extended && companion.is_none() {
+                return Err(ValidationError::MissingSectionIndexTable);
+            }
+        }
+
+        let Some(companion) = companion else {
+            return Ok(());
+        };
+
+        let word_size = core::mem::size_of::<u32>();
+        if companion.contents.len() != symbol_count * word_size {
+            return Err(ValidationError::SectionIndexTableSizeMismatch);
+        }
+
+        match self.header.identification.class {
+            Class::Class32 => {
+                for index in 0..symbol_count {
+                    let symbol_offset = index * entry_size;
+                    let representation = symbol::class_32::Representation::decode(
+                        symbol_section.contents,
+                        symbol_offset,
+                        self.header.identification.data,
+                    )
+                    .ok_or(ValidationError::SectionIndexTableSizeMismatch)?;
+                    let extended = word(
+                        companion.contents,
+                        index * word_size,
+                        self.header.identification.data,
+                    )
+                    .ok_or(ValidationError::SectionIndexTableSizeMismatch)?;
+                    if representation.st_shndx != section_header::Index::EXTENDED.raw()
+                        && extended != 0
+                    {
+                        return Err(ValidationError::SectionIndexTableUnexpectedValue {
+                            index,
+                            value: extended,
+                        });
+                    }
+                }
+            }
+            Class::Class64 => {
+                for index in 0..symbol_count {
+                    let symbol_offset = index * entry_size;
+                    let representation = symbol::class_64::Representation::decode(
+                        symbol_section.contents,
+                        symbol_offset,
+                        self.header.identification.data,
+                    )
+                    .ok_or(ValidationError::SectionIndexTableSizeMismatch)?;
+                    let extended = word(
+                        companion.contents,
+                        index * word_size,
+                        self.header.identification.data,
+                    )
+                    .ok_or(ValidationError::SectionIndexTableSizeMismatch)?;
+                    if representation.st_shndx != section_header::Index::EXTENDED.raw()
+                        && extended != 0
+                    {
+                        return Err(ValidationError::SectionIndexTableUnexpectedValue {
+                            index,
+                            value: extended,
+                        });
+                    }
+                }
+            }
+            Class::None | Class::Reserved(_) => {}
+        }
+
+        Ok(())
+    }
+
     pub fn symbol_section(
         &self,
         symbol_table_section_index: usize,
