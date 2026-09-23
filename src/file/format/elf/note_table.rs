@@ -8,6 +8,11 @@ use ample::r#type::Vec;
 
 use super::note::Note;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ValidationError {
+    OriginatorNotNullTerminated { index: usize },
+}
+
 #[derive(Debug)]
 pub struct NoteTable<'file> {
     pub notes: Vec<Note<'file>>,
@@ -32,5 +37,15 @@ impl<'file> NoteTable<'file> {
 
     pub fn iter(&self) -> core::slice::Iter<'_, Note<'file>> {
         self.notes.iter()
+    }
+
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        for (index, note) in self.notes.iter().enumerate() {
+            if !note.originator.is_empty() && note.originator.last() != Some(&0) {
+                return Err(ValidationError::OriginatorNotNullTerminated { index });
+            }
+        }
+
+        Ok(())
     }
 }
