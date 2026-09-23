@@ -961,12 +961,20 @@ impl<'file> ObjectFile<'file> {
             }
         }
 
-        let shared_object_name = array
-            .first(Tag::SharedObjectName)
-            .and_then(|entry| strings.get_str(entry.payload as usize));
-        let runtime_search_path = array
-            .first(Tag::RuntimeSearchPath)
-            .and_then(|entry| strings.get_str(entry.payload as usize));
+        let shared_object_name = if matches!(self.header.r#type, header::Type::SharedObject) {
+            array
+                .first(Tag::SharedObjectName)
+                .and_then(|entry| strings.get_str(entry.payload as usize))
+        } else {
+            None
+        };
+        let runtime_search_path = if matches!(self.header.r#type, header::Type::Executable) {
+            array
+                .first(Tag::RuntimeSearchPath)
+                .and_then(|entry| strings.get_str(entry.payload as usize))
+        } else {
+            None
+        };
         let run_path = array
             .first(Tag::RunPath)
             .and_then(|entry| strings.get_str(entry.payload as usize));
