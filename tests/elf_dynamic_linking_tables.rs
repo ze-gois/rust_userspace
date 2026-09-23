@@ -271,3 +271,18 @@ fn rejects_hash_chain_outside_symbol_and_chain_tables() {
         )),
     );
 }
+
+
+#[test]
+fn rejects_dynamic_extended_section_index_without_companion_table() {
+    let mut bytes = fixture();
+    let offset = second_symbol_offset() + 6;
+    bytes[offset..offset + 2].copy_from_slice(&0xffffu16.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_dynamic_linking_tables(1),
+        Err(ValidationError::DynamicSymbolTableUnavailable),
+    );
+}
