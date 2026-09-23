@@ -194,6 +194,12 @@ impl<'file> ObjectFile<'file> {
             });
         }
 
+        if usize::from(self.header.header_size) > self.bytes.len() {
+            return Err(ValidationError::HeaderSizeExceedsFile {
+                size: self.header.header_size,
+            });
+        }
+
         if self.header.program_header_count == 0 {
             if self.header.program_header_offset != 0 {
                 return Err(ValidationError::ProgramHeaderOffsetWithoutTable {
