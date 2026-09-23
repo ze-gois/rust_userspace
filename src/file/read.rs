@@ -1,7 +1,7 @@
 use ample::r#type::Vec;
 use core::ffi::CStr;
 
-use crate::target::os::syscall;
+use crate::target::operating_system::syscall;
 
 /// Read a regular file completely into an owned byte vector.
 pub fn read(path: &CStr) -> Option<Vec<u8>> {
@@ -9,10 +9,11 @@ pub fn read(path: &CStr) -> Option<Vec<u8>> {
         syscall::open::AtFlag::FDCWD.to(),
         path.as_ptr().cast(),
         syscall::open::Flag::RDONLY.to(),
+        0,
     ) {
-        core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
-            crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::Open(
-                crate::target::os::syscall::open::Ok::OPENAT(file_descriptor),
+        core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
+            crate::target::operating_system::Ok::Syscall(crate::target::operating_system::syscall::Ok::Open(
+                crate::target::operating_system::syscall::open::Ok::OPENAT(file_descriptor),
             )),
         ))) => file_descriptor as isize,
         _ => return None,
@@ -23,9 +24,9 @@ pub fn read(path: &CStr) -> Option<Vec<u8>> {
         0,
         syscall::lseek::Whence::END.raw(),
     ) {
-        core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
-            crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::LSeek(
-                crate::target::os::syscall::lseek::Ok::Default(length),
+        core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
+            crate::target::operating_system::Ok::Syscall(crate::target::operating_system::syscall::Ok::LSeek(
+                crate::target::operating_system::syscall::lseek::Ok::Default(length),
             )),
         ))) => length,
         _ => {
@@ -55,9 +56,9 @@ pub fn read(path: &CStr) -> Option<Vec<u8>> {
             bytes[read..].as_mut_ptr(),
             length - read,
         ) {
-            core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
-                crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::Read(
-                    crate::target::os::syscall::read::Ok::Default(count),
+            core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
+                crate::target::operating_system::Ok::Syscall(crate::target::operating_system::syscall::Ok::Read(
+                    crate::target::operating_system::syscall::read::Ok::Default(count),
                 )),
             ))) => count,
             _ => {

@@ -1,4 +1,4 @@
-use crate::target::os::syscall;
+use crate::target::operating_system::syscall;
 
 const PATH_CAPACITY: usize = 4096;
 const BUFFER_CAPACITY: usize = 4096;
@@ -21,10 +21,11 @@ pub fn print(file_path: &str) {
         syscall::open::AtFlag::FDCWD.to(),
         path.as_ptr(),
         syscall::open::Flag::RDONLY.to(),
+        0,
     ) {
-        core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
-            crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::Open(
-                crate::target::os::syscall::open::Ok::OPENAT(file_descriptor),
+        core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
+            crate::target::operating_system::Ok::Syscall(crate::target::operating_system::syscall::Ok::Open(
+                crate::target::operating_system::syscall::open::Ok::OPENAT(file_descriptor),
             )),
         ))) => file_descriptor as isize,
         _ => return,
@@ -38,9 +39,9 @@ pub fn print(file_path: &str) {
             buffer.as_mut_ptr(),
             buffer.len(),
         ) {
-            core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
-                crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::Read(
-                    crate::target::os::syscall::read::Ok::Default(read_length),
+            core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
+                crate::target::operating_system::Ok::Syscall(crate::target::operating_system::syscall::Ok::Read(
+                    crate::target::operating_system::syscall::read::Ok::Default(read_length),
                 )),
             ))) => read_length,
             _ => break,
@@ -57,9 +58,9 @@ pub fn print(file_path: &str) {
                 buffer[written..read_length].as_ptr(),
                 read_length - written,
             ) {
-                core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
-                    crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::Write(
-                        crate::target::os::syscall::write::Ok::Default(write_length),
+                core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
+                    crate::target::operating_system::Ok::Syscall(crate::target::operating_system::syscall::Ok::Write(
+                        crate::target::operating_system::syscall::write::Ok::Default(write_length),
                     )),
                 ))) => write_length,
                 _ => break 'printing,
