@@ -380,14 +380,14 @@ impl<'file> ObjectFile<'file> {
             .map_err(ValidationError::DynamicStringTableInvalid)?;
 
         for (entry_index, entry) in array.iter().enumerate() {
-            if matches!(
-                entry.tag,
-                Tag::Needed
-                    | Tag::SharedObjectName
-                    | Tag::RuntimeSearchPath
-                    | Tag::RunPath
-            ) && strings.get(entry.payload as usize).is_none()
-            {
+            let string_is_meaningful = match entry.tag {
+                Tag::Needed | Tag::RunPath => true,
+                Tag::SharedObjectName => matches!(self.header.r#type, header::Type::SharedObject),
+                Tag::RuntimeSearchPath => matches!(self.header.r#type, header::Type::Executable),
+                _ => false,
+            };
+
+            if string_is_meaningful && strings.get(entry.payload as usize).is_none() {
                 return Err(ValidationError::InvalidStringOffset {
                     index: entry_index,
                     tag: entry.tag,
