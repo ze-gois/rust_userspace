@@ -1530,15 +1530,8 @@ impl<'file> ObjectFile<'file> {
             return Err(ValidationError::NoBitsCompressedSection);
         }
 
-        if header.flags.contains(section_header::Flags::ALLOCATE)
-            && matches!(
-                self.header.r#type,
-                super::header::Type::Executable | super::header::Type::SharedObject
-            )
-        {
-            return Err(
-                ValidationError::AllocatedCompressedSectionInExecutableOrSharedObject,
-            );
+        if header.flags.contains(section_header::Flags::ALLOCATE) {
+            return Err(ValidationError::AllocatedCompressedSection);
         }
 
         let section = self
