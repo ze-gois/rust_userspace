@@ -95,7 +95,7 @@ fn fixture(include_companion: bool, companion_words: &[u32], second_shndx: u16) 
 
 #[test]
 fn accepts_one_to_one_extended_section_indices() {
-    let bytes = fixture(true, &[0, 3], 0xffff);
+    let bytes = fixture(true, &[0, 0xff00], 0xffff);
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
     assert_eq!(object.validate_symbol_table_section_indices(2), Ok(()));
 }
@@ -127,6 +127,20 @@ fn rejects_nonzero_extended_index_for_non_extended_symbol() {
     assert_eq!(
         object.validate_symbol_table_section_indices(2),
         Err(ValidationError::SectionIndexTableUnexpectedValue {
+            index: 1,
+            value: 3,
+        }),
+    );
+}
+
+
+#[test]
+fn rejects_extended_section_index_below_reserved_range() {
+    let bytes = fixture(true, &[0, 3], 0xffff);
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    assert_eq!(
+        object.validate_symbol_table_section_indices(2),
+        Err(ValidationError::ExtendedSectionIndexBelowReservedRange {
             index: 1,
             value: 3,
         }),
