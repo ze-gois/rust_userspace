@@ -31,7 +31,7 @@ use super::super::{
     program_header,
     relocation::{self, relative, Relocation},
     section_header,
-    shared_object_dependencies::SharedObjectDependencies,
+    shared_object_dependencies::{SharedObjectDependencies, SharedObjectDependency},
     string_table::StringTable,
     symbol::{self, Symbol},
 };
@@ -952,9 +952,12 @@ impl<'file> ObjectFile<'file> {
         let strings = self.dynamic_string_table_from_program_header(index)?;
 
         let mut needed = Vec::new();
-        for entry in array.iter() {
+        for (dynamic_entry_index, entry) in array.iter().enumerate() {
             if matches!(entry.tag, Tag::Needed) {
-                needed.push(strings.get_str(entry.payload as usize)?);
+                needed.push(SharedObjectDependency::new(
+                    dynamic_entry_index,
+                    strings.get_str(entry.payload as usize)?,
+                ));
             }
         }
 
