@@ -1396,13 +1396,16 @@ impl<'file> ObjectFile<'file> {
                     });
                 }
 
-                if grouped_members.iter().any(|index| *index == member_index) {
+                if grouped_members
+                    .iter()
+                    .any(|(_, index)| *index == member_index)
+                {
                     return Err(ValidationError::MemberInMultipleGroups {
                         member_index,
                     });
                 }
 
-                grouped_members.push(member_index);
+                grouped_members.push((group_index, member_index));
             }
         }
 
@@ -1417,10 +1420,80 @@ impl<'file> ObjectFile<'file> {
                 });
             }
 
-            if !grouped_members.iter().any(|index| *index == member_index) {
+            if !grouped_members
+                .iter()
+                .any(|(_, index)| *index == member_index)
+            {
                 return Err(ValidationError::GroupFlagWithoutGroup {
                     member_index,
                 });
+            }
+        }
+
+        for (source_index, header) in self.section_headers.iter().enumerate() {
+            let source_group = grouped_members
+                .iter()
+                .find(|(_, member_index)| *member_index == source_index)
+                .map(|(group_index, _)| *group_index);
+
+            let sh_link_is_section_reference = header
+                .flags
+                .contains(section_header::Flags::LINK_ORDER)
+                || matches!(
+                    header.r#type,
+                    section_header::Type::Dynamic
+                        | section_header::Type::SymbolTable
+                        | section_header::Type::DynamicSymbolTable
+                        | section_header::Type::Hash
+                        | section_header::Type::Relocation
+                        | section_header::Type::RelocationWithAddend
+                        | section_header::Type::Group
+                        | section_header::Type::SymbolTableSectionIndex
+                );
+
+            if sh_link_is_section_reference {
+                let target = header.link as usize;
+                if let Some((target_group, member_index)) = grouped_members
+                    .iter()
+                    .find(|(_, member_index)| *member_index == target)
+                    .copied()
+                {
+                    if source_group != Some(target_group) {
+                        return Err(
+                            ValidationError::ExternalNonSymbolReferenceToMember {
+                                source_index,
+                                member_index,
+                            },
+                        );
+                    }
+                }
+            }
+
+            let sh_info_is_section_reference = header
+                .flags
+                .contains(section_header::Flags::INFORMATION_LINK)
+                || matches!(
+                    header.r#type,
+                    section_header::Type::Relocation
+                        | section_header::Type::RelocationWithAddend
+                );
+
+            if sh_info_is_section_reference {
+                let target = header.information as usize;
+                if let Some((target_group, member_index)) = grouped_members
+                    .iter()
+                    .find(|(_, member_index)| *member_index == target)
+                    .copied()
+                {
+                    if source_group != Some(target_group) {
+                        return Err(
+                            ValidationError::ExternalNonSymbolReferenceToMember {
+                                source_index,
+                                member_index,
+                            },
+                        );
+                    }
+                }
             }
         }
 
