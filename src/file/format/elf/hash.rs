@@ -2,6 +2,18 @@
 
 use ample::r#type::Vec;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ValidationError {
+    BucketIndexOutOfBounds {
+        bucket_index: usize,
+        symbol_index: u32,
+    },
+    ChainIndexOutOfBounds {
+        chain_index: usize,
+        symbol_index: u32,
+    },
+}
+
 #[derive(Debug)]
 pub struct HashTable {
     pub buckets: Vec<u32>,
@@ -11,6 +23,34 @@ pub struct HashTable {
 impl HashTable {
     pub const fn new(buckets: Vec<u32>, chains: Vec<u32>) -> Self {
         Self { buckets, chains }
+    }
+
+    pub fn validate(&self, symbol_count: usize) -> Result<(), ValidationError> {
+        for (bucket_index, symbol_index) in self.buckets.iter().copied().enumerate() {
+            if symbol_index != 0
+                && (symbol_index as usize >= symbol_count
+                    || symbol_index as usize >= self.chains.len())
+            {
+                return Err(ValidationError::BucketIndexOutOfBounds {
+                    bucket_index,
+                    symbol_index,
+                });
+            }
+        }
+
+        for (chain_index, symbol_index) in self.chains.iter().copied().enumerate() {
+            if symbol_index != 0
+                && (symbol_index as usize >= symbol_count
+                    || symbol_index as usize >= self.chains.len())
+            {
+                return Err(ValidationError::ChainIndexOutOfBounds {
+                    chain_index,
+                    symbol_index,
+                });
+            }
+        }
+
+        Ok(())
     }
 
     pub fn find_index<F>(&self, name: &[u8], mut matches: F) -> Option<usize>
