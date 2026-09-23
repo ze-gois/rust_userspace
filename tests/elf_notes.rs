@@ -1,4 +1,7 @@
-use userspace::file::format::elf::ObjectFile;
+use userspace::file::format::elf::{
+    note_table::ValidationError,
+    ObjectFile,
+};
 
 fn half(bytes: &mut Vec<u8>, value: u16) { bytes.extend_from_slice(&value.to_le_bytes()); }
 fn word(bytes: &mut Vec<u8>, value: u32) { bytes.extend_from_slice(&value.to_le_bytes()); }
@@ -65,4 +68,23 @@ fn parses_elf64_note_with_32_bit_fields_and_64_bit_alignment() {
     assert_eq!(note.originator, b"GNU\0");
     assert_eq!(note.r#type, 7);
     assert_eq!(note.descriptor, &[1, 2, 3, 4]);
+    assert_eq!(notes.validate(), Ok(()));
+}
+
+#[test]
+fn rejects_note_originator_without_null_terminator() {
+    let mut bytes = elf64_note_fixture();
+
+    // Note payload begins after ELF64_Ehdr + Elf64_Phdr.
+    bytes[64 + 56 + 12..64 + 56 + 16].copy_from_slice(b"GNU!");
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let notes = object
+        .note_table_from_program_header(0)
+        .expect("PT_NOTE must resolve");
+
+    assert_eq!(
+        notes.validate(),
+        Err(ValidationError::OriginatorNotNullTerminated { index: 0 }),
+    );
 }
