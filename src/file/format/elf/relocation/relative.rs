@@ -49,6 +49,37 @@ impl StorageUnitWrite {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BatchApplicationError {
+    pub index: usize,
+    pub error: ApplicationError,
+}
+
+pub fn apply_storage_unit_writes(
+    writes: &[StorageUnitWrite],
+    memory_image: &mut MemoryImageWriter<'_>,
+) -> Result<(), BatchApplicationError> {
+    for (index, write) in writes.iter().copied().enumerate() {
+        memory_image
+            .validate_write(
+                write.load_time_virtual_address,
+                write.representation.bytes().len(),
+            )
+            .map_err(|error| BatchApplicationError {
+                index,
+                error: ApplicationError::MemoryImage(error),
+            })?;
+    }
+
+    for (index, write) in writes.iter().copied().enumerate() {
+        write
+            .apply(memory_image)
+            .map_err(|error| BatchApplicationError { index, error })?;
+    }
+
+    Ok(())
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StorageUnitRepresentation {
     Class32([u8; 4]),
     Class64([u8; 8]),
