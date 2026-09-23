@@ -189,22 +189,22 @@ fn run_path_takes_precedence_over_runtime_search_path() {
 #[test]
 fn distinguishes_direct_dependency_pathnames_from_names_that_require_search() {
     let name = SharedObjectDependency::new(2, "liba.so");
-    assert_eq!(name.direct_pathname(), None);
-    assert!(name.requires_search());
+    assert_eq!(name.direct_pathname("/origin"), Ok(None));
+    assert_eq!(name.requires_search("/origin"), Ok(true));
 
     let absolute_pathname = SharedObjectDependency::new(3, "/usr/lib/liba.so");
     assert_eq!(
-        absolute_pathname.direct_pathname(),
-        Some("/usr/lib/liba.so"),
+        absolute_pathname.direct_pathname("/origin"),
+        Ok(Some(String::from("/usr/lib/liba.so"))),
     );
-    assert!(!absolute_pathname.requires_search());
+    assert_eq!(absolute_pathname.requires_search("/origin"), Ok(false));
 
     let relative_pathname = SharedObjectDependency::new(4, "directory/liba.so");
     assert_eq!(
-        relative_pathname.direct_pathname(),
-        Some("directory/liba.so"),
+        relative_pathname.direct_pathname("/origin"),
+        Ok(Some(String::from("directory/liba.so"))),
     );
-    assert!(!relative_pathname.requires_search());
+    assert_eq!(relative_pathname.requires_search("/origin"), Ok(false));
 }
 
 #[test]
@@ -276,4 +276,15 @@ fn reports_unspecified_dynamic_string_substitution_sequence() {
         malformed.name_with_origin("/opt/application"),
         Err(OriginSubstitutionError::UnspecifiedSequence { byte_offset: 4 }),
     );
+}
+
+#[test]
+fn interprets_origin_substitution_before_needed_pathname_classification() {
+    let dependency = SharedObjectDependency::new(5, "$ORIGIN/liba.so");
+
+    assert_eq!(
+        dependency.direct_pathname("/opt/application"),
+        Ok(Some(String::from("/opt/application/liba.so"))),
+    );
+    assert_eq!(dependency.requires_search("/opt/application"), Ok(false));
 }
