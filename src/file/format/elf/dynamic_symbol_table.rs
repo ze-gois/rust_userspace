@@ -23,6 +23,7 @@ pub enum ValidationError {
     FileSymbolNotLocal { index: usize },
     FileSymbolNotAbsolute { index: usize },
     ReservedSectionIndex { index: usize, raw: u16 },
+    ExtendedSectionIndexBelowReservedRange { index: usize, value: usize },
 }
 
 #[derive(Debug)]
@@ -118,6 +119,21 @@ impl<'file> DynamicSymbolTable<'file> {
                 self.section_indices.get(index).copied()
             {
                 return Err(ValidationError::ReservedSectionIndex { index, raw });
+            }
+
+            if symbol.section_index == super::section_header::Index::EXTENDED {
+                if let Some(ResolvedSectionIndex::Section(value)) =
+                    self.section_indices.get(index).copied()
+                {
+                    if value < super::section_header::Index::LOWER_RESERVED.raw() as usize {
+                        return Err(
+                            ValidationError::ExtendedSectionIndexBelowReservedRange {
+                                index,
+                                value,
+                            },
+                        );
+                    }
+                }
             }
         }
 
