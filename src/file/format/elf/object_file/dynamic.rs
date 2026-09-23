@@ -588,14 +588,25 @@ impl<'file> ObjectFile<'file> {
                 .first(Tag::ProcedureLinkageTableRelocation)
                 .map(|entry| entry.payload),
         ) {
-            let (addend, entry_size) = match Tag::from_raw(i64::try_from(format).ok()?) {
-                Tag::Relocation => (
+            let (addend, entry_size) = match (
+                self.header.identification.class,
+                Tag::from_raw(i64::try_from(format).ok()?),
+            ) {
+                (Class::Class32, Tag::Relocation) => (
                     DynamicRelocationAddend::Implicit,
-                    array.first(Tag::RelocationEntrySize)?.payload,
+                    core::mem::size_of::<relocation::class_32::RelRepresentation>() as u64,
                 ),
-                Tag::RelocationWithAddend => (
+                (Class::Class32, Tag::RelocationWithAddend) => (
                     DynamicRelocationAddend::Explicit,
-                    array.first(Tag::RelocationWithAddendEntrySize)?.payload,
+                    core::mem::size_of::<relocation::class_32::RelaRepresentation>() as u64,
+                ),
+                (Class::Class64, Tag::Relocation) => (
+                    DynamicRelocationAddend::Implicit,
+                    core::mem::size_of::<relocation::class_64::RelRepresentation>() as u64,
+                ),
+                (Class::Class64, Tag::RelocationWithAddend) => (
+                    DynamicRelocationAddend::Explicit,
+                    core::mem::size_of::<relocation::class_64::RelaRepresentation>() as u64,
                 ),
                 _ => return None,
             };
