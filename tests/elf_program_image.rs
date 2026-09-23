@@ -172,10 +172,10 @@ fn rejects_program_image_file_larger_than_memory_image() {
 
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
 
-    assert_eq!(
+    assert!(matches!(
         object.program_image(),
         Err(Error::FileImageLargerThanMemoryImage { index: 0 }),
-    );
+    ));
 }
 
 #[test]
@@ -186,10 +186,10 @@ fn rejects_program_image_file_image_outside_file() {
 
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
 
-    assert_eq!(
+    assert!(matches!(
         object.program_image(),
         Err(Error::FileImageUnavailable { index: 0 }),
-    );
+    ));
 }
 
 #[test]
@@ -201,8 +201,8 @@ fn rejects_program_image_virtual_address_range_overflow() {
 
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
 
-    assert_eq!(
+    assert!(matches!(
         object.program_image(),
         Err(Error::VirtualAddressRangeOverflow { index: 0 }),
-    );
+    ));
 }
