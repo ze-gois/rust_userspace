@@ -15,6 +15,14 @@ impl<'file> SharedObjectDependency<'file> {
             name,
         }
     }
+
+    pub fn direct_pathname(&self) -> Option<&'file str> {
+        self.name.contains('/').then_some(self.name)
+    }
+
+    pub fn requires_search(&self) -> bool {
+        self.direct_pathname().is_none()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
