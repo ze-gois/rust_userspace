@@ -14,6 +14,11 @@ impl Flags {
     pub const BIND_NOW: u64 = 0x8;
     /// `DF_STATIC_TLS`: the object uses the static thread-local-storage model.
     pub const STATIC_THREAD_LOCAL_STORAGE: u64 = 0x10;
+    pub const DEFINED_MASK: u64 = Self::ORIGIN
+        | Self::SYMBOLIC
+        | Self::TEXT_RELOCATION
+        | Self::BIND_NOW
+        | Self::STATIC_THREAD_LOCAL_STORAGE;
 
     pub const fn from_raw(raw: u64) -> Self {
         Self(raw)
