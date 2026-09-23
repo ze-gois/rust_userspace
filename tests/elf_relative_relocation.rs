@@ -7,8 +7,8 @@ use userspace::file::format::elf::{
     },
     relocation::relative::{
         class_32, class_64, Entry, ExpansionError, RelocationFactor, RepresentationError,
-        ApplicationError, StorageUnit, StorageUnitRepresentation, StorageUnitWrite, Table,
-        VirtualAddressError, WriteError,
+        apply_storage_unit_writes, ApplicationError, BatchApplicationError, StorageUnit,
+        StorageUnitRepresentation, StorageUnitWrite, Table, VirtualAddressError, WriteError,
     },
     section_header,
 };
@@ -811,4 +811,137 @@ fn applied_relative_relocation_write_matches_planned_representation() {
     drop(write_image);
 
     assert_eq!(loaded, 0x101000u64.to_le_bytes());
+}
+
+
+#[test]
+fn applies_relative_relocation_storage_unit_write_batch() {
+    let mut first = [0u8; 8];
+    let mut second = [0u8; 8];
+
+    let mut regions = ample::r#type::Vec::new();
+    regions.push(RegionWriter::new(0x500000, &mut first));
+    regions.push(RegionWriter::new(0x500008, &mut second));
+    let mut image = MemoryImageWriter::new(regions);
+
+    let writes = [
+        StorageUnitWrite {
+            link_time_virtual_address: 0x400000,
+            load_time_virtual_address: 0x500000,
+            representation: StorageUnitRepresentation::Class64(
+                0x1111u64.to_le_bytes(),
+            ),
+        },
+        StorageUnitWrite {
+            link_time_virtual_address: 0x400008,
+            load_time_virtual_address: 0x500008,
+            representation: StorageUnitRepresentation::Class64(
+                0x2222u64.to_le_bytes(),
+            ),
+        },
+    ];
+
+    assert_eq!(apply_storage_unit_writes(&writes, &mut image), Ok(()));
+    drop(image);
+
+    assert_eq!(first, 0x1111u64.to_le_bytes());
+    assert_eq!(second, 0x2222u64.to_le_bytes());
+}
+
+#[test]
+fn relative_relocation_storage_unit_write_batch_is_atomic_on_late_failure() {
+    let mut first = [0u8; 8];
+
+    let mut regions = ample::r#type::Vec::new();
+    regions.push(RegionWriter::new(0x500000, &mut first));
+    let mut image = MemoryImageWriter::new(regions);
+
+    let writes = [
+        StorageUnitWrite {
+            link_time_virtual_address: 0x400000,
+            load_time_virtual_address: 0x500000,
+            representation: StorageUnitRepresentation::Class64(
+                0x1111u64.to_le_bytes(),
+            ),
+        },
+        StorageUnitWrite {
+            link_time_virtual_address: 0x400008,
+            load_time_virtual_address: 0x600000,
+            representation: StorageUnitRepresentation::Class64(
+                0x2222u64.to_le_bytes(),
+            ),
+        },
+    ];
+
+    assert_eq!(
+        apply_storage_unit_writes(&writes, &mut image),
+        Err(BatchApplicationError {
+            index: 1,
+            error: ApplicationError::MemoryImage(
+                MemoryImageWriteError::Unavailable {
+                    virtual_address: 0x600000,
+                    size: 8,
+                },
+            ),
+        }),
+    );
+    drop(image);
+
+    assert_eq!(first, [0; 8]);
+}
+
+#[test]
+fn relative_relocation_storage_unit_write_batch_is_atomic_on_early_failure() {
+    let mut second = [0u8; 8];
+
+    let mut regions = ample::r#type::Vec::new();
+    regions.push(RegionWriter::new(0x500008, &mut second));
+    let mut image = MemoryImageWriter::new(regions);
+
+    let writes = [
+        StorageUnitWrite {
+            link_time_virtual_address: 0x400000,
+            load_time_virtual_address: 0x600000,
+            representation: StorageUnitRepresentation::Class64(
+                0x1111u64.to_le_bytes(),
+            ),
+        },
+        StorageUnitWrite {
+            link_time_virtual_address: 0x400008,
+            load_time_virtual_address: 0x500008,
+            representation: StorageUnitRepresentation::Class64(
+                0x2222u64.to_le_bytes(),
+            ),
+        },
+    ];
+
+    assert_eq!(
+        apply_storage_unit_writes(&writes, &mut image),
+        Err(BatchApplicationError {
+            index: 0,
+            error: ApplicationError::MemoryImage(
+                MemoryImageWriteError::Unavailable {
+                    virtual_address: 0x600000,
+                    size: 8,
+                },
+            ),
+        }),
+    );
+    drop(image);
+
+    assert_eq!(second, [0; 8]);
+}
+
+#[test]
+fn empty_relative_relocation_storage_unit_write_batch_is_a_noop() {
+    let mut bytes = [0x5au8; 8];
+
+    let mut regions = ample::r#type::Vec::new();
+    regions.push(RegionWriter::new(0x500000, &mut bytes));
+    let mut image = MemoryImageWriter::new(regions);
+
+    assert_eq!(apply_storage_unit_writes(&[], &mut image), Ok(()));
+    drop(image);
+
+    assert_eq!(bytes, [0x5a; 8]);
 }
