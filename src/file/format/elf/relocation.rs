@@ -11,6 +11,7 @@ pub use r#type::Type;
 pub enum ValidationError {
     EntrySizeMismatch { expected: u64, actual: u64 },
     SizeNotEntryMultiple,
+    InvalidAssociatedSymbolTable { section_index: usize },
     MissingTargetSectionInRelocatableObject,
     SymbolIndexOutOfBounds {
         entry_index: usize,
