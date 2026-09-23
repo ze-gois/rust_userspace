@@ -62,82 +62,7 @@ fn substitute_origin(
     let mut index = 0usize;
 
     while index < bytes.len() {
-        if bytes[index] != b'    Pathname(&'file str),
-    CurrentDirectory,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SearchPath<'file> {
-    RunPath(&'file str),
-    RuntimeSearchPath(&'file str),
-}
-
-impl<'file> SearchPath<'file> {
-    pub const fn value(self) -> &'file str {
-        match self {
-            Self::RunPath(value) | Self::RuntimeSearchPath(value) => value,
-        }
-    }
-
-    pub fn value_with_origin(
-        self,
-        origin_directory: &str,
-    ) -> Result<String, OriginSubstitutionError> {
-        match self {
-            Self::RunPath(value) => substitute_origin(value, origin_directory),
-            Self::RuntimeSearchPath(value) => Ok(String::from(value)),
-        }
-    }
-
-    pub fn directories(self) -> Vec<SearchDirectory<'file>> {
-        let mut directories = Vec::new();
-
-        for directory in self.value().split(':') {
-            if directory.is_empty() {
-                directories.push(SearchDirectory::CurrentDirectory);
-            } else {
-                directories.push(SearchDirectory::Pathname(directory));
-            }
-        }
-
-        directories
-    }
-}
-
-#[derive(Debug)]
-pub struct SharedObjectDependencies<'file> {
-    pub needed: Vec<SharedObjectDependency<'file>>,
-    pub shared_object_name: Option<&'file str>,
-    pub runtime_search_path: Option<&'file str>,
-    pub run_path: Option<&'file str>,
-}
-
-impl<'file> SharedObjectDependencies<'file> {
-    pub const fn new(
-        needed: Vec<SharedObjectDependency<'file>>,
-        shared_object_name: Option<&'file str>,
-        runtime_search_path: Option<&'file str>,
-        run_path: Option<&'file str>,
-    ) -> Self {
-        Self {
-            needed,
-            shared_object_name,
-            runtime_search_path,
-            run_path,
-        }
-    }
-
-    pub const fn search_path(&self) -> Option<SearchPath<'file>> {
-        match (self.run_path, self.runtime_search_path) {
-            (Some(run_path), _) => Some(SearchPath::RunPath(run_path)),
-            (None, Some(runtime_search_path)) => {
-                Some(SearchPath::RuntimeSearchPath(runtime_search_path))
-            }
-            (None, None) => None,
-        }
-    }
-}
- {
+        if bytes[index] != b'$' {
             index += 1;
             continue;
         }
@@ -217,6 +142,16 @@ impl<'file> SearchPath<'file> {
     pub const fn value(self) -> &'file str {
         match self {
             Self::RunPath(value) | Self::RuntimeSearchPath(value) => value,
+        }
+    }
+
+    pub fn value_with_origin(
+        self,
+        origin_directory: &str,
+    ) -> Result<String, OriginSubstitutionError> {
+        match self {
+            Self::RunPath(value) => substitute_origin(value, origin_directory),
+            Self::RuntimeSearchPath(value) => Ok(String::from(value)),
         }
     }
 
