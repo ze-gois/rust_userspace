@@ -16,6 +16,11 @@ pub enum SectionValidationError {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RepresentationError {
+    ValueOutOfRange { value: i128 },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StorageUnit {
     Class32(u32),
     Class64(u64),
@@ -31,6 +36,23 @@ impl StorageUnit {
 
     pub const fn relocated_value(self, factor: RelocationFactor) -> i128 {
         self.value() as i128 + factor.value()
+    }
+
+    pub fn relocated(self, factor: RelocationFactor) -> Result<Self, RepresentationError> {
+        let value = self.relocated_value(factor);
+
+        match self {
+            Self::Class32(_) => {
+                let value = representation_32::Address::try_from(value)
+                    .map_err(|_| RepresentationError::ValueOutOfRange { value })?;
+                Ok(Self::Class32(value))
+            }
+            Self::Class64(_) => {
+                let value = representation_64::Address::try_from(value)
+                    .map_err(|_| RepresentationError::ValueOutOfRange { value })?;
+                Ok(Self::Class64(value))
+            }
+        }
     }
 }
 
