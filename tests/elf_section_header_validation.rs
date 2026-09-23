@@ -154,3 +154,110 @@ fn rejects_merge_or_strings_section_with_partial_entry() {
         );
     }
 }
+
+
+#[test]
+fn accepts_non_initial_null_section_with_undefined_fields() {
+    let mut bytes = fixture(0, 0, 1);
+    let header_offset = 64 + 64;
+
+    bytes[header_offset..header_offset + 4].copy_from_slice(&99u32.to_le_bytes());
+    bytes[header_offset + 4..header_offset + 8].copy_from_slice(&0u32.to_le_bytes());
+    bytes[header_offset + 8..header_offset + 16].copy_from_slice(&0x8u64.to_le_bytes());
+    bytes[header_offset + 16..header_offset + 24].copy_from_slice(&3u64.to_le_bytes());
+    bytes[header_offset + 44..header_offset + 48].copy_from_slice(&99u32.to_le_bytes());
+    bytes[header_offset + 48..header_offset + 56].copy_from_slice(&3u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    assert_eq!(object.validate_section_headers(), Ok(()));
+}
+
+#[test]
+fn rejects_reserved_section_type() {
+    let mut bytes = fixture(0, 0, 1);
+    let header_offset = 64 + 64;
+    bytes[header_offset + 4..header_offset + 8].copy_from_slice(&12u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_headers(),
+        Err(ValidationError::ReservedSectionType {
+            index: 1,
+            raw: 12,
+        }),
+    );
+}
+
+#[test]
+fn rejects_undefined_section_flag_bits() {
+    let bytes = fixture(0x8, 0, 1);
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_headers(),
+        Err(ValidationError::UndefinedFlagsSet {
+            index: 1,
+            flags: 0x8,
+        }),
+    );
+}
+
+#[test]
+fn rejects_non_allocated_section_with_address() {
+    let mut bytes = fixture(0, 0, 1);
+    let header_offset = 64 + 64;
+    bytes[header_offset + 16..header_offset + 24].copy_from_slice(&1u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_headers(),
+        Err(ValidationError::NonAllocatedSectionAddressNotZero {
+            index: 1,
+            address: 1,
+        }),
+    );
+}
+
+#[test]
+fn rejects_multiple_dynamic_sections() {
+    let mut bytes = fixture(0, 0, 1);
+    bytes[60..62].copy_from_slice(&3u16.to_le_bytes());
+
+    let first_header_offset = 64 + 64;
+    bytes[first_header_offset + 4..first_header_offset + 8]
+        .copy_from_slice(&6u32.to_le_bytes());
+    section_header(&mut bytes, 6, 0, 0, 1);
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_headers(),
+        Err(ValidationError::MultipleDynamicSections {
+            first: 1,
+            second: 2,
+        }),
+    );
+}
+
+#[test]
+fn rejects_multiple_hash_sections() {
+    let mut bytes = fixture(0, 0, 1);
+    bytes[60..62].copy_from_slice(&3u16.to_le_bytes());
+
+    let first_header_offset = 64 + 64;
+    bytes[first_header_offset + 4..first_header_offset + 8]
+        .copy_from_slice(&5u32.to_le_bytes());
+    section_header(&mut bytes, 5, 0, 0, 1);
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_headers(),
+        Err(ValidationError::MultipleHashSections {
+            first: 1,
+            second: 2,
+        }),
+    );
+}
