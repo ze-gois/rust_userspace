@@ -18,4 +18,8 @@ pub enum Error {
     ExtendedSectionCountBelowReservedRange { count: usize },
     DirectSectionNameStringTableWithInitialLink { link: u32 },
     ExtendedSectionNameStringTableBelowReservedRange { index: usize },
+    AddressMisaligned { index: usize },
+    SectionOutsideFile { index: usize },
+    SectionsOverlap { first: usize, second: usize },
+    InvalidSectionName { index: usize, name_index: u32 },
 }
