@@ -34,6 +34,24 @@ impl StorageUnitRepresentation {
             Self::Class64(bytes) => bytes,
         }
     }
+
+    pub const fn decode(self, data: Data) -> Result<StorageUnit, RepresentationError> {
+        match (self, data) {
+            (Self::Class32(bytes), Data::LeastSignificantByteFirst) => {
+                Ok(StorageUnit::Class32(u32::from_le_bytes(bytes)))
+            }
+            (Self::Class32(bytes), Data::MostSignificantByteFirst) => {
+                Ok(StorageUnit::Class32(u32::from_be_bytes(bytes)))
+            }
+            (Self::Class64(bytes), Data::LeastSignificantByteFirst) => {
+                Ok(StorageUnit::Class64(u64::from_le_bytes(bytes)))
+            }
+            (Self::Class64(bytes), Data::MostSignificantByteFirst) => {
+                Ok(StorageUnit::Class64(u64::from_be_bytes(bytes)))
+            }
+            (_, Data::None | Data::Reserved(_)) => Err(RepresentationError::UnsupportedData(data)),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
