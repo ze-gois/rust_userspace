@@ -12,6 +12,10 @@ pub enum ValidationError {
         chain_index: usize,
         symbol_index: u32,
     },
+    ChainCycle {
+        bucket_index: usize,
+        symbol_index: u32,
+    },
 }
 
 #[derive(Debug)]
@@ -47,6 +51,52 @@ impl HashTable {
                     chain_index,
                     symbol_index,
                 });
+            }
+        }
+
+        for (bucket_index, start) in self.buckets.iter().copied().enumerate() {
+            if start == 0 {
+                continue;
+            }
+
+            let mut slow = start;
+            let mut fast = start;
+
+            loop {
+                slow = *self
+                    .chains
+                    .get(slow as usize)
+                    .ok_or(ValidationError::BucketIndexOutOfBounds {
+                        bucket_index,
+                        symbol_index: slow,
+                    })?;
+                if slow == 0 {
+                    break;
+                }
+
+                for _ in 0..2 {
+                    fast = *self
+                        .chains
+                        .get(fast as usize)
+                        .ok_or(ValidationError::BucketIndexOutOfBounds {
+                            bucket_index,
+                            symbol_index: fast,
+                        })?;
+                    if fast == 0 {
+                        break;
+                    }
+                }
+
+                if fast == 0 {
+                    break;
+                }
+
+                if slow == fast {
+                    return Err(ValidationError::ChainCycle {
+                        bucket_index,
+                        symbol_index: slow,
+                    });
+                }
             }
         }
 
