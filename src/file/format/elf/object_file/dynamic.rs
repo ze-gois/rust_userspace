@@ -660,6 +660,36 @@ impl<'file> ObjectFile<'file> {
         Some(tables)
     }
 
+    pub fn validate_dynamic_relocation_tables(
+        &self,
+        index: usize,
+    ) -> Result<(), dynamic::validation::ValidationError> {
+        use dynamic::validation::ValidationError;
+
+        self.validate_dynamic_array(index)?;
+        self.validate_dynamic_linking_tables(index)?;
+
+        let tables = self
+            .dynamic_relocation_tables_from_program_header(index)
+            .ok_or(ValidationError::DynamicRelocationTablesUnavailable)?;
+
+        for (table_index, table) in tables.iter().enumerate() {
+            for (entry_index, relocation) in table.relocations.iter().enumerate() {
+                if relocation.symbol_index as usize >= table.symbols.len() {
+                    return Err(
+                        ValidationError::DynamicRelocationSymbolIndexOutOfBounds {
+                            table_index,
+                            entry_index,
+                            symbol_index: relocation.symbol_index,
+                        },
+                    );
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     fn dynamic_relocation_table_from_parts(
         &self,
         program_header_index: usize,
