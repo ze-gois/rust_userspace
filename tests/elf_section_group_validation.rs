@@ -210,3 +210,32 @@ fn rejects_group_flag_without_group_membership() {
         Err(ValidationError::GroupFlagWithoutGroup { member_index: 1 }),
     );
 }
+
+
+#[test]
+fn rejects_member_in_multiple_groups() {
+    let mut bytes = fixture();
+
+    // Expand section-header count from 6 to 7.
+    bytes[60..62].copy_from_slice(&7u16.to_le_bytes());
+
+    // Insert a second SHT_GROUP header after the original table entries.
+    section_header(
+        &mut bytes,
+        17,
+        0,
+        GROUP_OFFSET,
+        GROUP_SIZE,
+        2,
+        1,
+        4,
+        4,
+    );
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_groups(),
+        Err(ValidationError::MemberInMultipleGroups { member_index: 4 }),
+    );
+}
