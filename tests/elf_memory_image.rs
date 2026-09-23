@@ -58,6 +58,7 @@ fn writes_bytes_to_loaded_memory_region() {
     let mut image = MemoryImageWriter::new(regions);
 
     assert!(image.write(0x4001, &[0xaa, 0xbb, 0xcc]));
+    drop(image);
     assert_eq!(bytes, [0x00, 0xaa, 0xbb, 0xcc, 0x00, 0x00]);
 }
 
@@ -70,6 +71,7 @@ fn rejects_write_outside_loaded_memory_regions() {
 
     assert!(!image.write(0x4fff, &[1]));
     assert!(!image.write(0x5004, &[1]));
+    drop(image);
     assert_eq!(bytes, [0; 4]);
 }
 
@@ -83,6 +85,7 @@ fn does_not_join_write_across_memory_regions() {
     let mut image = MemoryImageWriter::new(regions);
 
     assert!(!image.write(0x1001, &[1, 2]));
+    drop(image);
     assert_eq!(first, [0; 2]);
     assert_eq!(second, [0; 2]);
 }
