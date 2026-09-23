@@ -18,6 +18,9 @@ pub enum ValidationError {
     FirstNonLocalIndexOutOfBounds { index: usize },
     NonLocalSymbolBeforeFirstNonLocal { index: usize },
     LocalSymbolAtOrAfterFirstNonLocal { index: usize },
+    MissingSectionIndexTable,
+    SectionIndexTableSizeMismatch,
+    SectionIndexTableUnexpectedValue { index: usize, value: u32 },
 }
 
 #[derive(Debug)]
