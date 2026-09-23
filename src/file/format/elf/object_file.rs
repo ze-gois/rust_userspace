@@ -302,6 +302,10 @@ impl<'file> ObjectFile<'file> {
                 return Err(ValidationError::AlignmentNotPowerOfTwo { index });
             }
 
+            if header.alignment > 1 && header.address % header.alignment != 0 {
+                return Err(ValidationError::AddressMisaligned { index });
+            }
+
             if header.flags.contains(Flags::INFORMATION_LINK) {
                 let target = usize::try_from(header.information)
                     .map_err(|_| ValidationError::InformationLinkOutOfBounds {
@@ -324,6 +328,63 @@ impl<'file> ObjectFile<'file> {
 
                 if header.size % header.entry_size != 0 {
                     return Err(ValidationError::MergeOrStringsSizeNotEntryMultiple { index });
+                }
+            }
+        }
+
+        for (index, header) in self.section_headers.iter().enumerate() {
+            if matches!(
+                header.r#type,
+                section_header::Type::Null | section_header::Type::NoBits
+            ) || header.size == 0
+            {
+                continue;
+            }
+
+            let end = header
+                .offset
+                .checked_add(header.size)
+                .ok_or(ValidationError::SectionOutsideFile { index })?;
+            if end > self.bytes.len() as u64 {
+                return Err(ValidationError::SectionOutsideFile { index });
+            }
+        }
+
+        for first in 0..self.section_headers.len() {
+            let first_header = self.section_headers[first];
+            if matches!(
+                first_header.r#type,
+                section_header::Type::Null | section_header::Type::NoBits
+            ) || first_header.size == 0
+            {
+                continue;
+            }
+            let first_end = first_header.offset + first_header.size;
+
+            for second in (first + 1)..self.section_headers.len() {
+                let second_header = self.section_headers[second];
+                if matches!(
+                    second_header.r#type,
+                    section_header::Type::Null | section_header::Type::NoBits
+                ) || second_header.size == 0
+                {
+                    continue;
+                }
+                let second_end = second_header.offset + second_header.size;
+
+                if first_header.offset < second_end && second_header.offset < first_end {
+                    return Err(ValidationError::SectionsOverlap { first, second });
+                }
+            }
+        }
+
+        if let Some(strings) = self.section_name_string_table() {
+            for (index, header) in self.section_headers.iter().enumerate() {
+                if strings.get(header.name_index as usize).is_none() {
+                    return Err(ValidationError::InvalidSectionName {
+                        index,
+                        name_index: header.name_index,
+                    });
                 }
             }
         }
