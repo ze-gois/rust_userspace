@@ -1,5 +1,5 @@
 use userspace::file::format::elf::{
-    shared_object_dependencies::{SearchPath, SharedObjectDependency},
+    shared_object_dependencies::{SearchDirectory, SearchPath, SharedObjectDependency},
     ObjectFile,
 };
 
@@ -203,4 +203,29 @@ fn distinguishes_direct_dependency_pathnames_from_names_that_require_search() {
         Some("directory/liba.so"),
     );
     assert!(!relative_pathname.requires_search());
+}
+
+#[test]
+fn resolves_dependency_search_path_directories_in_order() {
+    let search_path = SearchPath::RunPath("/first::/third:");
+
+    assert_eq!(
+        search_path.directories(),
+        vec![
+            SearchDirectory::Pathname("/first"),
+            SearchDirectory::CurrentDirectory,
+            SearchDirectory::Pathname("/third"),
+            SearchDirectory::CurrentDirectory,
+        ],
+    );
+}
+
+#[test]
+fn empty_dependency_search_path_means_current_directory() {
+    let search_path = SearchPath::RuntimeSearchPath("");
+
+    assert_eq!(
+        search_path.directories(),
+        vec![SearchDirectory::CurrentDirectory],
+    );
 }
