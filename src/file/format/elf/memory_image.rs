@@ -6,6 +6,58 @@
 
 use ample::r#type::Vec;
 
+#[derive(Debug)]
+pub struct OwnedRegion {
+    pub virtual_address: u64,
+    pub bytes: Vec<u8>,
+}
+
+impl OwnedRegion {
+    pub const fn new(virtual_address: u64, bytes: Vec<u8>) -> Self {
+        Self {
+            virtual_address,
+            bytes,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct OwnedMemoryImage {
+    pub regions: Vec<OwnedRegion>,
+}
+
+impl OwnedMemoryImage {
+    pub const fn new(regions: Vec<OwnedRegion>) -> Self {
+        Self { regions }
+    }
+
+    pub fn as_memory_image(&self) -> MemoryImage<'_> {
+        let mut regions = Vec::with_capacity(self.regions.len());
+
+        for region in self.regions.iter() {
+            regions.push(Region::new(
+                region.virtual_address,
+                region.bytes.as_slice(),
+            ));
+        }
+
+        MemoryImage::new(regions)
+    }
+
+    pub fn as_memory_image_writer(&mut self) -> MemoryImageWriter<'_> {
+        let mut regions = Vec::with_capacity(self.regions.len());
+
+        for region in self.regions.iter_mut() {
+            regions.push(RegionWriter::new(
+                region.virtual_address,
+                region.bytes.as_mut_slice(),
+            ));
+        }
+
+        MemoryImageWriter::new(regions)
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Region<'memory> {
     pub virtual_address: u64,
