@@ -369,3 +369,56 @@ fn rejects_program_image_base_address_underflow() {
         }),
     );
 }
+
+
+#[test]
+fn materializes_program_image_at_load_time_virtual_addresses() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let image = object.program_image().expect("program image must build");
+    let base_address = image
+        .base_address(0x700000, 0x1000)
+        .expect("base address must calculate");
+
+    let owned = image
+        .materialize_memory_image(base_address)
+        .expect("program memory image must materialize");
+    let memory = owned.as_memory_image();
+
+    assert_eq!(
+        memory.bytes(0x700000, 8),
+        Some(&[0x10, 0x20, 0x30, 0x40, 0, 0, 0, 0][..]),
+    );
+    assert_eq!(
+        memory.bytes(0x800000, 2),
+        Some(&[0xaa, 0xbb][..]),
+    );
+    assert_eq!(memory.bytes(0x400000, 1), None);
+}
+
+#[test]
+fn materialized_program_image_writer_mutates_owned_segment_bytes() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let image = object.program_image().expect("program image must build");
+    let base_address = image
+        .base_address(0x700000, 0x1000)
+        .expect("base address must calculate");
+
+    let mut owned = image
+        .materialize_memory_image(base_address)
+        .expect("program memory image must materialize");
+
+    {
+        let mut writer = owned.as_memory_image_writer();
+        writer
+            .write(0x700004, &[0xde, 0xad, 0xbe, 0xef])
+            .expect("zero-fill bytes must be writable through the image view");
+    }
+
+    let memory = owned.as_memory_image();
+    assert_eq!(
+        memory.bytes(0x700000, 8),
+        Some(&[0x10, 0x20, 0x30, 0x40, 0xde, 0xad, 0xbe, 0xef][..]),
+    );
+}
