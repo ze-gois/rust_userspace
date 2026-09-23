@@ -177,6 +177,12 @@ impl<'file> ObjectFile<'file> {
             return Err(ValidationError::ReservedObjectType { raw });
         }
 
+        if !self.header.machine.is_assigned() {
+            return Err(ValidationError::ReservedMachine {
+                raw: self.header.machine.raw(),
+            });
+        }
+
         let minimum_header_size = match self.header.identification.class {
             Class::Class32 => {
                 core::mem::size_of::<super::header::class_32::Representation>() as u16
