@@ -694,6 +694,21 @@ impl<'file> ObjectFile<'file> {
                     });
                 }
             }
+
+            if header.flags.contains(section_header::Flags::LINK_ORDER) {
+                let target_section_index = usize::try_from(header.link).map_err(|_| {
+                    ValidationError::LinkOrderTargetOutOfBounds {
+                        section_index,
+                        target_section_index: usize::MAX,
+                    }
+                })?;
+                if target_section_index >= self.section_headers.len() {
+                    return Err(ValidationError::LinkOrderTargetOutOfBounds {
+                        section_index,
+                        target_section_index,
+                    });
+                }
+            }
         }
 
         Ok(())
