@@ -1,4 +1,5 @@
 use userspace::file::format::elf::{
+    base_address::BaseAddress,
     program_header::Flags,
     program_image::Error,
     ObjectFile,
@@ -237,4 +238,71 @@ fn materializes_program_segment_without_zero_fill() {
 
     assert_eq!(materialized.as_slice(), &[0xaa, 0xbb]);
     assert_eq!(materialized.len() as u64, image.segments[1].memory_size());
+}
+
+
+#[test]
+fn relates_program_segment_addresses_to_load_time() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let image = object.program_image().expect("program image must build");
+    let base_address = BaseAddress::calculate(0x700000, 0x400000, 0x1000)
+        .expect("base address must calculate");
+
+    let first = image.segments[0];
+    assert_eq!(
+        first.load_time_virtual_address(base_address),
+        Ok(0x700000),
+    );
+    assert_eq!(
+        first.zero_fill_load_time_virtual_address(base_address),
+        Ok(0x700004),
+    );
+    assert_eq!(
+        first.load_time_end_virtual_address(base_address),
+        Ok(0x700008),
+    );
+
+    let second = image.segments[1];
+    assert_eq!(
+        second.load_time_virtual_address(base_address),
+        Ok(0x800000),
+    );
+    assert_eq!(
+        second.load_time_end_virtual_address(base_address),
+        Ok(0x800002),
+    );
+}
+
+#[test]
+fn zero_base_address_preserves_program_segment_virtual_addresses() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let image = object.program_image().expect("program image must build");
+    let base_address = BaseAddress::calculate(0x400000, 0x400000, 0x1000)
+        .expect("zero base address must calculate");
+
+    let first = image.segments[0];
+    assert_eq!(
+        first.load_time_virtual_address(base_address),
+        Ok(first.link_time_virtual_address),
+    );
+    assert_eq!(
+        first.load_time_end_virtual_address(base_address),
+        Ok(first.link_time_end_virtual_address),
+    );
+}
+
+#[test]
+fn rejects_program_segment_load_time_virtual_address_overflow() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let image = object.program_image().expect("program image must build");
+    let base_address = BaseAddress::calculate(u64::MAX, 0, 1)
+        .expect("large base address must calculate");
+
+    assert_eq!(
+        image.segments[0].load_time_virtual_address(base_address),
+        Err(Error::LoadTimeVirtualAddressOverflow { index: 0 }),
+    );
 }
