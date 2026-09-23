@@ -206,3 +206,35 @@ fn rejects_program_image_virtual_address_range_overflow() {
         Err(Error::VirtualAddressRangeOverflow { index: 0 }),
     ));
 }
+
+
+#[test]
+fn materializes_program_segment_file_image_and_zero_fill() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let image = object.program_image().expect("program image must build");
+
+    let materialized = image.segments[0]
+        .memory_image_bytes()
+        .expect("program segment memory image must materialize");
+
+    assert_eq!(
+        materialized.as_slice(),
+        &[0x10, 0x20, 0x30, 0x40, 0, 0, 0, 0],
+    );
+    assert_eq!(materialized.len() as u64, image.segments[0].memory_size());
+}
+
+#[test]
+fn materializes_program_segment_without_zero_fill() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let image = object.program_image().expect("program image must build");
+
+    let materialized = image.segments[1]
+        .memory_image_bytes()
+        .expect("program segment memory image must materialize");
+
+    assert_eq!(materialized.as_slice(), &[0xaa, 0xbb]);
+    assert_eq!(materialized.len() as u64, image.segments[1].memory_size());
+}
