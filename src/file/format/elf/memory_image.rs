@@ -60,6 +60,20 @@ impl<'memory> RegionWriter<'memory> {
         }
     }
 
+    pub fn contains_range(&self, virtual_address: u64, size: usize) -> bool {
+        let Some(displacement) = virtual_address.checked_sub(self.virtual_address) else {
+            return false;
+        };
+        let Ok(displacement) = usize::try_from(displacement) else {
+            return false;
+        };
+        let Some(end) = displacement.checked_add(size) else {
+            return false;
+        };
+
+        end <= self.bytes.len()
+    }
+
     pub fn bytes_mut(
         &mut self,
         virtual_address: u64,
@@ -90,6 +104,25 @@ impl<'memory> MemoryImageWriter<'memory> {
         Self { regions }
     }
 
+    pub fn validate_write(
+        &self,
+        virtual_address: u64,
+        size: usize,
+    ) -> Result<(), WriteError> {
+        if self
+            .regions
+            .iter()
+            .any(|region| region.contains_range(virtual_address, size))
+        {
+            return Ok(());
+        }
+
+        Err(WriteError::Unavailable {
+            virtual_address,
+            size,
+        })
+    }
+
     pub fn bytes_mut(
         &mut self,
         virtual_address: u64,
@@ -105,12 +138,11 @@ impl<'memory> MemoryImageWriter<'memory> {
         virtual_address: u64,
         bytes: &[u8],
     ) -> Result<(), WriteError> {
+        self.validate_write(virtual_address, bytes.len())?;
+
         let destination = self
             .bytes_mut(virtual_address, bytes.len())
-            .ok_or(WriteError::Unavailable {
-                virtual_address,
-                size: bytes.len(),
-            })?;
+            .expect("validated memory-image write must remain available");
 
         destination.copy_from_slice(bytes);
         Ok(())
