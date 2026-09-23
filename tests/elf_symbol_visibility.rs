@@ -13,7 +13,7 @@ fn decodes_all_generic_symbol_visibility_values() {
 }
 
 #[test]
-fn ignores_undefined_upper_st_other_bits() {
+fn decodes_visibility_from_lower_st_other_bits() {
     assert_eq!(Visibility::from_raw(0b1111_1100), Visibility::Exported);
     assert_eq!(Visibility::from_raw(0b1111_1101), Visibility::Singleton);
     assert_eq!(Visibility::from_raw(0b1111_1110), Visibility::Eliminate);
