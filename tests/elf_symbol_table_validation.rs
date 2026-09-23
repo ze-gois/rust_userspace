@@ -161,3 +161,134 @@ fn rejects_sh_info_boundary_beyond_symbol_table() {
         Err(ValidationError::FirstNonLocalIndexOutOfBounds { index: 4 }),
     );
 }
+
+
+fn symbol_offset(index: usize) -> usize {
+    64 + 14 + index * 24
+}
+
+#[test]
+fn rejects_undefined_upper_st_other_bits() {
+    let mut bytes = fixture(2, 0x00, 0x10);
+    bytes[symbol_offset(1) + 5] = 0x80;
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let symbols = object.symbol_table(2).expect("symbol table must resolve");
+
+    assert_eq!(
+        symbols.validate(),
+        Err(ValidationError::UndefinedOtherBits {
+            index: 1,
+            bits: 0x80,
+        }),
+    );
+}
+
+#[test]
+fn rejects_reserved_symbol_binding() {
+    let bytes = fixture(2, 0x00, 0x30);
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let symbols = object.symbol_table(2).expect("symbol table must resolve");
+
+    assert_eq!(
+        symbols.validate(),
+        Err(ValidationError::ReservedBinding { index: 2, raw: 3 }),
+    );
+}
+
+#[test]
+fn rejects_reserved_symbol_type() {
+    let bytes = fixture(2, 0x00, 0x17);
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let symbols = object.symbol_table(2).expect("symbol table must resolve");
+
+    assert_eq!(
+        symbols.validate(),
+        Err(ValidationError::ReservedType { index: 2, raw: 7 }),
+    );
+}
+
+#[test]
+fn rejects_reserved_symbol_visibility() {
+    let mut bytes = fixture(2, 0x00, 0x10);
+    bytes[symbol_offset(2) + 5] = 7;
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let symbols = object.symbol_table(2).expect("symbol table must resolve");
+
+    assert_eq!(
+        symbols.validate(),
+        Err(ValidationError::ReservedVisibility { index: 2, raw: 7 }),
+    );
+}
+
+#[test]
+fn rejects_invalid_symbol_name_index() {
+    let mut bytes = fixture(2, 0x00, 0x10);
+    let offset = symbol_offset(2);
+    bytes[offset..offset + 4].copy_from_slice(&99u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let symbols = object.symbol_table(2).expect("symbol table must resolve");
+
+    assert_eq!(
+        symbols.validate(),
+        Err(ValidationError::InvalidNameIndex {
+            index: 2,
+            name_index: 99,
+        }),
+    );
+}
+
+#[test]
+fn rejects_protected_local_symbol() {
+    let mut bytes = fixture(2, 0x00, 0x10);
+    bytes[symbol_offset(1) + 5] = 3;
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let symbols = object.symbol_table(2).expect("symbol table must resolve");
+
+    assert_eq!(
+        symbols.validate(),
+        Err(ValidationError::LocalProtectedVisibility { index: 1 }),
+    );
+}
+
+#[test]
+fn accepts_local_absolute_file_symbol() {
+    let mut bytes = fixture(2, 0x04, 0x10);
+    let offset = symbol_offset(1);
+    bytes[offset + 6..offset + 8].copy_from_slice(&0xfff1u16.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let symbols = object.symbol_table(2).expect("symbol table must resolve");
+
+    assert_eq!(symbols.validate(), Ok(()));
+}
+
+#[test]
+fn rejects_non_local_file_symbol() {
+    let mut bytes = fixture(2, 0x00, 0x14);
+    let offset = symbol_offset(2);
+    bytes[offset + 6..offset + 8].copy_from_slice(&0xfff1u16.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let symbols = object.symbol_table(2).expect("symbol table must resolve");
+
+    assert_eq!(
+        symbols.validate(),
+        Err(ValidationError::FileSymbolNotLocal { index: 2 }),
+    );
+}
+
+#[test]
+fn rejects_non_absolute_file_symbol() {
+    let bytes = fixture(2, 0x04, 0x10);
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+    let symbols = object.symbol_table(2).expect("symbol table must resolve");
+
+    assert_eq!(
+        symbols.validate(),
+        Err(ValidationError::FileSymbolNotAbsolute { index: 1 }),
+    );
+}
