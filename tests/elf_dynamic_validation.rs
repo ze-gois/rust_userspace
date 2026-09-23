@@ -364,3 +364,15 @@ fn rejects_reserved_dynamic_flags() {
         Err(ValidationError::ReservedFlags { bits: 0x20 }),
     );
 }
+
+
+#[test]
+fn rejects_jump_relocation_size_not_entry_multiple() {
+    let bytes = fixture(3, &[(23, 0x404000), (2, 17), (20, 17)]);
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_dynamic_array(1),
+        Err(ValidationError::JumpRelocationSizeNotEntryMultiple),
+    );
+}
