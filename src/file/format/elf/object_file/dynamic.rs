@@ -533,6 +533,42 @@ impl<'file> ObjectFile<'file> {
             return Err(ValidationError::RelativeRelocationSizeNotEntryMultiple);
         }
 
+        if size != 0 {
+            let address = array
+                .first(Tag::RelativeRelocation)
+                .expect("DT_RELR presence checked above")
+                .payload;
+            let bytes = self
+                .file_range_for_virtual_address(address, size)
+                .ok_or(ValidationError::RelativeRelocationTableUnavailable)?;
+
+            let first = match self.header.identification.class {
+                Class::Class32 => {
+                    let representation = relative::class_32::Representation::decode(
+                        bytes,
+                        0,
+                        self.header.identification.data,
+                    )
+                    .ok_or(ValidationError::RelativeRelocationTableUnavailable)?;
+                    relative::Entry::from(representation)
+                }
+                Class::Class64 => {
+                    let representation = relative::class_64::Representation::decode(
+                        bytes,
+                        0,
+                        self.header.identification.data,
+                    )
+                    .ok_or(ValidationError::RelativeRelocationTableUnavailable)?;
+                    relative::Entry::from(representation)
+                }
+                Class::None | Class::Reserved(_) => return Ok(()),
+            };
+
+            if !matches!(first, relative::Entry::Address(_)) {
+                return Err(ValidationError::RelativeRelocationFirstEntryMustBeAddress);
+            }
+        }
+
         Ok(())
     }
 
