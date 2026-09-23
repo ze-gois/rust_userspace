@@ -20,6 +20,9 @@ pub mod base_address;
 pub mod memory_image;
 pub mod program_image;
 
+// Processor-specific ELF semantics (psABI / architecture ABI).
+pub mod processor_specific;
+
 // Linking view and section contents.
 pub mod section_header;
 pub mod section;
