@@ -584,6 +584,121 @@ impl<'file> ObjectFile<'file> {
         ))
     }
 
+    pub fn validate_section_links(
+        &self,
+    ) -> Result<(), super::section_link::ValidationError> {
+        use super::section_link::ValidationError;
+
+        for (section_index, header) in self.section_headers.iter().copied().enumerate() {
+            let requires_zero_information = matches!(
+                header.r#type,
+                section_header::Type::Dynamic
+                    | section_header::Type::Hash
+                    | section_header::Type::SymbolTableSectionIndex
+            );
+
+            if requires_zero_information && header.information != 0 {
+                return Err(ValidationError::InformationMustBeZero {
+                    section_index,
+                    information: header.information,
+                });
+            }
+
+            let link_meaning = match header.r#type {
+                section_header::Type::Dynamic
+                | section_header::Type::SymbolTable
+                | section_header::Type::DynamicSymbolTable => {
+                    Some(SectionLinkMeaning::StringTable)
+                }
+                section_header::Type::Hash
+                | section_header::Type::Relocation
+                | section_header::Type::RelocationWithAddend
+                | section_header::Type::Group
+                | section_header::Type::SymbolTableSectionIndex => {
+                    Some(SectionLinkMeaning::SymbolTable)
+                }
+                _ => None,
+            };
+
+            if let Some(meaning) = link_meaning {
+                let linked_section_index = usize::try_from(header.link).map_err(|_| {
+                    ValidationError::LinkOutOfBounds {
+                        section_index,
+                        linked_section_index: usize::MAX,
+                    }
+                })?;
+                let linked_header = self.section_headers.get(linked_section_index).ok_or(
+                    ValidationError::LinkOutOfBounds {
+                        section_index,
+                        linked_section_index,
+                    },
+                )?;
+
+                match meaning {
+                    SectionLinkMeaning::StringTable => {
+                        if !matches!(linked_header.r#type, section_header::Type::StringTable) {
+                            return Err(ValidationError::LinkNotStringTable {
+                                section_index,
+                                linked_section_index,
+                            });
+                        }
+                    }
+                    SectionLinkMeaning::SymbolTable => {
+                        if !matches!(
+                            linked_header.r#type,
+                            section_header::Type::SymbolTable
+                                | section_header::Type::DynamicSymbolTable
+                        ) {
+                            return Err(ValidationError::LinkNotSymbolTable {
+                                section_index,
+                                linked_section_index,
+                            });
+                        }
+                    }
+                }
+            }
+
+            if matches!(
+                header.r#type,
+                section_header::Type::Relocation | section_header::Type::RelocationWithAddend
+            ) && header.information != section_header::Index::UNDEFINED.raw() as u32
+            {
+                let target_section_index =
+                    usize::try_from(header.information).map_err(|_| {
+                        ValidationError::RelocationTargetOutOfBounds {
+                            section_index,
+                            target_section_index: usize::MAX,
+                        }
+                    })?;
+
+                if target_section_index >= self.section_headers.len() {
+                    return Err(ValidationError::RelocationTargetOutOfBounds {
+                        section_index,
+                        target_section_index,
+                    });
+                }
+            }
+
+            if matches!(header.r#type, section_header::Type::Group) {
+                let symbols = self.symbol_table(header.link as usize).ok_or(
+                    ValidationError::LinkNotSymbolTable {
+                        section_index,
+                        linked_section_index: header.link as usize,
+                    },
+                )?;
+                let symbol_index = header.information as usize;
+                if symbols.get(symbol_index).is_none() {
+                    return Err(ValidationError::GroupSignatureOutOfBounds {
+                        section_index,
+                        symbol_index,
+                    });
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn link_order(&self, section_index: usize) -> Option<LinkOrder<'file>> {
         let metadata = self.section(section_index)?;
         if !metadata
