@@ -1,5 +1,7 @@
 use userspace::file::format::elf::{
-    shared_object_dependencies::{SearchDirectory, SearchPath, SharedObjectDependency},
+    shared_object_dependencies::{
+        OriginSubstitutionError, SearchDirectory, SearchPath, SharedObjectDependency,
+    },
     ObjectFile,
 };
 
@@ -227,5 +229,51 @@ fn empty_dependency_search_path_means_current_directory() {
     assert_eq!(
         search_path.directories(),
         vec![SearchDirectory::CurrentDirectory],
+    );
+}
+
+#[test]
+fn substitutes_origin_in_needed_dependency_name() {
+    let dependency = SharedObjectDependency::new(2, "$ORIGIN/liba.so");
+    assert_eq!(
+        dependency.name_with_origin("/opt/application/lib"),
+        Ok(String::from("/opt/application/lib/liba.so")),
+    );
+
+    let braced = SharedObjectDependency::new(3, "${ORIGIN}/libb.so");
+    assert_eq!(
+        braced.name_with_origin("/opt/application/lib"),
+        Ok(String::from("/opt/application/lib/libb.so")),
+    );
+}
+
+#[test]
+fn substitutes_origin_in_run_path_but_not_deprecated_runtime_search_path() {
+    let run_path = SearchPath::RunPath("$ORIGIN/lib:/usr/lib");
+    assert_eq!(
+        run_path.value_with_origin("/opt/application"),
+        Ok(String::from("/opt/application/lib:/usr/lib")),
+    );
+
+    let runtime_search_path = SearchPath::RuntimeSearchPath("$ORIGIN/lib:/usr/lib");
+    assert_eq!(
+        runtime_search_path.value_with_origin("/opt/application"),
+        Ok(String::from("$ORIGIN/lib:/usr/lib")),
+    );
+}
+
+#[test]
+fn reports_unspecified_dynamic_string_substitution_sequence() {
+    let dependency = SharedObjectDependency::new(2, "$LIB/liba.so");
+
+    assert_eq!(
+        dependency.name_with_origin("/opt/application"),
+        Err(OriginSubstitutionError::UnspecifiedSequence { byte_offset: 0 }),
+    );
+
+    let malformed = SharedObjectDependency::new(3, "lib/${ORIGIN");
+    assert_eq!(
+        malformed.name_with_origin("/opt/application"),
+        Err(OriginSubstitutionError::UnspecifiedSequence { byte_offset: 4 }),
     );
 }
