@@ -1,10 +1,10 @@
-use crate::target::arch::{Arch, traits::Callable};
+use crate::target::architecture::{Architecture, traits::Callable};
 
 hooking!(CLOSE);
 
 #[inline(always)]
 pub fn close(fd: isize) -> crate::Result {
-    let arch_result = Arch::syscall1(NUMBER, fd as usize);
+    let arch_result = Architecture::syscall1(NUMBER, fd as usize);
     handle_result(arch_result)
 }
 
@@ -46,19 +46,19 @@ pub type Result = core::result::Result<Ok, Error>;
 pub fn handle_result(result: crate::Result) -> crate::Result {
     // Err(crate::Error::Default(1))
     match result {
-        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Arch(
-            crate::target::arch::Ok::X86_64Syscall(
-                crate::target::arch::syscall::Ok::X86_64Syscall1(
-                    crate::target::arch::syscall::syscall1::Ok::Default(m),
+        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
+            crate::target::architecture::Ok::X86_64Syscall(
+                crate::target::architecture::syscall::Ok::X86_64Syscall1(
+                    crate::target::architecture::syscall::syscall1::Ok::Default(m),
                 ),
             ),
-        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
-            crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::Close(
-                crate::target::os::syscall::close::Ok::Default(m),
+        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
+            crate::target::operating_system::Ok::Syscall(crate::target::operating_system::syscall::Ok::Close(
+                crate::target::operating_system::syscall::close::Ok::Default(m),
             )),
         ))),
-        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::Os(
-            crate::target::os::Error::Syscall(crate::target::os::syscall::Error::Close(
+        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
+            crate::target::operating_system::Error::Syscall(crate::target::operating_system::syscall::Error::Close(
                 Error::Default(3),
             )),
         ))),
