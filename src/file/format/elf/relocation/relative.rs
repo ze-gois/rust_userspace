@@ -3,7 +3,7 @@
 use ample::r#type::Vec;
 
 use super::super::{
-    identification::Data,
+    identification::{Class, Data},
     representation::{class_32 as representation_32, class_64 as representation_64, Decoder},
 };
 
@@ -15,14 +15,22 @@ pub enum SectionValidationError {
     FirstEntryMustBeAddress,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExpansionError {
+    UnsupportedClass,
+    BitmapWithoutAddress,
+    AddressOverflow,
+}
+
 #[derive(Debug)]
 pub struct Table {
     pub entries: Vec<Entry>,
+    pub class: Class,
 }
 
 impl Table {
-    pub const fn new(entries: Vec<Entry>) -> Self {
-        Self { entries }
+    pub const fn new(entries: Vec<Entry>, class: Class) -> Self {
+        Self { entries, class }
     }
 
     pub fn len(&self) -> usize {
@@ -35,6 +43,60 @@ impl Table {
 
     pub fn iter(&self) -> core::slice::Iter<'_, Entry> {
         self.entries.iter()
+    }
+
+    pub fn addresses(&self) -> Result<Vec<u64>, ExpansionError> {
+        let (address_size, bitmap_storage_units) = match self.class {
+            Class::Class32 => (4u64, 31u32),
+            Class::Class64 => (8u64, 63u32),
+            Class::None | Class::Reserved(_) => return Err(ExpansionError::UnsupportedClass),
+        };
+
+        let mut addresses = Vec::new();
+        let mut next_address = None;
+
+        for entry in self.entries.iter().copied() {
+            match entry {
+                Entry::Address(address) => {
+                    addresses.push(address);
+                    next_address = Some(
+                        address
+                            .checked_add(address_size)
+                            .ok_or(ExpansionError::AddressOverflow)?,
+                    );
+                }
+                Entry::Bitmap(bitmap) => {
+                    let block_address =
+                        next_address.ok_or(ExpansionError::BitmapWithoutAddress)?;
+
+                    for bitmap_bit in 1..=bitmap_storage_units {
+                        if bitmap & (1u64 << bitmap_bit) == 0 {
+                            continue;
+                        }
+
+                        let storage_unit_index = u64::from(bitmap_bit - 1);
+                        let displacement = storage_unit_index
+                            .checked_mul(address_size)
+                            .ok_or(ExpansionError::AddressOverflow)?;
+                        let address = block_address
+                            .checked_add(displacement)
+                            .ok_or(ExpansionError::AddressOverflow)?;
+                        addresses.push(address);
+                    }
+
+                    let block_size = u64::from(bitmap_storage_units)
+                        .checked_mul(address_size)
+                        .ok_or(ExpansionError::AddressOverflow)?;
+                    next_address = Some(
+                        block_address
+                            .checked_add(block_size)
+                            .ok_or(ExpansionError::AddressOverflow)?,
+                    );
+                }
+            }
+        }
+
+        Ok(addresses)
     }
 }
 
