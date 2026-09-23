@@ -29,6 +29,13 @@ pub enum ValidationError {
     LocalProtectedVisibility { index: usize },
     FileSymbolNotLocal { index: usize },
     FileSymbolNotAbsolute { index: usize },
+    InvalidSymbolTableSection { section_index: usize },
+    SectionIndexOutOfBounds { index: usize, section_index: usize },
+    ReservedSectionIndex { index: usize, raw: u16 },
+    CommonSectionIndexOutsideRelocatableObject { index: usize },
+    CommonSymbolWithoutCommonSection { index: usize },
+    CommonSymbolWithoutAllocatedSection { index: usize },
+    CommonAlignmentNotPowerOfTwo { index: usize, alignment: u64 },
 }
 
 #[derive(Debug)]
