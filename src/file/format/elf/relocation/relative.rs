@@ -23,7 +23,8 @@ pub enum RepresentationError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StorageUnitWrite {
-    pub virtual_address: u64,
+    pub link_time_virtual_address: u64,
+    pub load_time_virtual_address: u64,
     pub representation: StorageUnitRepresentation,
 }
 
@@ -138,12 +139,27 @@ impl RelocationFactor {
     pub const fn is_zero(self) -> bool {
         self.0 == 0
     }
+
+    pub fn relocate_virtual_address(
+        self,
+        link_time_virtual_address: u64,
+    ) -> Result<u64, VirtualAddressError> {
+        let value = link_time_virtual_address as i128 + self.0;
+        u64::try_from(value)
+            .map_err(|_| VirtualAddressError::OutOfRange { value })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VirtualAddressError {
+    OutOfRange { value: i128 },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WriteError {
     Expansion(ExpansionError),
     Representation(RepresentationError),
+    VirtualAddress(VirtualAddressError),
     StorageUnitCountMismatch {
         addresses: usize,
         storage_units: usize,
@@ -214,8 +230,13 @@ impl Table {
                 .representation(data)
                 .map_err(WriteError::Representation)?;
 
+            let load_time_virtual_address = factor
+                .relocate_virtual_address(virtual_address)
+                .map_err(WriteError::VirtualAddress)?;
+
             writes.push(StorageUnitWrite {
-                virtual_address,
+                link_time_virtual_address: virtual_address,
+                load_time_virtual_address,
                 representation,
             });
         }
