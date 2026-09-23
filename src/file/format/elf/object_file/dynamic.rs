@@ -355,6 +355,59 @@ impl<'file> ObjectFile<'file> {
         ))
     }
 
+    pub fn validate_dynamic_linking_tables(
+        &self,
+        index: usize,
+    ) -> Result<(), dynamic::validation::ValidationError> {
+        use dynamic::validation::ValidationError;
+
+        let array = self
+            .dynamic_array_from_program_header(index)
+            .ok_or(ValidationError::MalformedDynamicArray)?;
+
+        let strings = self
+            .dynamic_string_table_from_program_header(index)
+            .ok_or(ValidationError::DynamicStringTableUnavailable)?;
+        strings
+            .validate()
+            .map_err(ValidationError::DynamicStringTableInvalid)?;
+
+        for (entry_index, entry) in array.iter().enumerate() {
+            if matches!(
+                entry.tag,
+                Tag::Needed
+                    | Tag::SharedObjectName
+                    | Tag::RuntimeSearchPath
+                    | Tag::RunPath
+            ) && strings.get(entry.payload as usize).is_none()
+            {
+                return Err(ValidationError::InvalidStringOffset {
+                    index: entry_index,
+                    tag: entry.tag,
+                    offset: entry.payload,
+                });
+            }
+        }
+
+        let symbols = self
+            .dynamic_symbol_table_from_program_header(index)
+            .ok_or(ValidationError::DynamicSymbolTableUnavailable)?;
+        symbols
+            .validate()
+            .map_err(ValidationError::DynamicSymbolTableInvalid)?;
+
+        if array.first(Tag::Hash).is_some() {
+            let hash = self
+                .dynamic_hash_table_from_program_header(index)
+                .ok_or(ValidationError::DynamicHashTableUnavailable)?;
+            hash.table
+                .validate(symbols.len())
+                .map_err(ValidationError::DynamicHashTableInvalid)?;
+        }
+
+        Ok(())
+    }
+
     pub fn dynamic_hash_table_from_program_header(
         &self,
         index: usize,
