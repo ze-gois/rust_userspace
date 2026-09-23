@@ -2,7 +2,7 @@ use userspace::file::format::elf::{
     dynamic::{PayloadKind, Tag},
     identification::{Class, Data},
     relocation::relative::{
-        class_32, class_64, Entry, ExpansionError, RelocationFactor, Table,
+        class_32, class_64, Entry, ExpansionError, RelocationFactor, StorageUnit, Table,
     },
     section_header,
 };
@@ -176,4 +176,55 @@ fn computes_negative_relative_relocation_factor_without_loss() {
         0x1000i128 - 0xffff_ffff_ffff_f000u64 as i128,
     );
     assert!(!factor.is_zero());
+}
+
+
+#[test]
+fn relocates_elf32_storage_unit_value() {
+    let factor = RelocationFactor::from_virtual_addresses(0x5000, 0x4000);
+    let storage_unit = StorageUnit::Class32(0x2000);
+
+    assert_eq!(
+        storage_unit.relocate(factor),
+        StorageUnit::Class32(0x3000),
+    );
+}
+
+#[test]
+fn relocates_elf64_storage_unit_value_with_negative_factor() {
+    let factor = RelocationFactor::from_virtual_addresses(0x3000, 0x5000);
+    let storage_unit = StorageUnit::Class64(0x9000);
+
+    assert_eq!(
+        storage_unit.relocate(factor),
+        StorageUnit::Class64(0x7000),
+    );
+}
+
+#[test]
+fn relative_relocation_storage_unit_uses_elf_class_width() {
+    let factor = RelocationFactor::from_virtual_addresses(8, 0);
+
+    assert_eq!(
+        StorageUnit::Class32(u32::MAX - 3).relocate(factor),
+        StorageUnit::Class32(4),
+    );
+    assert_eq!(
+        StorageUnit::Class64(u64::MAX - 3).relocate(factor),
+        StorageUnit::Class64(4),
+    );
+}
+
+#[test]
+fn zero_relative_relocation_factor_preserves_storage_unit() {
+    let factor = RelocationFactor::from_virtual_addresses(0x400000, 0x400000);
+
+    assert_eq!(
+        StorageUnit::Class32(0x1234_5678).relocate(factor),
+        StorageUnit::Class32(0x1234_5678),
+    );
+    assert_eq!(
+        StorageUnit::Class64(0x1234_5678_9abc_def0).relocate(factor),
+        StorageUnit::Class64(0x1234_5678_9abc_def0),
+    );
 }
