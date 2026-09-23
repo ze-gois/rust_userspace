@@ -2,7 +2,8 @@
 //!
 //! The ELF layer describes the program image. This module realizes that image
 //! in the current Linux process with `mmap(2)`, copies the segment contents,
-//! and applies page protections with `mprotect(2)`.
+//! applies supported processor-specific relocations while the mapping is
+//! writable, and then installs final page protections with `mprotect(2)`.
 
 use ample::r#type::Vec;
 
