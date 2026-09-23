@@ -21,6 +21,7 @@ pub enum ValidationError {
     MissingSectionIndexTable,
     SectionIndexTableSizeMismatch,
     SectionIndexTableUnexpectedValue { index: usize, value: u32 },
+    ExtendedSectionIndexBelowReservedRange { index: usize, value: u32 },
     UndefinedOtherBits { index: usize, bits: u8 },
     ReservedBinding { index: usize, raw: u8 },
     ReservedType { index: usize, raw: u8 },
