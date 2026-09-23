@@ -393,6 +393,8 @@ impl<'file> ObjectFile<'file> {
 
         let mut dynamic_section_index = None;
         let mut hash_section_index = None;
+        let mut symbol_table_section_index = None;
+        let mut dynamic_symbol_table_section_index = None;
 
         for (index, header) in self.section_headers.iter().enumerate() {
             if index != 0 && matches!(header.r#type, section_header::Type::Null) {
@@ -436,6 +438,24 @@ impl<'file> ObjectFile<'file> {
                         });
                     }
                     hash_section_index = Some(index);
+                }
+                section_header::Type::SymbolTable => {
+                    if let Some(first) = symbol_table_section_index {
+                        return Err(ValidationError::MultipleSymbolTables {
+                            first,
+                            second: index,
+                        });
+                    }
+                    symbol_table_section_index = Some(index);
+                }
+                section_header::Type::DynamicSymbolTable => {
+                    if let Some(first) = dynamic_symbol_table_section_index {
+                        return Err(ValidationError::MultipleDynamicSymbolTables {
+                            first,
+                            second: index,
+                        });
+                    }
+                    dynamic_symbol_table_section_index = Some(index);
                 }
                 _ => {}
             }
