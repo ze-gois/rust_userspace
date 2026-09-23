@@ -292,3 +292,113 @@ fn rejects_non_absolute_file_symbol() {
         Err(ValidationError::FileSymbolNotAbsolute { index: 1 }),
     );
 }
+
+
+#[test]
+fn rejects_symbol_section_index_outside_section_table() {
+    let mut bytes = fixture(2, 0x00, 0x10);
+    let offset = symbol_offset(2);
+    bytes[offset + 6..offset + 8].copy_from_slice(&99u16.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_symbol_table(2),
+        Err(ValidationError::SectionIndexOutOfBounds {
+            index: 2,
+            section_index: 99,
+        }),
+    );
+}
+
+#[test]
+fn rejects_reserved_symbol_section_index() {
+    let mut bytes = fixture(2, 0x00, 0x10);
+    let offset = symbol_offset(2);
+    bytes[offset + 6..offset + 8].copy_from_slice(&0xff40u16.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_symbol_table(2),
+        Err(ValidationError::ReservedSectionIndex {
+            index: 2,
+            raw: 0xff40,
+        }),
+    );
+}
+
+#[test]
+fn accepts_common_symbol_in_relocatable_object() {
+    let mut bytes = fixture(2, 0x00, 0x15);
+    let offset = symbol_offset(2);
+    bytes[offset + 6..offset + 8].copy_from_slice(&0xfff2u16.to_le_bytes());
+    bytes[offset + 8..offset + 16].copy_from_slice(&8u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(object.validate_symbol_table(2), Ok(()));
+}
+
+#[test]
+fn rejects_common_section_index_outside_relocatable_object() {
+    let mut bytes = fixture(2, 0x00, 0x10);
+    bytes[16..18].copy_from_slice(&2u16.to_le_bytes());
+
+    let offset = symbol_offset(2);
+    bytes[offset + 6..offset + 8].copy_from_slice(&0xfff2u16.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_symbol_table(2),
+        Err(ValidationError::CommonSectionIndexOutsideRelocatableObject {
+            index: 2,
+        }),
+    );
+}
+
+#[test]
+fn rejects_common_symbol_without_common_section_in_relocatable_object() {
+    let bytes = fixture(2, 0x00, 0x15);
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_symbol_table(2),
+        Err(ValidationError::CommonSymbolWithoutCommonSection { index: 2 }),
+    );
+}
+
+#[test]
+fn rejects_unallocated_common_symbol_in_executable() {
+    let mut bytes = fixture(2, 0x00, 0x15);
+    bytes[16..18].copy_from_slice(&2u16.to_le_bytes());
+
+    let offset = symbol_offset(2);
+    bytes[offset + 6..offset + 8].copy_from_slice(&0xfff1u16.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_symbol_table(2),
+        Err(ValidationError::CommonSymbolWithoutAllocatedSection { index: 2 }),
+    );
+}
+
+#[test]
+fn rejects_non_power_of_two_common_alignment() {
+    let mut bytes = fixture(2, 0x00, 0x15);
+    let offset = symbol_offset(2);
+    bytes[offset + 6..offset + 8].copy_from_slice(&0xfff2u16.to_le_bytes());
+    bytes[offset + 8..offset + 16].copy_from_slice(&3u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_symbol_table(2),
+        Err(ValidationError::CommonAlignmentNotPowerOfTwo {
+            index: 2,
+            alignment: 3,
+        }),
+    );
+}
