@@ -1,10 +1,13 @@
 use userspace::file::format::elf::{
+    base_address::BaseAddress,
     dynamic::{PayloadKind, Tag},
     identification::{Class, Data},
     memory_image::{
         MemoryImage, MemoryImageWriter, Region, RegionWriter,
         WriteError as MemoryImageWriteError,
     },
+    program_header::Flags as ProgramHeaderFlags,
+    program_image::{ProgramImage, Segment as ProgramImageSegment, ZeroFill},
     relocation::relative::{
         class_32, class_64, Entry, ExpansionError, RelocationFactor, RepresentationError,
         apply_storage_unit_writes, ApplicationError, BatchApplicationError, StorageUnit,
@@ -944,4 +947,55 @@ fn empty_relative_relocation_storage_unit_write_batch_is_a_noop() {
     drop(image);
 
     assert_eq!(bytes, [0x5a; 8]);
+}
+
+
+#[test]
+fn relative_relocation_operates_on_materialized_program_image() {
+    let source = 0x1000u64.to_le_bytes();
+
+    let mut segments = ample::r#type::Vec::new();
+    segments.push(ProgramImageSegment {
+        program_header_index: 0,
+        link_time_virtual_address: 0x400000,
+        file_image: &source,
+        zero_fill: ZeroFill::new(0x400008, 0),
+        flags: ProgramHeaderFlags::from_raw(
+            ProgramHeaderFlags::READ | ProgramHeaderFlags::WRITE,
+        ),
+        alignment: 0x1000,
+        link_time_end_virtual_address: 0x400008,
+    });
+    let program_image = ProgramImage::new(segments);
+    let base_address = BaseAddress::calculate(0x500000, 0x400000, 0x1000)
+        .expect("base address must calculate");
+    let mut owned = program_image
+        .materialize_memory_image(base_address)
+        .expect("program memory image must materialize");
+
+    let table = Table::new(vec![Entry::Address(0x400000)], Class::Class64);
+    let factor = RelocationFactor::from_virtual_addresses(0x500000, 0x400000);
+
+    let writes = {
+        let memory = owned.as_memory_image();
+        table
+            .storage_unit_writes_from_memory_image(
+                &memory,
+                Data::LeastSignificantByteFirst,
+                factor,
+            )
+            .expect("RELR writes must plan from program memory image")
+    };
+
+    {
+        let mut writer = owned.as_memory_image_writer();
+        apply_storage_unit_writes(&writes, &mut writer)
+            .expect("RELR writes must apply to program memory image");
+    }
+
+    let memory = owned.as_memory_image();
+    assert_eq!(
+        memory.bytes(0x500000, 8),
+        Some(&0x101000u64.to_le_bytes()[..]),
+    );
 }
