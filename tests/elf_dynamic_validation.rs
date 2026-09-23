@@ -376,3 +376,18 @@ fn rejects_jump_relocation_size_not_entry_multiple() {
         Err(ValidationError::JumpRelocationSizeNotEntryMultiple),
     );
 }
+
+
+#[test]
+fn does_not_apply_executable_shared_mandatory_tags_to_core_object() {
+    let mut bytes = fixture(4, &[]);
+
+    // End the dynamic array immediately; Table 8.1 mandatory tags are specified
+    // for executables and shared objects, not ET_CORE.
+    let first = dynamic_entry_offset(0);
+    bytes[first..first + 8].copy_from_slice(&0i64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(object.validate_dynamic_array(1), Ok(()));
+}
