@@ -40,7 +40,7 @@ impl<'file> Section<'file> {
         match entry.tag {
             Tag::Needed
             | Tag::SharedObjectName
-            | Tag::RuntimeSearchPath
+            | Tag::RPath
             | Tag::RunPath => self.strings.get_str(entry.payload as usize),
             _ => None,
         }
