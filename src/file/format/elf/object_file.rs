@@ -1531,9 +1531,48 @@ impl<'file> ObjectFile<'file> {
         }
 
         if header.flags.contains(section_header::Flags::ALLOCATE)
-            && !matches!(self.header.r#type, super::header::Type::Relocatable)
+            && matches!(
+                self.header.r#type,
+                super::header::Type::Executable | super::header::Type::SharedObject
+            )
         {
-            return Err(ValidationError::AllocatedCompressedSectionOutsideRelocatableObject);
+            return Err(
+                ValidationError::AllocatedCompressedSectionInExecutableOrSharedObject,
+            );
+        }
+
+        let section = self
+            .section(section_index)
+            .ok_or(ValidationError::MissingCompressionHeader)?;
+
+        let compression_header = match self.header.identification.class {
+            Class::Class32 => {
+                let representation = compression::class_32::Representation::decode(
+                    section.contents,
+                    0,
+                    self.header.identification.data,
+                )
+                .ok_or(ValidationError::MissingCompressionHeader)?;
+                CompressionHeader::from(representation)
+            }
+            Class::Class64 => {
+                let representation = compression::class_64::Representation::decode(
+                    section.contents,
+                    0,
+                    self.header.identification.data,
+                )
+                .ok_or(ValidationError::MissingCompressionHeader)?;
+                CompressionHeader::from(representation)
+            }
+            Class::None | Class::Reserved(_) => {
+                return Err(ValidationError::MissingCompressionHeader)
+            }
+        };
+
+        if compression_header.alignment > 1
+            && !compression_header.alignment.is_power_of_two()
+        {
+            return Err(ValidationError::UncompressedAlignmentNotPowerOfTwo);
         }
 
         Ok(())
