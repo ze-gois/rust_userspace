@@ -43,3 +43,6 @@ impl Pointer {
         self.0
     }
 }
+
+/// Raw x86-64 stack pointer value supplied at process entry.
+pub type StackPointer = *const u8;

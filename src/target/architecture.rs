@@ -1,5 +1,3 @@
-pub mod x86;
-
 #[cfg(target_arch = "x86_64")]
 pub mod x86_64;
 #[cfg(target_arch = "x86_64")]
@@ -8,12 +6,11 @@ pub use x86_64::*;
 pub mod macros;
 pub mod traits;
 
-#[cfg(target_arch = "x86_64")]
-pub use x86::bit64::StackPointer;
-
 ample::r#struct!(
-    pub struct Arch {}
+    pub struct Architecture {}
 );
+
+pub type Arch = Architecture;
 
 impl core::ops::Sub for Pointer {
     type Output = usize;
