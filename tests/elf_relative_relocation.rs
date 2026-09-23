@@ -1,7 +1,10 @@
 use userspace::file::format::elf::{
     dynamic::{PayloadKind, Tag},
     identification::{Class, Data},
-    memory_image::{MemoryImage, MemoryImageWriter, Region, RegionWriter},
+    memory_image::{
+        MemoryImage, MemoryImageWriter, Region, RegionWriter,
+        WriteError as MemoryImageWriteError,
+    },
     relocation::relative::{
         class_32, class_64, Entry, ExpansionError, RelocationFactor, RepresentationError,
         ApplicationError, StorageUnit, StorageUnitRepresentation, StorageUnitWrite, Table,
@@ -770,9 +773,12 @@ fn rejects_relative_relocation_write_outside_memory_image() {
 
     assert_eq!(
         write.apply(&mut image),
-        Err(ApplicationError::StorageUnitUnavailable {
-            load_time_virtual_address: 0x500000,
-        }),
+        Err(ApplicationError::MemoryImage(
+            MemoryImageWriteError::Unavailable {
+                virtual_address: 0x500000,
+                size: 8,
+            },
+        )),
     );
     drop(image);
     assert_eq!(bytes, [0; 8]);
