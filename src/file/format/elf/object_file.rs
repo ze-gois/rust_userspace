@@ -239,6 +239,16 @@ impl<'file> ObjectFile<'file> {
                     });
                 }
             }
+
+            if header.flags.contains(Flags::MERGE) || header.flags.contains(Flags::STRINGS) {
+                if header.entry_size == 0 {
+                    return Err(ValidationError::MergeOrStringsEntrySizeZero { index });
+                }
+
+                if header.size % header.entry_size != 0 {
+                    return Err(ValidationError::MergeOrStringsSizeNotEntryMultiple { index });
+                }
+            }
         }
 
         Ok(())
