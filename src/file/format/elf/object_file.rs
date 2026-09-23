@@ -1049,6 +1049,86 @@ impl<'file> ObjectFile<'file> {
         ))
     }
 
+    pub fn validate_section_groups(
+        &self,
+    ) -> Result<(), super::section_group::ValidationError> {
+        use super::header::Type as ObjectType;
+        use super::section_group::ValidationError;
+
+        let mut grouped_members = Vec::new();
+
+        for (group_index, header) in self.section_headers.iter().enumerate() {
+            if !matches!(header.r#type, section_header::Type::Group) {
+                continue;
+            }
+
+            if !matches!(self.header.r#type, ObjectType::Relocatable) {
+                return Err(ValidationError::GroupOutsideRelocatableObject {
+                    index: group_index,
+                });
+            }
+
+            if header.flags.raw() != 0 {
+                return Err(ValidationError::GroupSectionFlagsNotZero {
+                    index: group_index,
+                });
+            }
+
+            let group = self
+                .section_group(group_index)
+                .ok_or(ValidationError::InvalidGroup { index: group_index })?;
+
+            for member_index in group.members.iter().copied() {
+                if member_index <= group_index {
+                    return Err(ValidationError::MemberNotAfterGroup {
+                        group_index,
+                        member_index,
+                    });
+                }
+
+                let member = self
+                    .section_headers
+                    .get(member_index)
+                    .ok_or(ValidationError::InvalidGroup { index: group_index })?;
+
+                if !member.flags.contains(section_header::Flags::GROUP) {
+                    return Err(ValidationError::MemberMissingGroupFlag {
+                        group_index,
+                        member_index,
+                    });
+                }
+
+                if grouped_members.iter().any(|index| *index == member_index) {
+                    return Err(ValidationError::MemberInMultipleGroups {
+                        member_index,
+                    });
+                }
+
+                grouped_members.push(member_index);
+            }
+        }
+
+        for (member_index, header) in self.section_headers.iter().enumerate() {
+            if !header.flags.contains(section_header::Flags::GROUP) {
+                continue;
+            }
+
+            if !matches!(self.header.r#type, ObjectType::Relocatable) {
+                return Err(ValidationError::MemberOutsideRelocatableObject {
+                    index: member_index,
+                });
+            }
+
+            if !grouped_members.iter().any(|index| *index == member_index) {
+                return Err(ValidationError::GroupFlagWithoutGroup {
+                    member_index,
+                });
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn note_table(&self, section_index: usize) -> Option<NoteTable<'file>> {
         let section = self.section(section_index)?;
         if !matches!(section.header.r#type, section_header::Type::Note) {
