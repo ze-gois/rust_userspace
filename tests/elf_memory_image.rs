@@ -1,7 +1,8 @@
 use ample::r#type::Vec;
 
 use userspace::file::format::elf::memory_image::{
-    MemoryImage, MemoryImageWriter, Region, RegionWriter, WriteError,
+    MemoryImage, MemoryImageWriter, OwnedMemoryImage, OwnedRegion, Region, RegionWriter,
+    WriteError,
 };
 
 #[test]
@@ -106,4 +107,36 @@ fn does_not_join_write_across_memory_regions() {
     drop(image);
     assert_eq!(first, [0; 2]);
     assert_eq!(second, [0; 2]);
+}
+
+
+#[test]
+fn owned_memory_image_exposes_read_only_view() {
+    let mut bytes = Vec::new();
+    bytes.extend([0x10, 0x20, 0x30, 0x40]);
+
+    let mut regions = Vec::new();
+    regions.push(OwnedRegion::new(0x7000, bytes));
+    let owned = OwnedMemoryImage::new(regions);
+
+    let image = owned.as_memory_image();
+    assert_eq!(image.bytes(0x7001, 2), Some(&[0x20, 0x30][..]));
+}
+
+#[test]
+fn owned_memory_image_exposes_writer_over_same_storage() {
+    let mut bytes = Vec::new();
+    bytes.extend([0, 0, 0, 0]);
+
+    let mut regions = Vec::new();
+    regions.push(OwnedRegion::new(0x8000, bytes));
+    let mut owned = OwnedMemoryImage::new(regions);
+
+    {
+        let mut writer = owned.as_memory_image_writer();
+        assert_eq!(writer.write(0x8001, &[0xaa, 0xbb]), Ok(()));
+    }
+
+    let image = owned.as_memory_image();
+    assert_eq!(image.bytes(0x8000, 4), Some(&[0x00, 0xaa, 0xbb, 0x00][..]));
 }
