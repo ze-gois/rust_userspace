@@ -29,15 +29,8 @@ impl StorageUnit {
         }
     }
 
-    pub const fn relocate(self, factor: RelocationFactor) -> Self {
-        match self {
-            Self::Class32(value) => {
-                Self::Class32(value.wrapping_add(factor.value() as u32))
-            }
-            Self::Class64(value) => {
-                Self::Class64(value.wrapping_add(factor.value() as u64))
-            }
-        }
+    pub const fn relocated_value(self, factor: RelocationFactor) -> i128 {
+        self.value() as i128 + factor.value()
     }
 }
 
