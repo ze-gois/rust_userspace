@@ -99,7 +99,7 @@ fn linux_maps_and_writes_x86_64_initial_process_stack() {
     let end = start + mapping.length();
 
     assert!(stack_pointer as usize >= start);
-    assert!(stack_pointer as usize < end);
+    assert!((stack_pointer as usize) < end);
     assert_eq!(stack_pointer as usize % ALIGNMENT, 0);
 
     let words = unsafe {
