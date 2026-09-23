@@ -2,7 +2,8 @@ use userspace::file::format::elf::{
     dynamic::{PayloadKind, Tag},
     identification::{Class, Data},
     relocation::relative::{
-        class_32, class_64, Entry, ExpansionError, RelocationFactor, StorageUnit, Table,
+        class_32, class_64, Entry, ExpansionError, RelocationFactor, RepresentationError,
+        StorageUnit, Table,
     },
     section_header,
 };
@@ -220,5 +221,66 @@ fn zero_relative_relocation_factor_preserves_storage_unit_value() {
     assert_eq!(
         StorageUnit::Class64(0x1234_5678_9abc_def0).relocated_value(factor),
         0x1234_5678_9abc_def0,
+    );
+}
+
+
+#[test]
+fn represents_relocated_elf32_storage_unit() {
+    let factor = RelocationFactor::from_virtual_addresses(0x5000, 0x4000);
+    let storage_unit = StorageUnit::Class32(0x2000);
+
+    assert_eq!(
+        storage_unit.relocated(factor),
+        Ok(StorageUnit::Class32(0x3000)),
+    );
+}
+
+#[test]
+fn represents_relocated_elf64_storage_unit() {
+    let factor = RelocationFactor::from_virtual_addresses(0x3000, 0x5000);
+    let storage_unit = StorageUnit::Class64(0x9000);
+
+    assert_eq!(
+        storage_unit.relocated(factor),
+        Ok(StorageUnit::Class64(0x7000)),
+    );
+}
+
+#[test]
+fn rejects_relocated_elf32_value_above_address_width() {
+    let factor = RelocationFactor::from_virtual_addresses(1, 0);
+    let storage_unit = StorageUnit::Class32(u32::MAX);
+
+    assert_eq!(
+        storage_unit.relocated(factor),
+        Err(RepresentationError::ValueOutOfRange {
+            value: u32::MAX as i128 + 1,
+        }),
+    );
+}
+
+#[test]
+fn rejects_negative_relocated_storage_unit_value() {
+    let factor = RelocationFactor::from_virtual_addresses(0, 1);
+    let storage_unit = StorageUnit::Class64(0);
+
+    assert_eq!(
+        storage_unit.relocated(factor),
+        Err(RepresentationError::ValueOutOfRange { value: -1 }),
+    );
+}
+
+#[test]
+fn zero_factor_representation_preserves_storage_unit() {
+    let factor = RelocationFactor::from_virtual_addresses(0x400000, 0x400000);
+
+    assert_eq!(
+        StorageUnit::Class32(0x1234_5678).relocated(factor),
+        Ok(StorageUnit::Class32(0x1234_5678)),
+    );
+    assert_eq!(
+        StorageUnit::Class64(0x1234_5678_9abc_def0).relocated(factor),
+        Ok(StorageUnit::Class64(0x1234_5678_9abc_def0)),
     );
 }
