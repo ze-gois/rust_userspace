@@ -24,6 +24,13 @@ pub enum ValidationError {
     JumpRelocationMissingSize,
     JumpRelocationMissingFormat,
     JumpRelocationInvalidFormat { raw: u64 },
+    JumpRelocationSizeNotEntryMultiple,
+    DynamicRelocationTablesUnavailable,
+    DynamicRelocationSymbolIndexOutOfBounds {
+        table_index: usize,
+        entry_index: usize,
+        symbol_index: u32,
+    },
     ReservedFlags { bits: u64 },
     DynamicStringTableUnavailable,
     DynamicStringTableInvalid(super::super::string_table::ValidationError),
@@ -47,4 +54,6 @@ pub enum ValidationError {
     RelativeRelocationMissingEntrySize,
     RelativeRelocationEntrySizeMismatch,
     RelativeRelocationSizeNotEntryMultiple,
+    RelativeRelocationTableUnavailable,
+    RelativeRelocationFirstEntryMustBeAddress,
 }
