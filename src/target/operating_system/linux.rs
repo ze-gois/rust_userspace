@@ -6,6 +6,7 @@ pub struct Origin;
 
 pub mod memory;
 pub mod process_image;
+pub mod process_stack;
 pub mod syscall;
 
 pub use crate::info;
