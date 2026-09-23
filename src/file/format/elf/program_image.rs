@@ -15,6 +15,13 @@ pub enum Error {
     VirtualAddressRangeOverflow { index: usize },
     MemoryImageSizeUnsupported { index: usize, size: u64 },
     LoadTimeVirtualAddressOverflow { index: usize },
+    NoLoadSegments,
+    InvalidMaximumPageSize { size: u64 },
+    BaseAddressUnderflow {
+        memory_load_address: u64,
+        lowest_link_time_virtual_address: u64,
+        maximum_page_size: u64,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -124,5 +131,39 @@ impl<'file> ProgramImage<'file> {
 
     pub fn iter(&self) -> core::slice::Iter<'_, Segment<'file>> {
         self.segments.iter()
+    }
+
+    pub fn lowest_link_time_virtual_address(&self) -> Option<u64> {
+        self.segments
+            .iter()
+            .map(|segment| segment.link_time_virtual_address)
+            .min()
+    }
+
+    pub fn base_address(
+        &self,
+        memory_load_address: u64,
+        maximum_page_size: u64,
+    ) -> Result<BaseAddress, Error> {
+        if maximum_page_size == 0 || !maximum_page_size.is_power_of_two() {
+            return Err(Error::InvalidMaximumPageSize {
+                size: maximum_page_size,
+            });
+        }
+
+        let lowest_link_time_virtual_address = self
+            .lowest_link_time_virtual_address()
+            .ok_or(Error::NoLoadSegments)?;
+
+        BaseAddress::calculate(
+            memory_load_address,
+            lowest_link_time_virtual_address,
+            maximum_page_size,
+        )
+        .ok_or(Error::BaseAddressUnderflow {
+            memory_load_address,
+            lowest_link_time_virtual_address,
+            maximum_page_size,
+        })
     }
 }
