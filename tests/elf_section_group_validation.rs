@@ -216,12 +216,23 @@ fn rejects_group_flag_without_group_membership() {
 fn rejects_member_in_multiple_groups() {
     let mut bytes = fixture();
 
+    // Both groups will reference sections [5] and [6].
+    let first_member_offset = GROUP_OFFSET as usize + 4;
+    let second_member_offset = GROUP_OFFSET as usize + 8;
+    bytes[first_member_offset..first_member_offset + 4]
+        .copy_from_slice(&5u32.to_le_bytes());
+    bytes[second_member_offset..second_member_offset + 4]
+        .copy_from_slice(&6u32.to_le_bytes());
+
     // Expand section-header count from 6 to 7.
     bytes[60..62].copy_from_slice(&7u16.to_le_bytes());
 
-    // Insert a second SHT_GROUP header after the original table entries.
+    // Replace section [4] with a second SHT_GROUP so group headers [3] and [4]
+    // both precede member sections [5] and [6].
+    let second_group_offset = SECTION_HEADER_OFFSET as usize + 4 * 64;
+    let mut second_group = Vec::new();
     section_header(
-        &mut bytes,
+        &mut second_group,
         17,
         0,
         GROUP_OFFSET,
@@ -231,11 +242,16 @@ fn rejects_member_in_multiple_groups() {
         4,
         4,
     );
+    bytes[second_group_offset..second_group_offset + 64]
+        .copy_from_slice(&second_group);
+
+    // Existing section [5] remains a member; append member section [6].
+    section_header(&mut bytes, 1, 0x200, 0, 0, 0, 0, 1, 0);
 
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
 
     assert_eq!(
         object.validate_section_groups(),
-        Err(ValidationError::MemberInMultipleGroups { member_index: 4 }),
+        Err(ValidationError::MemberInMultipleGroups { member_index: 5 }),
     );
 }
