@@ -307,3 +307,147 @@ fn rejects_program_header_table_outside_load_image() {
         Err(ValidationError::ProgramHeaderTableNotLoaded { index: 0 }),
     );
 }
+
+
+#[test]
+fn rejects_load_file_image_larger_than_memory_image() {
+    let mut bytes = one_segment_fixture();
+    bytes[program_header_field_offset(0, 0)..program_header_field_offset(0, 0) + 4]
+        .copy_from_slice(&1u32.to_le_bytes());
+    let memory_size = program_header_field_offset(0, 40);
+    bytes[memory_size..memory_size + 8].copy_from_slice(&3u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_program_headers(),
+        Err(ValidationError::LoadFileImageLargerThanMemoryImage { index: 0 }),
+    );
+}
+
+#[test]
+fn rejects_non_power_of_two_load_alignment() {
+    let mut bytes = one_segment_fixture();
+    bytes[program_header_field_offset(0, 0)..program_header_field_offset(0, 0) + 4]
+        .copy_from_slice(&1u32.to_le_bytes());
+    let alignment = program_header_field_offset(0, 48);
+    bytes[alignment..alignment + 8].copy_from_slice(&3u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_program_headers(),
+        Err(ValidationError::LoadAlignmentNotPowerOfTwo { index: 0 }),
+    );
+}
+
+#[test]
+fn rejects_incongruent_load_address_and_offset() {
+    let mut bytes = one_segment_fixture();
+    bytes[program_header_field_offset(0, 0)..program_header_field_offset(0, 0) + 4]
+        .copy_from_slice(&1u32.to_le_bytes());
+    let virtual_address = program_header_field_offset(0, 16);
+    bytes[virtual_address..virtual_address + 8].copy_from_slice(&1u64.to_le_bytes());
+    let alignment = program_header_field_offset(0, 48);
+    bytes[alignment..alignment + 8].copy_from_slice(&4u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_program_headers(),
+        Err(ValidationError::LoadAddressOffsetIncongruent { index: 0 }),
+    );
+}
+
+#[test]
+fn rejects_load_segments_out_of_virtual_address_order() {
+    let mut bytes = two_segment_phdr_fixture();
+    bytes[program_header_field_offset(0, 0)..program_header_field_offset(0, 0) + 4]
+        .copy_from_slice(&1u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_program_headers(),
+        Err(ValidationError::LoadSegmentsNotOrderedByVirtualAddress {
+            previous: 0,
+            current: 1,
+        }),
+    );
+}
+
+#[test]
+fn rejects_multiple_interpreters() {
+    let mut bytes = two_segment_phdr_fixture();
+    for index in 0..2 {
+        bytes[program_header_field_offset(index, 0)..program_header_field_offset(index, 0) + 4]
+            .copy_from_slice(&3u32.to_le_bytes());
+    }
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_program_headers(),
+        Err(ValidationError::MultipleInterpreters),
+    );
+}
+
+#[test]
+fn rejects_interpreter_after_load_segment() {
+    let mut bytes = two_segment_phdr_fixture();
+    bytes[program_header_field_offset(0, 0)..program_header_field_offset(0, 0) + 4]
+        .copy_from_slice(&1u32.to_le_bytes());
+    bytes[program_header_field_offset(1, 0)..program_header_field_offset(1, 0) + 4]
+        .copy_from_slice(&3u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_program_headers(),
+        Err(ValidationError::InterpreterAfterLoad { index: 1 }),
+    );
+}
+
+#[test]
+fn rejects_multiple_program_header_table_images() {
+    let mut bytes = two_segment_phdr_fixture();
+    bytes[program_header_field_offset(1, 0)..program_header_field_offset(1, 0) + 4]
+        .copy_from_slice(&6u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_program_headers(),
+        Err(ValidationError::MultipleProgramHeaderTableImages),
+    );
+}
+
+#[test]
+fn rejects_program_header_table_image_after_load_segment() {
+    let mut bytes = two_segment_phdr_fixture();
+    bytes[program_header_field_offset(0, 0)..program_header_field_offset(0, 0) + 4]
+        .copy_from_slice(&1u32.to_le_bytes());
+    bytes[program_header_field_offset(1, 0)..program_header_field_offset(1, 0) + 4]
+        .copy_from_slice(&6u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_program_headers(),
+        Err(ValidationError::ProgramHeaderTableImageAfterLoad { index: 1 }),
+    );
+}
+
+#[test]
+fn rejects_reserved_shared_library_segment() {
+    let mut bytes = one_segment_fixture();
+    bytes[program_header_field_offset(0, 0)..program_header_field_offset(0, 0) + 4]
+        .copy_from_slice(&5u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_program_headers(),
+        Err(ValidationError::SharedLibrarySegment { index: 0 }),
+    );
+}
