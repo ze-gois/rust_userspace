@@ -22,7 +22,7 @@ pub enum RepresentationError {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct RelativeRelocationWrite {
+pub struct StorageUnitWrite {
     pub virtual_address: u64,
     pub representation: StorageUnitRepresentation,
 }
@@ -141,12 +141,16 @@ impl RelocationFactor {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EffectError {
+pub enum WriteError {
     Expansion(ExpansionError),
     Representation(RepresentationError),
     StorageUnitCountMismatch {
         addresses: usize,
         storage_units: usize,
+    },
+    StorageUnitClassMismatch {
+        index: usize,
+        class: Class,
     },
 }
 
@@ -164,18 +168,18 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn writes_from_storage_units(
+    pub fn storage_unit_writes(
         &self,
         storage_units: &[StorageUnitRepresentation],
         data: Data,
         factor: RelocationFactor,
-    ) -> Result<Vec<RelativeRelocationWrite>, EffectError> {
+    ) -> Result<Vec<StorageUnitWrite>, WriteError> {
         let virtual_addresses = self
             .virtual_addresses()
-            .map_err(EffectError::Expansion)?;
+            .map_err(WriteError::Expansion)?;
 
         if virtual_addresses.len() != storage_units.len() {
-            return Err(EffectError::StorageUnitCountMismatch {
+            return Err(WriteError::StorageUnitCountMismatch {
                 addresses: virtual_addresses.len(),
                 storage_units: storage_units.len(),
             });
@@ -183,21 +187,34 @@ impl Table {
 
         let mut writes = Vec::with_capacity(virtual_addresses.len());
 
-        for (virtual_address, representation) in virtual_addresses
+        for (index, (virtual_address, representation)) in virtual_addresses
             .into_iter()
             .zip(storage_units.iter().copied())
+            .enumerate()
         {
+            let class_matches = matches!(
+                (self.class, representation),
+                (Class::Class32, StorageUnitRepresentation::Class32(_))
+                    | (Class::Class64, StorageUnitRepresentation::Class64(_))
+            );
+            if !class_matches {
+                return Err(WriteError::StorageUnitClassMismatch {
+                    index,
+                    class: self.class,
+                });
+            }
+
             let storage_unit = representation
                 .decode(data)
-                .map_err(EffectError::Representation)?;
+                .map_err(WriteError::Representation)?;
             let relocated = storage_unit
                 .relocated(factor)
-                .map_err(EffectError::Representation)?;
+                .map_err(WriteError::Representation)?;
             let representation = relocated
                 .representation(data)
-                .map_err(EffectError::Representation)?;
+                .map_err(WriteError::Representation)?;
 
-            writes.push(RelativeRelocationWrite {
+            writes.push(StorageUnitWrite {
                 virtual_address,
                 representation,
             });
