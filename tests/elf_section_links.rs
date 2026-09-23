@@ -1,5 +1,5 @@
 use userspace::file::format::elf::{
-    section_link::Meaning,
+    section_link::{Meaning, ValidationError},
     ObjectFile,
 };
 
@@ -123,4 +123,100 @@ fn leaves_undefined_relocation_target_without_relation() {
 
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
     assert!(object.relocation_target_section(3).is_none());
+}
+
+
+fn section_header_field_offset(section_index: usize, field_offset: usize) -> usize {
+    64 + 1 + section_index * 64 + field_offset
+}
+
+#[test]
+fn validates_sh_link_and_sh_info_table() {
+    let bytes = fixture();
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(object.validate_section_links(), Ok(()));
+}
+
+#[test]
+fn rejects_string_table_link_to_wrong_section_type() {
+    let mut bytes = fixture();
+
+    let link_offset = section_header_field_offset(2, 40);
+    bytes[link_offset..link_offset + 4].copy_from_slice(&4u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_links(),
+        Err(ValidationError::LinkNotStringTable {
+            section_index: 2,
+            linked_section_index: 4,
+        }),
+    );
+}
+
+#[test]
+fn rejects_symbol_table_link_to_wrong_section_type() {
+    let mut bytes = fixture();
+
+    let link_offset = section_header_field_offset(3, 40);
+    bytes[link_offset..link_offset + 4].copy_from_slice(&1u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_links(),
+        Err(ValidationError::LinkNotSymbolTable {
+            section_index: 3,
+            linked_section_index: 1,
+        }),
+    );
+}
+
+#[test]
+fn rejects_required_zero_information_fields() {
+    for section_type in [5u32, 6u32, 18u32] {
+        let mut bytes = fixture();
+
+        let type_offset = section_header_field_offset(4, 4);
+        bytes[type_offset..type_offset + 4].copy_from_slice(&section_type.to_le_bytes());
+
+        let link_offset = section_header_field_offset(4, 40);
+        let link = if section_type == 6 { 1u32 } else { 2u32 };
+        bytes[link_offset..link_offset + 4].copy_from_slice(&link.to_le_bytes());
+
+        let information_offset = section_header_field_offset(4, 44);
+        bytes[information_offset..information_offset + 4]
+            .copy_from_slice(&1u32.to_le_bytes());
+
+        let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+        assert_eq!(
+            object.validate_section_links(),
+            Err(ValidationError::InformationMustBeZero {
+                section_index: 4,
+                information: 1,
+            }),
+        );
+    }
+}
+
+#[test]
+fn rejects_relocation_target_outside_section_table() {
+    let mut bytes = fixture();
+
+    let information_offset = section_header_field_offset(3, 44);
+    bytes[information_offset..information_offset + 4]
+        .copy_from_slice(&99u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_links(),
+        Err(ValidationError::RelocationTargetOutOfBounds {
+            section_index: 3,
+            target_section_index: 99,
+        }),
+    );
 }
