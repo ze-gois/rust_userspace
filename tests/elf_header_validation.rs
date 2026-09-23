@@ -156,3 +156,29 @@ fn rejects_program_header_table_without_offset() {
         Err(ValidationError::ProgramHeaderTableWithoutOffset { count: 1 }),
     );
 }
+
+
+#[test]
+fn accepts_currently_assigned_machine_values() {
+    for machine in [0u16, 62u16, 243u16, 269u16] {
+        let mut bytes = fixture();
+        bytes[18..20].copy_from_slice(&machine.to_le_bytes());
+
+        let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+        assert_eq!(object.validate_header(), Ok(()));
+    }
+}
+
+#[test]
+fn rejects_reserved_machine_values() {
+    for machine in [11u16, 16u16, 24u16, 121u16, 145u16, 182u16, 184u16, 225u16, 270u16] {
+        let mut bytes = fixture();
+        bytes[18..20].copy_from_slice(&machine.to_le_bytes());
+
+        let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+        assert_eq!(
+            object.validate_header(),
+            Err(ValidationError::ReservedMachine { raw: machine }),
+        );
+    }
+}
