@@ -4,15 +4,7 @@ use core::panic::PanicInfo;
 #[panic_handler]
 #[cfg(not(feature = "with_std"))]
 pub fn panic(_info: &PanicInfo) -> ! {
-    #[cfg(target_os = "linux")]
-    {
-        crate::target::operating_system::syscall::exit(101)
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    loop {
-        core::hint::spin_loop();
-    }
+    crate::target::operating_system::syscall::exit(101)
 }
 
 pub fn hook() {}
