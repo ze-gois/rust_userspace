@@ -69,3 +69,37 @@ fn rejects_wrong_dynamic_relative_relocation_entry_size() {
         Err(ValidationError::RelativeRelocationEntrySizeMismatch),
     );
 }
+
+
+#[test]
+fn rejects_dynamic_relative_relocation_table_starting_with_bitmap() {
+    let mut bytes = fixture(8);
+
+    // First Elf64_Relr entry begins immediately after the dynamic array.
+    let first_relr = 64 + 2 * 56 + 4 * 16;
+    bytes[first_relr..first_relr + 8].copy_from_slice(&3u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_dynamic_relative_relocation(1),
+        Err(ValidationError::RelativeRelocationFirstEntryMustBeAddress),
+    );
+}
+
+#[test]
+fn rejects_unmapped_dynamic_relative_relocation_table() {
+    let mut bytes = fixture(8);
+
+    // DT_RELR payload is entry [1], d_un at +8.
+    let relr_payload = 64 + 2 * 56 + 16 + 8;
+    bytes[relr_payload..relr_payload + 8]
+        .copy_from_slice(&0x500000u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_dynamic_relative_relocation(1),
+        Err(ValidationError::RelativeRelocationTableUnavailable),
+    );
+}
