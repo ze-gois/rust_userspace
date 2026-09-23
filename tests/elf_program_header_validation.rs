@@ -451,3 +451,30 @@ fn rejects_reserved_shared_library_segment() {
         Err(ValidationError::SharedLibrarySegment { index: 0 }),
     );
 }
+
+
+#[test]
+fn rejects_dynamic_executable_without_interpreter() {
+    let mut bytes = one_segment_fixture();
+    bytes[program_header_field_offset(0, 0)..program_header_field_offset(0, 0) + 4]
+        .copy_from_slice(&2u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_program_headers(),
+        Err(ValidationError::DynamicExecutableMissingInterpreter),
+    );
+}
+
+#[test]
+fn permits_dynamic_shared_object_without_interpreter() {
+    let mut bytes = one_segment_fixture();
+    bytes[16..18].copy_from_slice(&3u16.to_le_bytes());
+    bytes[program_header_field_offset(0, 0)..program_header_field_offset(0, 0) + 4]
+        .copy_from_slice(&2u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(object.validate_program_headers(), Ok(()));
+}
