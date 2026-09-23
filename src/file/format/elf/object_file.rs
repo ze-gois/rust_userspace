@@ -1447,7 +1447,7 @@ impl<'file> ObjectFile<'file> {
             Class::None | Class::Reserved(_) => return None,
         }
 
-        Some(relative::Table::new(entries))
+        Some(relative::Table::new(entries, self.header.identification.class))
     }
 
     pub fn validate_relative_relocation_section(
