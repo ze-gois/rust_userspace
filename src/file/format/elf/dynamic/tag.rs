@@ -25,7 +25,7 @@ pub enum Tag {
     Initialization,
     Termination,
     SharedObjectName,
-    RuntimeSearchPath,
+    RPath,
     Symbolic,
     Relocation,
     RelocationSize,
@@ -71,7 +71,7 @@ impl Tag {
             12 => Self::Initialization,
             13 => Self::Termination,
             14 => Self::SharedObjectName,
-            15 => Self::RuntimeSearchPath,
+            15 => Self::RPath,
             16 => Self::Symbolic,
             17 => Self::Relocation,
             18 => Self::RelocationSize,
@@ -127,7 +127,7 @@ impl Tag {
             | Self::StringTableSize
             | Self::SymbolEntrySize
             | Self::SharedObjectName
-            | Self::RuntimeSearchPath
+            | Self::RPath
             | Self::RelocationSize
             | Self::RelocationEntrySize
             | Self::ProcedureLinkageTableRelocation
