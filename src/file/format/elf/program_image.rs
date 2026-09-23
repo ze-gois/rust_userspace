@@ -13,6 +13,7 @@ pub enum Error {
     FileImageLargerThanMemoryImage { index: usize },
     FileImageUnavailable { index: usize },
     VirtualAddressRangeOverflow { index: usize },
+    MemoryImageSizeUnsupported { index: usize, size: u64 },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,6 +49,24 @@ pub struct Segment<'file> {
 impl<'file> Segment<'file> {
     pub const fn memory_size(&self) -> u64 {
         self.file_image.len() as u64 + self.zero_fill.size
+    }
+
+    pub fn memory_image_bytes(&self) -> Result<Vec<u8>, Error> {
+        let memory_size = self.memory_size();
+        let capacity = usize::try_from(memory_size).map_err(|_| {
+            Error::MemoryImageSizeUnsupported {
+                index: self.program_header_index,
+                size: memory_size,
+            }
+        })?;
+
+        let mut bytes = Vec::with_capacity(capacity);
+        bytes.extend(self.file_image.iter().copied());
+
+        let zero_fill_size = capacity - self.file_image.len();
+        bytes.extend(core::iter::repeat(0).take(zero_fill_size));
+
+        Ok(bytes)
     }
 }
 
