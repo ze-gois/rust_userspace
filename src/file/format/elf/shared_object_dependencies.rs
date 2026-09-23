@@ -17,6 +17,12 @@ impl<'file> SharedObjectDependency<'file> {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SearchPath<'file> {
+    RunPath(&'file str),
+    RuntimeSearchPath(&'file str),
+}
+
 #[derive(Debug)]
 pub struct SharedObjectDependencies<'file> {
     pub needed: Vec<SharedObjectDependency<'file>>,
@@ -37,6 +43,16 @@ impl<'file> SharedObjectDependencies<'file> {
             shared_object_name,
             runtime_search_path,
             run_path,
+        }
+    }
+
+    pub const fn search_path(&self) -> Option<SearchPath<'file>> {
+        match (self.run_path, self.runtime_search_path) {
+            (Some(run_path), _) => Some(SearchPath::RunPath(run_path)),
+            (None, Some(runtime_search_path)) => {
+                Some(SearchPath::RuntimeSearchPath(runtime_search_path))
+            }
+            (None, None) => None,
         }
     }
 }
