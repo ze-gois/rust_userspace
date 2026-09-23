@@ -155,7 +155,7 @@ pub extern "C" fn entry(
                                 entry.tag,
                                 userspace::file::format::elf::dynamic::Tag::Needed
                                     | userspace::file::format::elf::dynamic::Tag::SharedObjectName
-                                    | userspace::file::format::elf::dynamic::Tag::RuntimeSearchPath
+                                    | userspace::file::format::elf::dynamic::Tag::RPath
                                     | userspace::file::format::elf::dynamic::Tag::RunPath
                             ) {
                                 userspace::info!(
@@ -205,7 +205,7 @@ pub extern "C" fn entry(
                         userspace::info!(
                             "  shared_object = {{ name: {:?}, rpath: {:?}, runpath: {:?}, needed: {:?} }}\n",
                             dependencies.shared_object_name,
-                            dependencies.runtime_search_path,
+                            dependencies.rpath,
                             dependencies.run_path,
                             dependencies.needed,
                         );

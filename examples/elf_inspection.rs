@@ -55,7 +55,7 @@ fn main() {
                         .and_then(|table| match entry.tag {
                             userspace::file::format::elf::dynamic::Tag::Needed
                             | userspace::file::format::elf::dynamic::Tag::SharedObjectName
-                            | userspace::file::format::elf::dynamic::Tag::RuntimeSearchPath
+                            | userspace::file::format::elf::dynamic::Tag::RPath
                             | userspace::file::format::elf::dynamic::Tag::RunPath => {
                                 table.get_str(entry.payload as usize)
                             }
