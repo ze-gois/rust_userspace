@@ -16,19 +16,26 @@ impl<'file> SharedObjectDependency<'file> {
         }
     }
 
-    pub fn direct_pathname(&self) -> Option<&'file str> {
-        self.name.contains('/').then_some(self.name)
-    }
-
-    pub fn requires_search(&self) -> bool {
-        self.direct_pathname().is_none()
-    }
-
     pub fn name_with_origin(
         &self,
         origin_directory: &str,
     ) -> Result<String, OriginSubstitutionError> {
         substitute_origin(self.name, origin_directory)
+    }
+
+    pub fn direct_pathname(
+        &self,
+        origin_directory: &str,
+    ) -> Result<Option<String>, OriginSubstitutionError> {
+        let name = self.name_with_origin(origin_directory)?;
+        Ok(name.contains('/').then_some(name))
+    }
+
+    pub fn requires_search(
+        &self,
+        origin_directory: &str,
+    ) -> Result<bool, OriginSubstitutionError> {
+        Ok(self.direct_pathname(origin_directory)?.is_none())
     }
 }
 
