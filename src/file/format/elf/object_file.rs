@@ -218,7 +218,84 @@ impl<'file> ObjectFile<'file> {
     pub fn validate_section_headers(
         &self,
     ) -> Result<(), section_header::ValidationError> {
+        use super::header::{SectionHeaderCount, SectionNameStringTableIndex};
         use section_header::{Flags, ValidationError};
+
+        if let Some(initial) = self.section_headers.first() {
+            if initial.name_index != 0 {
+                return Err(ValidationError::UndefinedSectionNameNotZero);
+            }
+            if !matches!(initial.r#type, section_header::Type::Null) {
+                return Err(ValidationError::UndefinedSectionTypeNotNull);
+            }
+            if initial.flags.raw() != 0 {
+                return Err(ValidationError::UndefinedSectionFlagsNotZero);
+            }
+            if initial.address != 0 {
+                return Err(ValidationError::UndefinedSectionAddressNotZero);
+            }
+            if initial.offset != 0 {
+                return Err(ValidationError::UndefinedSectionOffsetNotZero);
+            }
+            if initial.information != 0 {
+                return Err(ValidationError::UndefinedSectionInformationNotZero);
+            }
+            if initial.alignment != 0 {
+                return Err(ValidationError::UndefinedSectionAlignmentNotZero);
+            }
+            if initial.entry_size != 0 {
+                return Err(ValidationError::UndefinedSectionEntrySizeNotZero);
+            }
+
+            match self.header.section_header_count {
+                SectionHeaderCount::Direct(_) => {
+                    if initial.size != 0 {
+                        return Err(ValidationError::DirectSectionCountWithInitialSize {
+                            size: initial.size,
+                        });
+                    }
+                }
+                SectionHeaderCount::ZeroOrExtended => {
+                    if self.header.section_header_offset != 0
+                        && self.section_header_count
+                            < section_header::Index::LOWER_RESERVED.raw() as usize
+                    {
+                        return Err(ValidationError::ExtendedSectionCountBelowReservedRange {
+                            count: self.section_header_count,
+                        });
+                    }
+                }
+            }
+
+            match self.header.section_name_string_table_index {
+                SectionNameStringTableIndex::Undefined
+                | SectionNameStringTableIndex::Direct(_) => {
+                    if initial.link != 0 {
+                        return Err(
+                            ValidationError::DirectSectionNameStringTableWithInitialLink {
+                                link: initial.link,
+                            },
+                        );
+                    }
+                }
+                SectionNameStringTableIndex::Extended => {
+                    let index = self
+                        .section_name_string_table_index
+                        .ok_or(
+                            ValidationError::ExtendedSectionNameStringTableBelowReservedRange {
+                                index: 0,
+                            },
+                        )?;
+                    if index < section_header::Index::LOWER_RESERVED.raw() as usize {
+                        return Err(
+                            ValidationError::ExtendedSectionNameStringTableBelowReservedRange {
+                                index,
+                            },
+                        );
+                    }
+                }
+            }
+        }
 
         for (index, header) in self.section_headers.iter().enumerate() {
             if header.alignment > 1 && !header.alignment.is_power_of_two() {
