@@ -10,7 +10,10 @@ use crate::file::format::elf::{
     ObjectFile,
     base_address::BaseAddress,
     header::Type as ObjectType,
-    program_header::Flags as ElfFlags,
+    identification::{Class, Data},
+    memory_image::{MemoryImageWriter, RegionWriter},
+    processor_specific::x86_64,
+    program_header::{self, Flags as ElfFlags},
     program_image,
 };
 
@@ -28,6 +31,12 @@ pub enum Error {
     UnexpectedMappingAddress { expected: usize, actual: usize },
     SegmentAddressOutsideMapping { program_header_index: usize },
     SegmentSizeUnsupported { program_header_index: usize, size: u64 },
+    UnsupportedMachine { machine: u16 },
+    UnsupportedClass { class: Class },
+    UnsupportedData { data: Data },
+    DynamicRelocationTableUnavailable { program_header_index: usize },
+    UnsupportedProcessorRelocation { raw: u32 },
+    X86_64RelativeRelocation(x86_64::relocation::RelativeError),
     ProtectionFailed { address: usize, length: usize },
 }
 
@@ -164,6 +173,16 @@ pub fn map(object_file: &ObjectFile<'_>, page_size: usize) -> Result<Mapping, Er
         return Err(error);
     }
 
+    if let Err(error) = apply_processor_specific_relocations(
+        object_file,
+        mapped_address,
+        mapping_size,
+        base_address,
+    ) {
+        let _ = syscall::munmap(mapped_address as *mut u8, mapping_size);
+        return Err(error);
+    }
+
     if let Err(error) = protect_program_image(
         &program_image,
         mapped_address,
@@ -249,6 +268,103 @@ fn copy_program_image(
     }
 
     Ok(())
+}
+
+fn apply_processor_specific_relocations(
+    object_file: &ObjectFile<'_>,
+    mapping_address: usize,
+    mapping_size: usize,
+    base_address: BaseAddress,
+) -> Result<(), Error> {
+    #[cfg(target_arch = "x86_64")]
+    {
+        if object_file.header.machine != x86_64::MACHINE {
+            return Err(Error::UnsupportedMachine {
+                machine: object_file.header.machine.raw(),
+            });
+        }
+
+        if !matches!(object_file.header.identification.class, Class::Class64) {
+            return Err(Error::UnsupportedClass {
+                class: object_file.header.identification.class,
+            });
+        }
+
+        if !matches!(
+            object_file.header.identification.data,
+            Data::LeastSignificantByteFirst
+        ) {
+            return Err(Error::UnsupportedData {
+                data: object_file.header.identification.data,
+            });
+        }
+
+        let mapping_bytes = unsafe {
+            core::slice::from_raw_parts_mut(
+                mapping_address as *mut u8,
+                mapping_size,
+            )
+        };
+        let mut regions = Vec::with_capacity(1);
+        regions.push(RegionWriter::new(mapping_address as u64, mapping_bytes));
+        let mut memory_image = MemoryImageWriter::new(regions);
+
+        for (program_header_index, header) in
+            object_file.program_headers.iter().enumerate()
+        {
+            if !matches!(header.r#type, program_header::Type::Dynamic) {
+                continue;
+            }
+
+            let tables = object_file
+                .dynamic_relocation_tables_from_program_header(
+                    program_header_index,
+                )
+                .ok_or(Error::DynamicRelocationTableUnavailable {
+                    program_header_index,
+                })?;
+
+            for table in tables.iter() {
+                for relocation in table.iter().copied() {
+                    match x86_64::relocation::Type::from_generic(
+                        relocation.r#type,
+                    ) {
+                        x86_64::relocation::Type::None => {}
+                        x86_64::relocation::Type::Relative => {
+                            let write = x86_64::relocation::relative_write(
+                                relocation,
+                                base_address,
+                            )
+                            .map_err(Error::X86_64RelativeRelocation)?;
+                            write
+                                .apply(&mut memory_image)
+                                .map_err(Error::X86_64RelativeRelocation)?;
+                        }
+                        x86_64::relocation::Type::Other(r#type) => {
+                            return Err(
+                                Error::UnsupportedProcessorRelocation {
+                                    raw: r#type.raw(),
+                                },
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        return Ok(());
+    }
+
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        let _ = (
+            object_file,
+            mapping_address,
+            mapping_size,
+            base_address,
+        );
+        Err(Error::UnsupportedMachine { machine: 0 })
+    }
 }
 
 fn protect_program_image(
