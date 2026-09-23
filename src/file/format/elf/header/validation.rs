@@ -6,6 +6,7 @@ pub enum Error {
     IdentificationPaddingNotZero { index: usize, value: u8 },
     ObjectVersionNotCurrent { version: u32 },
     ReservedObjectType { raw: u16 },
+    ReservedMachine { raw: u16 },
     HeaderSizeTooSmall { size: u16, minimum: u16 },
     HeaderSizeExceedsFile { size: u16 },
     ProgramHeaderOffsetWithoutTable { offset: u64 },
