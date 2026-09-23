@@ -2,6 +2,7 @@
 
 use crate::file::format::elf::header::Machine;
 
+pub mod entry_point;
 pub mod relocation;
 
 /// ELF `EM_X86_64`.

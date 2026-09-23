@@ -188,7 +188,7 @@ fn executes_callable_entry_from_mapped_elf_object() {
         .expect("e_entry must resolve inside executable PT_LOAD");
 
     let returned = unsafe {
-        userspace::target::architecture::entry_point::call(entry)
+        userspace::file::format::elf::processor_specific::x86_64::entry_point::call(entry)
     };
 
     assert_eq!(returned, 42);
