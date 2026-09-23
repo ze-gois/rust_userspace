@@ -72,6 +72,10 @@ fn resolves_relative_relocation_section() {
     assert_eq!(table.len(), 2);
     let entries: Vec<_> = table.iter().copied().collect();
     assert_eq!(entries, vec![Entry::Address(0x401000), Entry::Bitmap(7)]);
+    assert_eq!(
+        table.virtual_addresses(),
+        Ok(vec![0x401000, 0x401008, 0x401010]),
+    );
 }
 
 #[test]
