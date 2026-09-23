@@ -37,6 +37,7 @@ impl From<Representation> for super::Symbol {
             binding: super::Binding::from_raw(representation.st_info >> 4),
             r#type: super::Type::from_raw(representation.st_info & 0x0f),
             visibility: super::Visibility::from_raw(representation.st_other),
+            other_bits: representation.st_other & !0x07,
             section_index: super::super::section_header::Index::from_raw(representation.st_shndx),
         }
     }
