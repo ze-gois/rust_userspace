@@ -7,6 +7,18 @@ use super::{
     symbol_table::SymbolTable,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ValidationError {
+    GroupOutsideRelocatableObject { index: usize },
+    GroupSectionFlagsNotZero { index: usize },
+    MemberOutsideRelocatableObject { index: usize },
+    MemberNotAfterGroup { group_index: usize, member_index: usize },
+    MemberMissingGroupFlag { group_index: usize, member_index: usize },
+    MemberInMultipleGroups { member_index: usize },
+    GroupFlagWithoutGroup { member_index: usize },
+    InvalidGroup { index: usize },
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Flags(u32);
 
