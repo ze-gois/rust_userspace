@@ -3,7 +3,8 @@ use userspace::file::format::elf::{
     identification::{Class, Data},
     relocation::relative::{
         class_32, class_64, Entry, ExpansionError, RelocationFactor, RepresentationError,
-        StorageUnit, StorageUnitRepresentation, StorageUnitWrite, Table, WriteError,
+        StorageUnit, StorageUnitRepresentation, StorageUnitWrite, Table, VirtualAddressError,
+        WriteError,
     },
     section_header,
 };
@@ -451,13 +452,15 @@ fn plans_elf64_relative_relocation_storage_unit_writes() {
         ),
         Ok(vec![
             StorageUnitWrite {
-                virtual_address: 0x400000,
+                link_time_virtual_address: 0x400000,
+                load_time_virtual_address: 0x500000,
                 representation: StorageUnitRepresentation::Class64(
                     0x101000u64.to_le_bytes(),
                 ),
             },
             StorageUnitWrite {
-                virtual_address: 0x400008,
+                link_time_virtual_address: 0x400008,
+                load_time_virtual_address: 0x500008,
                 representation: StorageUnitRepresentation::Class64(
                     0x102000u64.to_le_bytes(),
                 ),
@@ -481,7 +484,8 @@ fn plans_big_endian_relative_relocation_storage_unit_write() {
             factor,
         ),
         Ok(vec![StorageUnitWrite {
-            virtual_address: 0x1000,
+            link_time_virtual_address: 0x1000,
+            load_time_virtual_address: 0x2000,
             representation: StorageUnitRepresentation::Class32(
                 0x3000u32.to_be_bytes(),
             ),
@@ -551,5 +555,38 @@ fn propagates_relative_relocation_storage_unit_representation_error() {
         Err(WriteError::Representation(
             RepresentationError::ValueOutOfRange { value: -1 },
         )),
+    );
+}
+
+
+#[test]
+fn relocates_relative_relocation_virtual_address_to_load_time() {
+    let factor = RelocationFactor::from_virtual_addresses(0x500000, 0x400000);
+
+    assert_eq!(
+        factor.relocate_virtual_address(0x401000),
+        Ok(0x501000),
+    );
+}
+
+#[test]
+fn relocates_relative_relocation_virtual_address_with_negative_factor() {
+    let factor = RelocationFactor::from_virtual_addresses(0x300000, 0x400000);
+
+    assert_eq!(
+        factor.relocate_virtual_address(0x401000),
+        Ok(0x301000),
+    );
+}
+
+#[test]
+fn rejects_relative_relocation_load_time_virtual_address_out_of_range() {
+    let factor = RelocationFactor::from_virtual_addresses(u64::MAX, 0);
+
+    assert_eq!(
+        factor.relocate_virtual_address(1),
+        Err(VirtualAddressError::OutOfRange {
+            value: u64::MAX as i128 + 1,
+        }),
     );
 }
