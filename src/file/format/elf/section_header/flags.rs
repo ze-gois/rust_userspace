@@ -17,6 +17,19 @@ impl Flags {
     pub const COMPRESSED: u64 = 0x800;
     pub const OPERATING_SYSTEM_MASK: u64 = 0x0ff0_0000;
     pub const PROCESSOR_MASK: u64 = 0xf000_0000;
+    pub const DEFINED_MASK: u64 = Self::WRITE
+        | Self::ALLOCATE
+        | Self::EXECUTABLE_INSTRUCTIONS
+        | Self::MERGE
+        | Self::STRINGS
+        | Self::INFORMATION_LINK
+        | Self::LINK_ORDER
+        | Self::OPERATING_SYSTEM_NONCONFORMING
+        | Self::GROUP
+        | Self::THREAD_LOCAL_STORAGE
+        | Self::COMPRESSED
+        | Self::OPERATING_SYSTEM_MASK
+        | Self::PROCESSOR_MASK;
 
     pub const fn from_raw(raw: u64) -> Self {
         Self(raw)
