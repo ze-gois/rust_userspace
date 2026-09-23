@@ -180,51 +180,45 @@ fn computes_negative_relative_relocation_factor_without_loss() {
 
 
 #[test]
-fn relocates_elf32_storage_unit_value() {
+fn computes_elf32_relative_relocation_storage_unit_value() {
     let factor = RelocationFactor::from_virtual_addresses(0x5000, 0x4000);
     let storage_unit = StorageUnit::Class32(0x2000);
 
-    assert_eq!(
-        storage_unit.relocate(factor),
-        StorageUnit::Class32(0x3000),
-    );
+    assert_eq!(storage_unit.relocated_value(factor), 0x3000);
 }
 
 #[test]
-fn relocates_elf64_storage_unit_value_with_negative_factor() {
+fn computes_elf64_relative_relocation_storage_unit_value_with_negative_factor() {
     let factor = RelocationFactor::from_virtual_addresses(0x3000, 0x5000);
     let storage_unit = StorageUnit::Class64(0x9000);
 
-    assert_eq!(
-        storage_unit.relocate(factor),
-        StorageUnit::Class64(0x7000),
-    );
+    assert_eq!(storage_unit.relocated_value(factor), 0x7000);
 }
 
 #[test]
-fn relative_relocation_storage_unit_uses_elf_class_width() {
+fn preserves_full_relative_relocation_result_before_storage_write() {
     let factor = RelocationFactor::from_virtual_addresses(8, 0);
 
     assert_eq!(
-        StorageUnit::Class32(u32::MAX - 3).relocate(factor),
-        StorageUnit::Class32(4),
+        StorageUnit::Class32(u32::MAX).relocated_value(factor),
+        u32::MAX as i128 + 8,
     );
     assert_eq!(
-        StorageUnit::Class64(u64::MAX - 3).relocate(factor),
-        StorageUnit::Class64(4),
+        StorageUnit::Class64(u64::MAX).relocated_value(factor),
+        u64::MAX as i128 + 8,
     );
 }
 
 #[test]
-fn zero_relative_relocation_factor_preserves_storage_unit() {
+fn zero_relative_relocation_factor_preserves_storage_unit_value() {
     let factor = RelocationFactor::from_virtual_addresses(0x400000, 0x400000);
 
     assert_eq!(
-        StorageUnit::Class32(0x1234_5678).relocate(factor),
-        StorageUnit::Class32(0x1234_5678),
+        StorageUnit::Class32(0x1234_5678).relocated_value(factor),
+        0x1234_5678,
     );
     assert_eq!(
-        StorageUnit::Class64(0x1234_5678_9abc_def0).relocate(factor),
-        StorageUnit::Class64(0x1234_5678_9abc_def0),
+        StorageUnit::Class64(0x1234_5678_9abc_def0).relocated_value(factor),
+        0x1234_5678_9abc_def0,
     );
 }
