@@ -1360,6 +1360,37 @@ impl<'file> ObjectFile<'file> {
             return Err(SectionValidationError::SizeNotEntryMultiple);
         }
 
+        if header.size != 0 {
+            let section = self
+                .section(section_index)
+                .ok_or(SectionValidationError::SizeNotEntryMultiple)?;
+            let first = match self.header.identification.class {
+                Class::Class32 => {
+                    let representation = relative::class_32::Representation::decode(
+                        section.contents,
+                        0,
+                        self.header.identification.data,
+                    )
+                    .ok_or(SectionValidationError::SizeNotEntryMultiple)?;
+                    relative::Entry::from(representation)
+                }
+                Class::Class64 => {
+                    let representation = relative::class_64::Representation::decode(
+                        section.contents,
+                        0,
+                        self.header.identification.data,
+                    )
+                    .ok_or(SectionValidationError::SizeNotEntryMultiple)?;
+                    relative::Entry::from(representation)
+                }
+                Class::None | Class::Reserved(_) => return Ok(()),
+            };
+
+            if !matches!(first, relative::Entry::Address(_)) {
+                return Err(SectionValidationError::FirstEntryMustBeAddress);
+            }
+        }
+
         Ok(())
     }
 
