@@ -20,4 +20,5 @@ pub enum Error {
     ThreadLocalStorageFlagsNotReadOnly { index: usize, flags: u32 },
     ProgramHeaderTableImageMismatch { index: usize },
     ProgramHeaderTableNotLoaded { index: usize },
+    DynamicExecutableMissingInterpreter,
 }
