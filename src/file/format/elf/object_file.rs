@@ -242,8 +242,37 @@ impl<'file> ObjectFile<'file> {
         let mut interpreter_seen = false;
         let mut program_header_table_image_seen = false;
         let mut previous_load: Option<(usize, u64)> = None;
+        let mut program_header_table_image_index = None;
 
         for (index, header) in self.program_headers.iter().enumerate() {
+            if matches!(header.r#type, Type::Null) {
+                continue;
+            }
+
+            if let Type::Reserved(raw) = header.r#type {
+                return Err(ValidationError::ReservedSegmentType { index, raw });
+            }
+
+            if !matches!(header.r#type, Type::Load) && header.alignment > 1 {
+                if !header.alignment.is_power_of_two() {
+                    return Err(ValidationError::SegmentAlignmentNotPowerOfTwo { index });
+                }
+
+                if header.virtual_address % header.alignment != header.offset % header.alignment {
+                    return Err(ValidationError::SegmentAddressOffsetIncongruent { index });
+                }
+            }
+
+            if header.file_size != 0 {
+                let end = header
+                    .offset
+                    .checked_add(header.file_size)
+                    .ok_or(ValidationError::SegmentFileImageOutsideFile { index })?;
+                if end > self.bytes.len() as u64 {
+                    return Err(ValidationError::SegmentFileImageOutsideFile { index });
+                }
+            }
+
             match header.r#type {
                 Type::Load => {
                     first_load_seen = true;
@@ -288,6 +317,13 @@ impl<'file> ObjectFile<'file> {
                     if first_load_seen {
                         return Err(ValidationError::InterpreterAfterLoad { index });
                     }
+
+                    let pathname = range(self.bytes, header.offset, header.file_size)
+                        .ok_or(ValidationError::SegmentFileImageOutsideFile { index })?;
+                    if pathname.is_empty() || pathname.last() != Some(&0) {
+                        return Err(ValidationError::InterpreterNotNullTerminated { index });
+                    }
+
                     interpreter_seen = true;
                 }
                 Type::ProgramHeader => {
@@ -297,12 +333,70 @@ impl<'file> ObjectFile<'file> {
                     if first_load_seen {
                         return Err(ValidationError::ProgramHeaderTableImageAfterLoad { index });
                     }
+
+                    let table_size = u64::from(self.header.program_header_entry_size)
+                        .checked_mul(u64::from(self.header.program_header_count))
+                        .ok_or(ValidationError::ProgramHeaderTableImageMismatch { index })?;
+
+                    if header.offset != self.header.program_header_offset
+                        || header.file_size != table_size
+                        || header.memory_size != table_size
+                    {
+                        return Err(ValidationError::ProgramHeaderTableImageMismatch { index });
+                    }
+
                     program_header_table_image_seen = true;
+                    program_header_table_image_index = Some(index);
+                }
+                Type::ThreadLocalStorage => {
+                    if header.file_size > header.memory_size {
+                        return Err(
+                            ValidationError::ThreadLocalStorageFileImageLargerThanTemplate {
+                                index,
+                            },
+                        );
+                    }
+
+                    if header.flags.raw() != program_header::Flags::READ {
+                        return Err(ValidationError::ThreadLocalStorageFlagsNotReadOnly {
+                            index,
+                            flags: header.flags.raw(),
+                        });
+                    }
                 }
                 Type::SharedLibrary => {
                     return Err(ValidationError::SharedLibrarySegment { index });
                 }
                 _ => {}
+            }
+        }
+
+        if let Some(index) = program_header_table_image_index {
+            let header = self.program_headers[index];
+            let table_size = header.file_size;
+            let table_end = header.offset + table_size;
+
+            let loaded = self.program_headers.iter().any(|load| {
+                if !matches!(load.r#type, Type::Load) {
+                    return false;
+                }
+
+                let Some(load_file_end) = load.offset.checked_add(load.file_size) else {
+                    return false;
+                };
+                if header.offset < load.offset || table_end > load_file_end {
+                    return false;
+                }
+
+                let delta = header.offset - load.offset;
+                load.virtual_address
+                    .checked_add(delta)
+                    .map(|address| address == header.virtual_address)
+                    .unwrap_or(false)
+            });
+
+            if !loaded {
+                return Err(ValidationError::ProgramHeaderTableNotLoaded { index });
             }
         }
 
