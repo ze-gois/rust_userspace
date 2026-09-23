@@ -3,7 +3,7 @@ use userspace::file::format::elf::{
     identification::{Class, Data},
     relocation::relative::{
         class_32, class_64, Entry, ExpansionError, RelocationFactor, RepresentationError,
-        StorageUnit, StorageUnitRepresentation, Table,
+        StorageUnit, StorageUnitRepresentation, StorageUnitWrite, Table, WriteError,
     },
     section_header,
 };
@@ -427,5 +427,129 @@ fn rejects_storage_unit_decoding_without_data_encoding() {
     assert_eq!(
         representation.decode(Data::Reserved(7)),
         Err(RepresentationError::UnsupportedData(Data::Reserved(7))),
+    );
+}
+
+
+#[test]
+fn plans_elf64_relative_relocation_storage_unit_writes() {
+    let table = Table::new(
+        vec![Entry::Address(0x400000), Entry::Bitmap(0b11)],
+        Class::Class64,
+    );
+    let storage_units = [
+        StorageUnitRepresentation::Class64(0x1000u64.to_le_bytes()),
+        StorageUnitRepresentation::Class64(0x2000u64.to_le_bytes()),
+    ];
+    let factor = RelocationFactor::from_virtual_addresses(0x500000, 0x400000);
+
+    assert_eq!(
+        table.storage_unit_writes(
+            &storage_units,
+            Data::LeastSignificantByteFirst,
+            factor,
+        ),
+        Ok(vec![
+            StorageUnitWrite {
+                virtual_address: 0x400000,
+                representation: StorageUnitRepresentation::Class64(
+                    0x101000u64.to_le_bytes(),
+                ),
+            },
+            StorageUnitWrite {
+                virtual_address: 0x400008,
+                representation: StorageUnitRepresentation::Class64(
+                    0x102000u64.to_le_bytes(),
+                ),
+            },
+        ]),
+    );
+}
+
+#[test]
+fn plans_big_endian_relative_relocation_storage_unit_write() {
+    let table = Table::new(vec![Entry::Address(0x1000)], Class::Class32);
+    let storage_units = [
+        StorageUnitRepresentation::Class32(0x2000u32.to_be_bytes()),
+    ];
+    let factor = RelocationFactor::from_virtual_addresses(0x2000, 0x1000);
+
+    assert_eq!(
+        table.storage_unit_writes(
+            &storage_units,
+            Data::MostSignificantByteFirst,
+            factor,
+        ),
+        Ok(vec![StorageUnitWrite {
+            virtual_address: 0x1000,
+            representation: StorageUnitRepresentation::Class32(
+                0x3000u32.to_be_bytes(),
+            ),
+        }]),
+    );
+}
+
+#[test]
+fn rejects_relative_relocation_storage_unit_count_mismatch() {
+    let table = Table::new(
+        vec![Entry::Address(0x400000), Entry::Bitmap(0b11)],
+        Class::Class64,
+    );
+    let storage_units = [
+        StorageUnitRepresentation::Class64(0x1000u64.to_le_bytes()),
+    ];
+    let factor = RelocationFactor::from_virtual_addresses(0x500000, 0x400000);
+
+    assert_eq!(
+        table.storage_unit_writes(
+            &storage_units,
+            Data::LeastSignificantByteFirst,
+            factor,
+        ),
+        Err(WriteError::StorageUnitCountMismatch {
+            addresses: 2,
+            storage_units: 1,
+        }),
+    );
+}
+
+#[test]
+fn rejects_relative_relocation_storage_unit_class_mismatch() {
+    let table = Table::new(vec![Entry::Address(0x400000)], Class::Class64);
+    let storage_units = [
+        StorageUnitRepresentation::Class32(0x1000u32.to_le_bytes()),
+    ];
+    let factor = RelocationFactor::from_virtual_addresses(0x500000, 0x400000);
+
+    assert_eq!(
+        table.storage_unit_writes(
+            &storage_units,
+            Data::LeastSignificantByteFirst,
+            factor,
+        ),
+        Err(WriteError::StorageUnitClassMismatch {
+            index: 0,
+            class: Class::Class64,
+        }),
+    );
+}
+
+#[test]
+fn propagates_relative_relocation_storage_unit_representation_error() {
+    let table = Table::new(vec![Entry::Address(0x400000)], Class::Class64);
+    let storage_units = [
+        StorageUnitRepresentation::Class64(0u64.to_le_bytes()),
+    ];
+    let factor = RelocationFactor::from_virtual_addresses(0, 1);
+
+    assert_eq!(
+        table.storage_unit_writes(
+            &storage_units,
+            Data::LeastSignificantByteFirst,
+            factor,
+        ),
+        Err(WriteError::Representation(
+            RepresentationError::ValueOutOfRange { value: -1 },
+        )),
     );
 }
