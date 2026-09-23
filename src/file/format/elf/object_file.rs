@@ -139,6 +139,88 @@ impl<'file> ObjectFile<'file> {
         ))
     }
 
+    pub fn validate_header(
+        &self,
+    ) -> Result<(), super::header::ValidationError> {
+        use super::header::{Type as ObjectType, ValidationError, Version};
+        use super::identification;
+
+        if self.header.identification.version != Version::Current.raw() as u8 {
+            return Err(ValidationError::IdentificationVersionNotCurrent {
+                version: self.header.identification.version,
+            });
+        }
+
+        for (padding_index, value) in self
+            .header
+            .identification
+            .padding
+            .iter()
+            .copied()
+            .enumerate()
+        {
+            if value != 0 {
+                return Err(ValidationError::IdentificationPaddingNotZero {
+                    index: identification::PADDING_INDEX + padding_index,
+                    value,
+                });
+            }
+        }
+
+        if !matches!(self.header.version, Version::Current) {
+            return Err(ValidationError::ObjectVersionNotCurrent {
+                version: self.header.version.raw(),
+            });
+        }
+
+        if let ObjectType::Reserved(raw) = self.header.r#type {
+            return Err(ValidationError::ReservedObjectType { raw });
+        }
+
+        let minimum_header_size = match self.header.identification.class {
+            Class::Class32 => {
+                core::mem::size_of::<super::header::class_32::Representation>() as u16
+            }
+            Class::Class64 => {
+                core::mem::size_of::<super::header::class_64::Representation>() as u16
+            }
+            Class::None | Class::Reserved(_) => self.header.header_size,
+        };
+
+        if self.header.header_size < minimum_header_size {
+            return Err(ValidationError::HeaderSizeTooSmall {
+                size: self.header.header_size,
+                minimum: minimum_header_size,
+            });
+        }
+
+        if self.header.program_header_count == 0 {
+            if self.header.program_header_offset != 0 {
+                return Err(ValidationError::ProgramHeaderOffsetWithoutTable {
+                    offset: self.header.program_header_offset,
+                });
+            }
+        } else if self.header.program_header_offset == 0 {
+            return Err(ValidationError::ProgramHeaderTableWithoutOffset {
+                count: self.header.program_header_count,
+            });
+        }
+
+        if self.section_header_count == 0 {
+            if self.header.section_header_offset != 0 {
+                return Err(ValidationError::SectionHeaderOffsetWithoutTable {
+                    offset: self.header.section_header_offset,
+                });
+            }
+        } else if self.header.section_header_offset == 0 {
+            return Err(ValidationError::SectionHeaderTableWithoutOffset {
+                count: self.section_header_count,
+            });
+        }
+
+        Ok(())
+    }
+
     pub fn validate_program_headers(
         &self,
     ) -> Result<(), program_header::ValidationError> {
