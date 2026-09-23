@@ -23,4 +23,9 @@ pub enum Error {
     SectionsOverlap { first: usize, second: usize },
     InvalidSectionNameStringTableType { index: usize },
     InvalidSectionName { index: usize, name_index: u32 },
+    UndefinedFlagsSet { index: usize, flags: u64 },
+    NonAllocatedSectionAddressNotZero { index: usize, address: u64 },
+    ReservedSectionType { index: usize, raw: u32 },
+    MultipleDynamicSections { first: usize, second: usize },
+    MultipleHashSections { first: usize, second: usize },
 }
