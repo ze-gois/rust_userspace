@@ -95,3 +95,19 @@ fn rejects_wrong_relative_relocation_section_entry_size() {
         Err(SectionValidationError::EntrySizeMismatch),
     );
 }
+
+
+#[test]
+fn rejects_relative_relocation_table_starting_with_bitmap() {
+    let mut bytes = fixture(2, 8);
+
+    // First Elf64_Relr entry: least-significant bit 1 denotes a bitmap entry.
+    bytes[64..72].copy_from_slice(&3u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_relative_relocation_section(1),
+        Err(SectionValidationError::FirstEntryMustBeAddress),
+    );
+}
