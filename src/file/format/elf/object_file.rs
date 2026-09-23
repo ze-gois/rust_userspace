@@ -11,6 +11,7 @@ use super::{
     note_table::NoteTable,
     identification::Class,
     program_header::{self, ProgramHeader},
+    program_image::{self, ProgramImage},
     program_header_table_image::ProgramHeaderTableImage,
     program_interpreter::ProgramInterpreter,
     relocation::{self, relative, Relocation},
@@ -93,6 +94,47 @@ impl<'file> ObjectFile<'file> {
 
         let file_image = range(self.bytes, program_header.offset, program_header.file_size)?;
         Some(LoadableSegment::new(program_header, file_image))
+    }
+
+    pub fn program_image(&self) -> Result<ProgramImage<'file>, program_image::Error> {
+        let mut segments = Vec::new();
+
+        for (index, program_header) in self.program_headers.iter().copied().enumerate() {
+            if !matches!(program_header.r#type, program_header::Type::Load) {
+                continue;
+            }
+
+            if program_header.file_size > program_header.memory_size {
+                return Err(program_image::Error::FileImageLargerThanMemoryImage { index });
+            }
+
+            let file_image = range(self.bytes, program_header.offset, program_header.file_size)
+                .ok_or(program_image::Error::FileImageUnavailable { index })?;
+
+            let zero_fill_virtual_address = program_header
+                .virtual_address
+                .checked_add(program_header.file_size)
+                .ok_or(program_image::Error::VirtualAddressRangeOverflow { index })?;
+            let link_time_end_virtual_address = program_header
+                .virtual_address
+                .checked_add(program_header.memory_size)
+                .ok_or(program_image::Error::VirtualAddressRangeOverflow { index })?;
+
+            segments.push(program_image::Segment {
+                program_header_index: index,
+                link_time_virtual_address: program_header.virtual_address,
+                file_image,
+                zero_fill: program_image::ZeroFill::new(
+                    zero_fill_virtual_address,
+                    program_header.memory_size - program_header.file_size,
+                ),
+                flags: program_header.flags,
+                alignment: program_header.alignment,
+                link_time_end_virtual_address,
+            });
+        }
+
+        Ok(ProgramImage::new(segments))
     }
 
     pub fn program_interpreter(&self) -> Option<ProgramInterpreter<'file>> {
