@@ -1,5 +1,6 @@
 use userspace::file::format::elf::{
     section_group::ValidationError,
+    section_link::ValidationError as SectionLinkValidationError,
     ObjectFile,
 };
 
@@ -253,5 +254,26 @@ fn rejects_member_in_multiple_groups() {
     assert_eq!(
         object.validate_section_groups(),
         Err(ValidationError::MemberInMultipleGroups { member_index: 5 }),
+    );
+}
+
+
+#[test]
+fn rejects_section_group_signature_outside_symbol_table() {
+    let mut bytes = fixture();
+
+    // SHT_GROUP section [3], sh_info at +44.
+    let information_offset = SECTION_HEADER_OFFSET as usize + 3 * 64 + 44;
+    bytes[information_offset..information_offset + 4]
+        .copy_from_slice(&99u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_section_links(),
+        Err(SectionLinkValidationError::GroupSignatureOutOfBounds {
+            section_index: 3,
+            symbol_index: 99,
+        }),
     );
 }
