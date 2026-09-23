@@ -66,6 +66,169 @@ impl<'file> ObjectFile<'file> {
         )
     }
 
+    pub fn validate_dynamic_array(
+        &self,
+        index: usize,
+    ) -> Result<(), dynamic::validation::ValidationError> {
+        use dynamic::validation::ValidationError;
+
+        let Some(program_header) = self.program_headers.get(index).copied() else {
+            return Ok(());
+        };
+        if !matches!(program_header.r#type, program_header::Type::Dynamic) {
+            return Ok(());
+        }
+
+        let array = self
+            .dynamic_array_from_program_header(index)
+            .ok_or(ValidationError::MalformedDynamicArray)?;
+
+        if !matches!(array.entries.last().map(|entry| entry.tag), Some(Tag::Null)) {
+            return Err(ValidationError::MissingNullTerminator);
+        }
+
+        for (entry_index, entry) in array.iter().enumerate() {
+            if let Tag::Reserved(raw) = entry.tag {
+                return Err(ValidationError::ReservedTag {
+                    index: entry_index,
+                    raw,
+                });
+            }
+        }
+
+        let string_table = array
+            .first(Tag::StringTable)
+            .ok_or(ValidationError::MissingStringTable)?;
+        let string_table_size = array
+            .first(Tag::StringTableSize)
+            .ok_or(ValidationError::MissingStringTableSize)?;
+        let symbol_table = array
+            .first(Tag::SymbolTable)
+            .ok_or(ValidationError::MissingSymbolTable)?;
+        let symbol_entry_size = array
+            .first(Tag::SymbolEntrySize)
+            .ok_or(ValidationError::MissingSymbolEntrySize)?;
+
+        let _ = (string_table, string_table_size, symbol_table);
+
+        if array.first(Tag::Hash).is_none() && array.first(Tag::SymbolTableSize).is_none() {
+            return Err(ValidationError::MissingHashOrSymbolTableSize);
+        }
+
+        let expected_symbol_entry_size = match self.header.identification.class {
+            Class::Class32 => core::mem::size_of::<symbol::class_32::Representation>() as u64,
+            Class::Class64 => core::mem::size_of::<symbol::class_64::Representation>() as u64,
+            Class::None | Class::Reserved(_) => return Ok(()),
+        };
+
+        if symbol_entry_size.payload != expected_symbol_entry_size {
+            return Err(ValidationError::SymbolEntrySizeMismatch {
+                expected: expected_symbol_entry_size,
+                actual: symbol_entry_size.payload,
+            });
+        }
+
+        if let Some(symbol_table_size) = array.first(Tag::SymbolTableSize) {
+            if symbol_table_size.payload % symbol_entry_size.payload != 0 {
+                return Err(ValidationError::SymbolTableSizeNotEntryMultiple);
+            }
+        }
+
+        let expected_rel_entry_size = match self.header.identification.class {
+            Class::Class32 => {
+                core::mem::size_of::<relocation::class_32::RelRepresentation>() as u64
+            }
+            Class::Class64 => {
+                core::mem::size_of::<relocation::class_64::RelRepresentation>() as u64
+            }
+            Class::None | Class::Reserved(_) => return Ok(()),
+        };
+        let expected_rela_entry_size = match self.header.identification.class {
+            Class::Class32 => {
+                core::mem::size_of::<relocation::class_32::RelaRepresentation>() as u64
+            }
+            Class::Class64 => {
+                core::mem::size_of::<relocation::class_64::RelaRepresentation>() as u64
+            }
+            Class::None | Class::Reserved(_) => return Ok(()),
+        };
+
+        let rel = array.first(Tag::Relocation);
+        let rela = array.first(Tag::RelocationWithAddend);
+
+        if matches!(self.header.r#type, header::Type::Executable) && rel.is_none() && rela.is_none() {
+            return Err(ValidationError::ExecutableMissingRelocationTable);
+        }
+
+        if rel.is_some() {
+            let size = array
+                .first(Tag::RelocationSize)
+                .ok_or(ValidationError::RelocationMissingSize)?;
+            let entry_size = array
+                .first(Tag::RelocationEntrySize)
+                .ok_or(ValidationError::RelocationMissingEntrySize)?;
+
+            if entry_size.payload != expected_rel_entry_size {
+                return Err(ValidationError::RelocationEntrySizeMismatch {
+                    expected: expected_rel_entry_size,
+                    actual: entry_size.payload,
+                });
+            }
+            if size.payload % entry_size.payload != 0 {
+                return Err(ValidationError::RelocationSizeNotEntryMultiple);
+            }
+        }
+
+        if rela.is_some() {
+            let size = array
+                .first(Tag::RelocationWithAddendSize)
+                .ok_or(ValidationError::RelocationWithAddendMissingSize)?;
+            let entry_size = array
+                .first(Tag::RelocationWithAddendEntrySize)
+                .ok_or(ValidationError::RelocationWithAddendMissingEntrySize)?;
+
+            if entry_size.payload != expected_rela_entry_size {
+                return Err(ValidationError::RelocationWithAddendEntrySizeMismatch {
+                    expected: expected_rela_entry_size,
+                    actual: entry_size.payload,
+                });
+            }
+            if size.payload % entry_size.payload != 0 {
+                return Err(ValidationError::RelocationWithAddendSizeNotEntryMultiple);
+            }
+        }
+
+        if array.first(Tag::JumpRelocation).is_some() {
+            array
+                .first(Tag::ProcedureLinkageTableRelocationSize)
+                .ok_or(ValidationError::JumpRelocationMissingSize)?;
+            let format = array
+                .first(Tag::ProcedureLinkageTableRelocation)
+                .ok_or(ValidationError::JumpRelocationMissingFormat)?;
+
+            if !matches!(
+                Tag::from_raw(i64::try_from(format.payload).unwrap_or(i64::MIN)),
+                Tag::Relocation | Tag::RelocationWithAddend
+            ) {
+                return Err(ValidationError::JumpRelocationInvalidFormat {
+                    raw: format.payload,
+                });
+            }
+        }
+
+        if let Some(flags) = array.first(Tag::Flags) {
+            let reserved = flags.payload & !Flags::DEFINED_MASK;
+            if reserved != 0 {
+                return Err(ValidationError::ReservedFlags { bits: reserved });
+            }
+        }
+
+        self.validate_dynamic_relative_relocation(index)?;
+        self.validate_dynamic_initialization_and_termination(index)?;
+
+        Ok(())
+    }
+
     pub fn dynamic_flags_from_program_header(&self, index: usize) -> Option<Flags> {
         let array = self.dynamic_array_from_program_header(index)?;
         Some(Flags::from_raw(
