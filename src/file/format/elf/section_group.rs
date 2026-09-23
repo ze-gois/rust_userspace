@@ -17,6 +17,10 @@ pub enum ValidationError {
     MemberInMultipleGroups { member_index: usize },
     GroupFlagWithoutGroup { member_index: usize },
     InvalidGroup { index: usize },
+    ExternalNonSymbolReferenceToMember {
+        source_index: usize,
+        member_index: usize,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
