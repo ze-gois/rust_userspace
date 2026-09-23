@@ -199,20 +199,27 @@ impl<'file> ObjectFile<'file> {
         }
 
         if array.first(Tag::JumpRelocation).is_some() {
-            array
+            let size = array
                 .first(Tag::ProcedureLinkageTableRelocationSize)
                 .ok_or(ValidationError::JumpRelocationMissingSize)?;
             let format = array
                 .first(Tag::ProcedureLinkageTableRelocation)
                 .ok_or(ValidationError::JumpRelocationMissingFormat)?;
 
-            if !matches!(
-                Tag::from_raw(i64::try_from(format.payload).unwrap_or(i64::MIN)),
-                Tag::Relocation | Tag::RelocationWithAddend
+            let entry_size = match Tag::from_raw(
+                i64::try_from(format.payload).unwrap_or(i64::MIN),
             ) {
-                return Err(ValidationError::JumpRelocationInvalidFormat {
-                    raw: format.payload,
-                });
+                Tag::Relocation => expected_rel_entry_size,
+                Tag::RelocationWithAddend => expected_rela_entry_size,
+                _ => {
+                    return Err(ValidationError::JumpRelocationInvalidFormat {
+                        raw: format.payload,
+                    })
+                }
+            };
+
+            if size.payload % entry_size != 0 {
+                return Err(ValidationError::JumpRelocationSizeNotEntryMultiple);
             }
         }
 
