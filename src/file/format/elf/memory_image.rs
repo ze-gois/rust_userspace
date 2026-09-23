@@ -72,6 +72,14 @@ impl<'memory> RegionWriter<'memory> {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WriteError {
+    Unavailable {
+        virtual_address: u64,
+        size: usize,
+    },
+}
+
 #[derive(Debug)]
 pub struct MemoryImageWriter<'memory> {
     pub regions: Vec<RegionWriter<'memory>>,
@@ -92,12 +100,19 @@ impl<'memory> MemoryImageWriter<'memory> {
             .find_map(|region| region.bytes_mut(virtual_address, size))
     }
 
-    pub fn write(&mut self, virtual_address: u64, bytes: &[u8]) -> bool {
-        let Some(destination) = self.bytes_mut(virtual_address, bytes.len()) else {
-            return false;
-        };
+    pub fn write(
+        &mut self,
+        virtual_address: u64,
+        bytes: &[u8],
+    ) -> Result<(), WriteError> {
+        let destination = self
+            .bytes_mut(virtual_address, bytes.len())
+            .ok_or(WriteError::Unavailable {
+                virtual_address,
+                size: bytes.len(),
+            })?;
 
         destination.copy_from_slice(bytes);
-        true
+        Ok(())
     }
 }
