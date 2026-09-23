@@ -16,6 +16,29 @@ pub enum SectionValidationError {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RelocationFactor(i128);
+
+impl RelocationFactor {
+    pub const fn from_virtual_addresses(
+        actual_load_time_virtual_address: u64,
+        link_time_virtual_address: u64,
+    ) -> Self {
+        Self(
+            actual_load_time_virtual_address as i128
+                - link_time_virtual_address as i128,
+        )
+    }
+
+    pub const fn value(self) -> i128 {
+        self.0
+    }
+
+    pub const fn is_zero(self) -> bool {
+        self.0 == 0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExpansionError {
     UnsupportedClass,
     BitmapWithoutAddress,
