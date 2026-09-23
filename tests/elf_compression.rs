@@ -67,13 +67,13 @@ fn recognizes_zstandard_compression_type() {
 }
 
 #[test]
-fn allows_allocated_compressed_section_in_relocatable_object() {
-    let bytes = fixture(1, 1, 0x2 | 0x800);
+fn resolves_non_allocated_compressed_section() {
+    let bytes = fixture(1, 1, 0x800);
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
 
     object
         .validate_compressed_section(1)
-        .expect("ET_REL may combine SHF_ALLOC and SHF_COMPRESSED");
+        .expect("non-allocable compressed section must be valid");
 
     let section = object
         .compressed_section(1)
@@ -92,7 +92,7 @@ fn rejects_allocated_compressed_section_in_executable() {
 
     assert_eq!(
         object.validate_compressed_section(1),
-        Err(ValidationError::AllocatedCompressedSectionInExecutableOrSharedObject),
+        Err(ValidationError::AllocatedCompressedSection),
     );
     assert!(object.compressed_section(1).is_none());
 }
@@ -111,11 +111,25 @@ fn rejects_compressed_nobits_section() {
 
 
 #[test]
-fn allows_allocated_compressed_section_in_core_object() {
+fn rejects_allocated_compressed_section_in_relocatable_object() {
+    let bytes = fixture(1, 1, 0x2 | 0x800);
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_compressed_section(1),
+        Err(ValidationError::AllocatedCompressedSection),
+    );
+}
+
+#[test]
+fn rejects_allocated_compressed_section_in_core_object() {
     let bytes = fixture(4, 1, 0x2 | 0x800);
     let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
 
-    assert_eq!(object.validate_compressed_section(1), Ok(()));
+    assert_eq!(
+        object.validate_compressed_section(1),
+        Err(ValidationError::AllocatedCompressedSection),
+    );
 }
 
 #[test]
