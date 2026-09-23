@@ -286,3 +286,54 @@ fn rejects_dynamic_extended_section_index_without_companion_table() {
         Err(ValidationError::DynamicSymbolTableUnavailable),
     );
 }
+
+
+#[test]
+fn ignores_soname_string_offset_in_executable() {
+    let mut bytes = fixture();
+
+    // Executables ignore DT_SONAME.
+    bytes[16..18].copy_from_slice(&2u16.to_le_bytes());
+    let tag = dynamic_entry_offset(5);
+    bytes[tag..tag + 8].copy_from_slice(&14i64.to_le_bytes());
+    bytes[tag + 8..tag + 16].copy_from_slice(&99u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(object.validate_dynamic_linking_tables(1), Ok(()));
+}
+
+#[test]
+fn ignores_rpath_string_offset_in_shared_object() {
+    let mut bytes = fixture();
+
+    // Shared objects ignore DT_RPATH.
+    let tag = dynamic_entry_offset(5);
+    bytes[tag..tag + 8].copy_from_slice(&15i64.to_le_bytes());
+    bytes[tag + 8..tag + 16].copy_from_slice(&99u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(object.validate_dynamic_linking_tables(1), Ok(()));
+}
+
+#[test]
+fn rejects_cyclic_system_v_hash_chain() {
+    let mut bytes = fixture();
+
+    // bucket[0] -> symbol 1 and chain[1] -> symbol 1 creates a cycle.
+    let chain_one = HASH_OFFSET as usize + 16;
+    bytes[chain_one..chain_one + 4].copy_from_slice(&1u32.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_dynamic_linking_tables(1),
+        Err(ValidationError::DynamicHashTableInvalid(
+            HashValidationError::ChainCycle {
+                bucket_index: 0,
+                symbol_index: 1,
+            },
+        )),
+    );
+}
