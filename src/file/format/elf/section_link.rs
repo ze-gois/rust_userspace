@@ -8,6 +8,34 @@
 use super::section::Section;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ValidationError {
+    LinkOutOfBounds {
+        section_index: usize,
+        linked_section_index: usize,
+    },
+    LinkNotStringTable {
+        section_index: usize,
+        linked_section_index: usize,
+    },
+    LinkNotSymbolTable {
+        section_index: usize,
+        linked_section_index: usize,
+    },
+    InformationMustBeZero {
+        section_index: usize,
+        information: u32,
+    },
+    RelocationTargetOutOfBounds {
+        section_index: usize,
+        target_section_index: usize,
+    },
+    GroupSignatureOutOfBounds {
+        section_index: usize,
+        symbol_index: usize,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Meaning {
     StringTable,
     SymbolTable,
