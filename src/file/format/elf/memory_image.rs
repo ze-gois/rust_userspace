@@ -142,7 +142,10 @@ impl<'memory> MemoryImageWriter<'memory> {
 
         let destination = self
             .bytes_mut(virtual_address, bytes.len())
-            .expect("validated memory-image write must remain available");
+            .ok_or(WriteError::Unavailable {
+                virtual_address,
+                size: bytes.len(),
+            })?;
 
         destination.copy_from_slice(bytes);
         Ok(())
