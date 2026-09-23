@@ -1,6 +1,7 @@
 use userspace::file::format::elf::{
     dynamic::{PayloadKind, Tag},
     identification::{Class, Data},
+    memory_image::{MemoryImage, Region},
     relocation::relative::{
         class_32, class_64, Entry, ExpansionError, RelocationFactor, RepresentationError,
         StorageUnit, StorageUnitRepresentation, StorageUnitWrite, Table, VirtualAddressError,
@@ -588,5 +589,113 @@ fn rejects_relative_relocation_load_time_virtual_address_out_of_range() {
         Err(VirtualAddressError::OutOfRange {
             value: u64::MAX as i128 + 1,
         }),
+    );
+}
+
+
+#[test]
+fn plans_relative_relocation_writes_from_loaded_memory_image() {
+    let table = Table::new(
+        vec![Entry::Address(0x400000), Entry::Bitmap(0b11)],
+        Class::Class64,
+    );
+    let mut bytes = [0u8; 16];
+    bytes[0..8].copy_from_slice(&0x1000u64.to_le_bytes());
+    bytes[8..16].copy_from_slice(&0x2000u64.to_le_bytes());
+
+    let mut regions = ample::r#type::Vec::new();
+    regions.push(Region::new(0x500000, &bytes));
+    let image = MemoryImage::new(regions);
+    let factor = RelocationFactor::from_virtual_addresses(0x500000, 0x400000);
+
+    assert_eq!(
+        table.storage_unit_writes_from_memory_image(
+            &image,
+            Data::LeastSignificantByteFirst,
+            factor,
+        ),
+        Ok(vec![
+            StorageUnitWrite {
+                link_time_virtual_address: 0x400000,
+                load_time_virtual_address: 0x500000,
+                representation: StorageUnitRepresentation::Class64(
+                    0x101000u64.to_le_bytes(),
+                ),
+            },
+            StorageUnitWrite {
+                link_time_virtual_address: 0x400008,
+                load_time_virtual_address: 0x500008,
+                representation: StorageUnitRepresentation::Class64(
+                    0x102000u64.to_le_bytes(),
+                ),
+            },
+        ]),
+    );
+}
+
+#[test]
+fn plans_big_endian_relative_relocation_write_from_loaded_memory_image() {
+    let table = Table::new(vec![Entry::Address(0x1000)], Class::Class32);
+    let bytes = 0x2000u32.to_be_bytes();
+
+    let mut regions = ample::r#type::Vec::new();
+    regions.push(Region::new(0x2000, &bytes));
+    let image = MemoryImage::new(regions);
+    let factor = RelocationFactor::from_virtual_addresses(0x2000, 0x1000);
+
+    assert_eq!(
+        table.storage_unit_writes_from_memory_image(
+            &image,
+            Data::MostSignificantByteFirst,
+            factor,
+        ),
+        Ok(vec![StorageUnitWrite {
+            link_time_virtual_address: 0x1000,
+            load_time_virtual_address: 0x2000,
+            representation: StorageUnitRepresentation::Class32(
+                0x3000u32.to_be_bytes(),
+            ),
+        }]),
+    );
+}
+
+#[test]
+fn rejects_relative_relocation_storage_unit_missing_from_memory_image() {
+    let table = Table::new(vec![Entry::Address(0x400000)], Class::Class64);
+    let mut regions = ample::r#type::Vec::new();
+    regions.push(Region::new(0x600000, &[0u8; 8]));
+    let image = MemoryImage::new(regions);
+    let factor = RelocationFactor::from_virtual_addresses(0x500000, 0x400000);
+
+    assert_eq!(
+        table.storage_unit_writes_from_memory_image(
+            &image,
+            Data::LeastSignificantByteFirst,
+            factor,
+        ),
+        Err(WriteError::StorageUnitUnavailable {
+            index: 0,
+            load_time_virtual_address: 0x500000,
+        }),
+    );
+}
+
+#[test]
+fn rejects_relative_relocation_load_address_overflow_before_memory_read() {
+    let table = Table::new(vec![Entry::Address(1)], Class::Class64);
+    let image = MemoryImage::new(ample::r#type::Vec::new());
+    let factor = RelocationFactor::from_virtual_addresses(u64::MAX, 0);
+
+    assert_eq!(
+        table.storage_unit_writes_from_memory_image(
+            &image,
+            Data::LeastSignificantByteFirst,
+            factor,
+        ),
+        Err(WriteError::VirtualAddress(
+            VirtualAddressError::OutOfRange {
+                value: u64::MAX as i128 + 1,
+            },
+        )),
     );
 }
