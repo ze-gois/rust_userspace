@@ -91,7 +91,7 @@ fn expands_elf32_relative_relocation_bitmaps() {
     );
 
     assert_eq!(
-        table.addresses(),
+        table.virtual_addresses(),
         Ok(vec![
             0x1000,
             0x1004,
@@ -114,7 +114,7 @@ fn expands_elf64_relative_relocation_bitmaps() {
     );
 
     assert_eq!(
-        table.addresses(),
+        table.virtual_addresses(),
         Ok(vec![
             0x400000,
             0x400008,
@@ -130,7 +130,7 @@ fn rejects_relative_relocation_bitmap_without_address() {
     let table = Table::new(vec![Entry::Bitmap(3)], Class::Class64);
 
     assert_eq!(
-        table.addresses(),
+        table.virtual_addresses(),
         Err(ExpansionError::BitmapWithoutAddress),
     );
 }
@@ -143,7 +143,7 @@ fn rejects_relative_relocation_address_expansion_overflow() {
     );
 
     assert_eq!(
-        table.addresses(),
-        Err(ExpansionError::AddressOverflow),
+        table.virtual_addresses(),
+        Err(ExpansionError::VirtualAddressOverflow),
     );
 }
