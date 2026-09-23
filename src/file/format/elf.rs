@@ -17,6 +17,7 @@ pub mod program_interpreter;
 pub mod program_header_table_image;
 pub mod thread_local_storage;
 pub mod base_address;
+pub mod memory_image;
 
 // Linking view and section contents.
 pub mod section_header;
