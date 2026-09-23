@@ -4,7 +4,7 @@ use ample::r#type::Vec;
 
 use super::super::{
     identification::{Class, Data},
-    memory_image::{MemoryImage, MemoryImageWriter},
+    memory_image::{self, MemoryImage, MemoryImageWriter},
     representation::{class_32 as representation_32, class_64 as representation_64, Decoder},
 };
 
@@ -24,9 +24,7 @@ pub enum RepresentationError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ApplicationError {
-    StorageUnitUnavailable {
-        load_time_virtual_address: u64,
-    },
+    MemoryImage(memory_image::WriteError),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,16 +39,12 @@ impl StorageUnitWrite {
         self,
         memory_image: &mut MemoryImageWriter<'_>,
     ) -> Result<(), ApplicationError> {
-        if !memory_image.write(
-            self.load_time_virtual_address,
-            self.representation.bytes(),
-        ) {
-            return Err(ApplicationError::StorageUnitUnavailable {
-                load_time_virtual_address: self.load_time_virtual_address,
-            });
-        }
-
-        Ok(())
+        memory_image
+            .write(
+                self.load_time_virtual_address,
+                self.representation.bytes(),
+            )
+            .map_err(ApplicationError::MemoryImage)
     }
 }
 
