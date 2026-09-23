@@ -92,7 +92,7 @@ fn rejects_allocated_compressed_section_in_executable() {
 
     assert_eq!(
         object.validate_compressed_section(1),
-        Err(ValidationError::AllocatedCompressedSectionOutsideRelocatableObject),
+        Err(ValidationError::AllocatedCompressedSectionInExecutableOrSharedObject),
     );
     assert!(object.compressed_section(1).is_none());
 }
@@ -107,4 +107,46 @@ fn rejects_compressed_nobits_section() {
         Err(ValidationError::NoBitsCompressedSection),
     );
     assert!(object.compressed_section(1).is_none());
+}
+
+
+#[test]
+fn allows_allocated_compressed_section_in_core_object() {
+    let bytes = fixture(4, 1, 0x2 | 0x800);
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(object.validate_compressed_section(1), Ok(()));
+}
+
+#[test]
+fn rejects_truncated_compression_header() {
+    let mut bytes = fixture(1, 1, 0x800);
+
+    // Section [1] begins after the ELF header and compression payload;
+    // sh_size is 32 bytes into Elf64_Shdr. Keep fewer bytes than Elf64_Chdr.
+    let section_header_offset = 64 + 27 + 64;
+    bytes[section_header_offset + 32..section_header_offset + 40]
+        .copy_from_slice(&8u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_compressed_section(1),
+        Err(ValidationError::MissingCompressionHeader),
+    );
+}
+
+#[test]
+fn rejects_non_power_of_two_uncompressed_alignment() {
+    let mut bytes = fixture(1, 1, 0x800);
+
+    // Elf64_Chdr.ch_addralign.
+    bytes[64 + 16..64 + 24].copy_from_slice(&3u64.to_le_bytes());
+
+    let object = ObjectFile::parse(&bytes).expect("ELF fixture must parse");
+
+    assert_eq!(
+        object.validate_compressed_section(1),
+        Err(ValidationError::UncompressedAlignmentNotPowerOfTwo),
+    );
 }
