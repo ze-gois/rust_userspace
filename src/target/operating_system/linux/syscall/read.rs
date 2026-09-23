@@ -1,9 +1,9 @@
-use crate::target::arch::{Arch, traits::Callable};
+use crate::target::architecture::{Architecture, traits::Callable};
 
 hooking!(READ);
 
 pub fn read(file_descriptor: isize, byte_buffer: *const u8, byte_length: usize) -> crate::Result {
-    let arch_result = Arch::syscall3(
+    let arch_result = Architecture::syscall3(
         NUMBER,
         file_descriptor as usize,
         byte_buffer as usize,
@@ -52,19 +52,19 @@ pub type Result = core::result::Result<Ok, Error>;
 pub fn handle_result(result: crate::Result) -> crate::Result {
     // Err(crate::Error::Default(1))
     match result {
-        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Arch(
-            crate::target::arch::Ok::X86_64Syscall(
-                crate::target::arch::syscall::Ok::X86_64Syscall3(
-                    crate::target::arch::syscall::syscall3::Ok::Default(m),
+        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
+            crate::target::architecture::Ok::X86_64Syscall(
+                crate::target::architecture::syscall::Ok::X86_64Syscall3(
+                    crate::target::architecture::syscall::syscall3::Ok::Default(m),
                 ),
             ),
-        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
-            crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::Read(
-                crate::target::os::syscall::read::Ok::Default(m),
+        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
+            crate::target::operating_system::Ok::Syscall(crate::target::operating_system::syscall::Ok::Read(
+                crate::target::operating_system::syscall::read::Ok::Default(m),
             )),
         ))),
-        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::Os(
-            crate::target::os::Error::Syscall(crate::target::os::syscall::Error::Read(
+        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
+            crate::target::operating_system::Error::Syscall(crate::target::operating_system::syscall::Error::Read(
                 Error::Default(3),
             )),
         ))),
