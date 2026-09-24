@@ -9,6 +9,7 @@ ENTRY(_start)
  * base address.
  */
 SECTIONS {
+    PROVIDE(_image_start = 0);
     . = 0x1000;
 
     .text : ALIGN(0x1000) {
@@ -36,7 +37,11 @@ SECTIONS {
     .dynstr : ALIGN(1) { *(.dynstr) } :rodata
     .hash : ALIGN(8) { *(.hash) } :rodata
     .gnu.hash : ALIGN(8) { *(.gnu.hash) } :rodata
-    .rela.dyn : ALIGN(8) { *(.rela.dyn) } :rodata
+    .rela.dyn : ALIGN(8) {
+        PROVIDE(_rela_dyn_start = .);
+        *(.rela.dyn)
+        PROVIDE(_rela_dyn_end = .);
+    } :rodata
     .rela.plt : ALIGN(8) { *(.rela.plt) } :rodata
 
     .got : ALIGN(8) {
