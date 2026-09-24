@@ -1,47 +1,32 @@
-pub mod header;
+//! ELF segment contents.
 
-mod constants;
-mod error;
-mod io;
-mod load;
-mod mapping;
-mod parse;
-mod plan;
+pub mod contents;
 
-pub use error::Error;
-pub use load::{load_inspect_path, load_path, load_static, load_static_path, prepare_execution};
-// pub use types::{LoadedSegment, LoadingPlan, PreparedExecution};
-
-use crate::file::format::elf::{LoadedELF, segment::header::Header64 as ProgramHeader64};
+use super::program_header::ProgramHeader;
 
 #[derive(Debug, Clone, Copy)]
-pub struct LoadedSegment {
-    pub index: usize,
-    pub address: u64,
-    pub virtual_address: u64,
-    pub file_offset: u64,
-    pub file_size: u64,
-    pub memory_size: u64,
-    pub flags: u32,
-    pub alignment: u64,
-    pub map_start: u64,
-    pub map_end: u64,
+pub struct Segment<'file> {
+    pub program_header: ProgramHeader,
+    pub file_image: &'file [u8],
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct PreparedExecution {
-    pub image: LoadedELF,
-    pub entry: u64,
-    pub stack_pointer: crate::target::arch::PointerType,
-}
+impl<'file> Segment<'file> {
+    pub const fn new(program_header: ProgramHeader, file_image: &'file [u8]) -> Self {
+        Self {
+            program_header,
+            file_image,
+        }
+    }
 
-#[derive(Clone, Copy)]
-pub struct LoadingPlan {
-    //SegmentPlan
-    pub header: ProgramHeader64,
-    pub address: u64,
-    pub map_start: u64,
-    pub map_end: u64,
-    pub file_start: u64,
-    pub memory_end: u64,
+    pub fn is_empty(&self) -> bool {
+        self.file_image.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.file_image.len()
+    }
+
+    pub const fn memory_size(&self) -> u64 {
+        self.program_header.memory_size
+    }
 }

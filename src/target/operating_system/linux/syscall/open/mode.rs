@@ -1,16 +1,15 @@
-#[rustfmt::skip]
-ample::enum_flag!(
+ample::flags!(
     usize;
-    "Open Mode";
-    pub enum Mode {
-        [0o400; ReadOwner;  READ_OWNER;  "Read owner";  "Readable by owner"],
-        [0o200; WriteOwner; WRITE_OWNER; "Write owner"; "Writable by owner"],
-        [0o100; ExecOwner;  EXEC_OWNER;  "Exec owner";  "Executable by owner"],
-        [0o40;  ReadGroup;  READ_GROUP;  "Read group";  "Readable by group"],
-        [0o20;  WriteGroup; WRITE_GROUP; "Write group"; "Writable by group"],
-        [0o10;  ExecGroup;  EXEC_GROUP;  "Exec group";  "Executable by group"],
-        [0o4;   ReadOther;  READ_OTHER;  "Read other";  "Readable by others"],
-        [0o2;   WriteOther; WRITE_OTHER; "Write other"; "Writable by others"],
-        [0o1;   ExecOther;  EXEC_OTHER;  "Exec other";  "Executable by others"]
+    "Open mode";
+    pub struct Mode {
+        [0o400; OWNER_READ;    S_IRUSR; "S_IRUSR"; "Owner may read"],
+        [0o200; OWNER_WRITE;   S_IWUSR; "S_IWUSR"; "Owner may write"],
+        [0o100; OWNER_EXECUTE; S_IXUSR; "S_IXUSR"; "Owner may execute"],
+        [0o040; GROUP_READ;    S_IRGRP; "S_IRGRP"; "Group may read"],
+        [0o020; GROUP_WRITE;   S_IWGRP; "S_IWGRP"; "Group may write"],
+        [0o010; GROUP_EXECUTE; S_IXGRP; "S_IXGRP"; "Group may execute"],
+        [0o004; OTHER_READ;    S_IROTH; "S_IROTH"; "Others may read"],
+        [0o002; OTHER_WRITE;   S_IWOTH; "S_IWOTH"; "Others may write"],
+        [0o001; OTHER_EXECUTE; S_IXOTH; "S_IXOTH"; "Others may execute"]
     }
 );

@@ -1,27 +1,70 @@
-pub mod entry;
-pub use entry::*;
+use ample::r#type::Vec;
 
-pub type List = crate::memory::stack::list::List<Entry>;
+#[derive(Debug, Clone, Copy)]
+pub struct Entry {
+    pointer: *const u8,
+}
 
-pub fn from_pointer(
-    environment_pointer: crate::target::arch::Pointer,
-) -> (List, crate::target::arch::Pointer) {
-    let environment_pointer = environment_pointer.0 as *mut crate::target::arch::PointerType;
+impl Entry {
+    pub const fn from_pointer(pointer: *const u8) -> Self { Self { pointer } }
+    pub const fn pointer(&self) -> *const u8 { self.pointer }
 
-    let mut counter = 0usize;
-    unsafe {
-        while !(*environment_pointer.add(counter)).is_null() {
-            counter += 1;
+    pub fn as_c_str(&self) -> Option<&core::ffi::CStr> {
+        if self.pointer.is_null() {
+            return None;
         }
+        Some(unsafe { core::ffi::CStr::from_ptr(self.pointer.cast()) })
     }
 
-    let auxiliary_pointer =
-        unsafe { (environment_pointer as crate::target::arch::PointerType).add(counter + 1) };
+    pub fn as_str(&self) -> Option<&str> {
+        self.as_c_str()?.to_str().ok()
+    }
 
-    let list = List::from_values(counter, |index| {
+    pub fn pair(&self) -> Option<(&str, &str)> {
+        self.as_str()?.split_once('=')
+    }
+
+    pub fn key(&self) -> Option<&str> {
+        self.pair().map(|(key, _)| key)
+    }
+
+    pub fn value(&self) -> Option<&str> {
+        self.pair().map(|(_, value)| value)
+    }
+
+    pub fn has_separator(&self) -> bool {
+        self.as_str().is_some_and(|value| value.contains('='))
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct List {
+    entries: Vec<Entry>,
+}
+
+impl List {
+    pub fn new() -> Self { Self { entries: Vec::new() } }
+    pub fn push(&mut self, entry: Entry) { self.entries.push(entry); }
+    pub fn len(&self) -> usize { self.entries.len() }
+    pub fn is_empty(&self) -> bool { self.entries.is_empty() }
+    pub fn get(&self, index: usize) -> Option<&Entry> { self.entries.get(index) }
+    pub fn iter(&self) -> core::slice::Iter<'_, Entry> { self.entries.iter() }
+}
+
+pub unsafe fn from_pointer(environment_pointer: *const usize) -> (List, *const usize) {
+    let mut environment = List::new();
+    let mut index = 0usize;
+
+    loop {
         let pointer = unsafe { *environment_pointer.add(index) };
-        Entry::from_pointer(crate::target::arch::Pointer(pointer))
-    });
+        if pointer == 0 {
+            break;
+        }
 
-    (list, crate::target::arch::Pointer(auxiliary_pointer))
+        environment.push(Entry::from_pointer(pointer as *const u8));
+        index += 1;
+    }
+
+    let auxiliary = unsafe { environment_pointer.add(index + 1) };
+    (environment, auxiliary)
 }

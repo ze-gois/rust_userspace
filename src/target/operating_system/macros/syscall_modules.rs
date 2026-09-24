@@ -29,7 +29,7 @@ macro_rules! syscall_modules {
         }
 
         pub mod signatures {
-            $(pub type $syscall_constant_ident = crate::target::arch::traits::callable::$syscall_signature;)*
+            $(pub type $syscall_constant_ident = crate::target::architecture::traits::callable::$syscall_signature;)*
         }
 
         #[repr(usize)]

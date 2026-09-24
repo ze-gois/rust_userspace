@@ -1,4 +1,4 @@
-use crate::target::arch::{Arch, traits::Callable};
+use crate::target::architecture::{Architecture, traits::Callable};
 
 pub use super::mmap::{Prot, prot};
 
@@ -6,7 +6,7 @@ hooking!(MPROTECT);
 
 #[inline(always)]
 pub fn mprotect(addr: *mut u8, len: usize, prot: i32) -> crate::Result {
-    let arch_result = Arch::syscall3(NUMBER, addr as usize, len, prot as usize);
+    let arch_result = Architecture::syscall3(NUMBER, addr as usize, len, prot as usize);
     handle_result(arch_result)
 }
 
@@ -24,8 +24,11 @@ pub mod ok {
 }
 
 pub mod error {
-    ample::result!(Error; "MUnMap error"; usize; [
-        [1; ERROR; Default; usize; "Error"; "Something wicked this way comes"],
+    ample::result!(Error; "MProtect error"; usize; [
+        [13; EACCES; PermissionDenied; usize; "EACCES"; "Requested protection conflicts with access allowed by the underlying memory object"],
+        [22; EINVAL; InvalidArgument; usize; "EINVAL"; "Address, alignment, or protection flags are invalid"],
+        [12; ENOMEM; OutOfMemory; usize; "ENOMEM"; "Address range is unmapped or kernel mapping resources are unavailable"],
+        [4096; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
@@ -43,19 +46,19 @@ pub type Result = core::result::Result<Ok, Error>;
 pub fn handle_result(result: crate::Result) -> crate::Result {
     // Err(crate::Error::Default(1))
     match result {
-        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Arch(
-            crate::target::arch::Ok::X86_64Syscall(
-                crate::target::arch::syscall::Ok::X86_64Syscall3(
-                    crate::target::arch::syscall::syscall3::Ok::Default(m),
+        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
+            crate::target::architecture::Ok::X86_64Syscall(
+                crate::target::architecture::syscall::Ok::X86_64Syscall3(
+                    crate::target::architecture::syscall::syscall3::Ok::Default(m),
                 ),
             ),
-        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
-            crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::MProtect(
-                crate::target::os::syscall::mprotect::Ok::Default(m),
+        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
+            crate::target::operating_system::Ok::Syscall(crate::target::operating_system::syscall::Ok::MProtect(
+                crate::target::operating_system::syscall::mprotect::Ok::Default(m),
             )),
         ))),
-        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::Os(
-            crate::target::os::Error::Syscall(crate::target::os::syscall::Error::MProtect(
+        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
+            crate::target::operating_system::Error::Syscall(crate::target::operating_system::syscall::Error::MProtect(
                 Error::Default(3),
             )),
         ))),

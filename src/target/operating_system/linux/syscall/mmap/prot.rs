@@ -1,11 +1,10 @@
-#[rustfmt::skip]
-ample::enum_flag!(
+ample::flags!(
     usize;
-    "Map Flags";
-    pub enum Prot {
-        [0;  None;  NONE; "None"; "None"],
-        [1;  Read;  READ; "Read"; "Read"],
-        [2;  Write;  WRITE; "Write"; "Write"],
-        [4;  Exec;  EXEC; "Exec"; "Exec"],
+    "Memory protection";
+    pub struct Prot {
+        [0; NONE;    PROT_NONE;  "PROT_NONE";  "Pages may not be accessed"],
+        [1; READ;    PROT_READ;  "PROT_READ";  "Pages may be read"],
+        [2; WRITE;   PROT_WRITE; "PROT_WRITE"; "Pages may be written"],
+        [4; EXECUTE; PROT_EXEC;  "PROT_EXEC";  "Pages may be executed"]
     }
 );

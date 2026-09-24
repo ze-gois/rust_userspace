@@ -1,4 +1,4 @@
-use crate::target::arch::{Arch, traits::Callable};
+use crate::target::architecture::{Architecture, traits::Callable};
 
 pub mod stat;
 pub use stat::Stat;
@@ -7,7 +7,7 @@ hooking!(FSTAT);
 
 #[inline(always)]
 pub fn fstat(fd: isize, stat: *const Stat) -> crate::Result {
-    let arch_result = Arch::syscall2(NUMBER, fd as usize, stat as usize);
+    let arch_result = Architecture::syscall2(NUMBER, fd as usize, stat as usize);
     handle_result(arch_result)
 }
 
@@ -25,8 +25,11 @@ pub mod ok {
 }
 
 pub mod error {
-    ample::result!(Error; "MUnMap error"; usize; [
-        [1; ERROR; Default; usize; "Error"; "Something wicked this way comes"],
+    ample::result!(Error; "FStat error"; usize; [
+        [9; EBADF; BadFileDescriptor; usize; "EBADF"; "File descriptor is not a valid open file descriptor"],
+        [14; EFAULT; InvalidBuffer; usize; "EFAULT"; "Status buffer is outside the accessible address space"],
+        [75; EOVERFLOW; Overflow; usize; "EOVERFLOW"; "File metadata cannot be represented by the stat structure"],
+        [4096; ERROR; Default; usize; "UNKNOWN"; "Unclassified Linux errno"],
     ]);
 
     impl Error {
@@ -44,19 +47,19 @@ pub type Result = core::result::Result<Ok, Error>;
 pub fn handle_result(result: crate::Result) -> crate::Result {
     // Err(crate::Error::Default(1))
     match result {
-        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Arch(
-            crate::target::arch::Ok::X86_64Syscall(
-                crate::target::arch::syscall::Ok::X86_64Syscall2(
-                    crate::target::arch::syscall::syscall2::Ok::Default(m),
+        crate::Result::Ok(crate::Ok::Target(crate::target::Ok::Architecture(
+            crate::target::architecture::Ok::X86_64Syscall(
+                crate::target::architecture::syscall::Ok::X86_64Syscall2(
+                    crate::target::architecture::syscall::syscall2::Ok::Default(m),
                 ),
             ),
-        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::Os(
-            crate::target::os::Ok::Syscall(crate::target::os::syscall::Ok::FStat(
-                crate::target::os::syscall::fstat::Ok::Default(m),
+        ))) => core::result::Result::Ok(crate::Ok::Target(crate::target::Ok::OperatingSystem(
+            crate::target::operating_system::Ok::Syscall(crate::target::operating_system::syscall::Ok::FStat(
+                crate::target::operating_system::syscall::fstat::Ok::Default(m),
             )),
         ))),
-        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::Os(
-            crate::target::os::Error::Syscall(crate::target::os::syscall::Error::FStat(
+        _ => core::result::Result::Err(crate::Error::Target(crate::target::Error::OperatingSystem(
+            crate::target::operating_system::Error::Syscall(crate::target::operating_system::syscall::Error::FStat(
                 Error::Default(3),
             )),
         ))),

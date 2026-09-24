@@ -1,88 +1,53 @@
-pub mod dtype;
+//! Executable and Linking Format (ELF).
+//!
+//! This module models the ELF object-file format described by the System V
+//! Generic ABI. Operating-system loading and process construction belong to
+//! consumers of this representation, not to the format itself.
 
+// Serialized representation and global object-file description.
+pub mod representation;
+pub mod identification;
 pub mod header;
-pub use header::Header32;
-pub use header::Header64;
 
-pub mod section;
+// Execution view.
+pub mod program_header;
 pub mod segment;
+pub mod loadable_segment;
+pub mod program_interpreter;
+pub mod program_header_table_image;
+pub mod thread_local_storage;
+pub mod base_address;
+pub mod memory_image;
+pub mod program_image;
 
-pub mod transfer;
+// Processor-specific ELF semantics (psABI / architecture ABI).
+pub mod processor_specific;
 
-pub(super) const MAX_INTERPRETER_PATH: usize = 256;
+// Linking view and section contents.
+pub mod section_header;
+pub mod section;
+pub mod section_link;
+pub mod string_table;
+pub mod symbol;
+pub mod symbol_table;
+pub mod relocation;
+pub mod relocation_table;
+pub mod dynamic;
+pub mod dynamic_array;
+pub mod hash;
+pub mod initialization_termination;
+pub mod note;
+pub mod note_table;
+pub mod compression;
+pub mod section_group;
 
-ample::r#struct!(
-    #[derive(Debug)]
-    pub struct InterpreterPath {
-        bytes: [u8; MAX_INTERPRETER_PATH],
-        len: usize,
-    }
-);
+// Relationships discovered through dynamic linking information.
+pub mod dynamic_symbol_table;
+pub mod dynamic_hash_table;
+pub mod dynamic_relocation_table;
+pub mod shared_object_dependencies;
 
-impl InterpreterPath {
-    pub fn as_str(&self) -> Option<&str> {
-        core::str::from_utf8(&self.bytes[..self.len]).ok()
-    }
+// Whole-file context and cross-structure resolution.
+pub mod object_file;
 
-    pub(super) fn from_parts(bytes: [u8; MAX_INTERPRETER_PATH], len: usize) -> Self {
-        Self { bytes, len }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct LoadedELF {
-    pub entry: u64,
-    pub base: u64,
-    pub end: u64,
-    pub direct_entry: bool,
-    pub phdr: u64,
-    pub phent: usize,
-    pub phnum: usize,
-    pub interpreter: Option<InterpreterPath>,
-    pub dynamic: bool,
-    pub segments: [Option<segment::LoadedSegment>; 32],
-    pub segment_count: usize,
-}
-
-#[derive(Clone, Copy)]
-pub struct LoadingPlan {
-    pub segments: [Option<segment::LoadingPlan>; 32],
-    pub segment_count: usize,
-    pub image_start: u64,
-    pub image_end: u64,
-    pub phdr: u64,
-    pub phent: usize,
-    pub phnum: usize,
-    pub interpreter: Option<InterpreterPath>,
-    pub dynamic: bool,
-    pub runtime_dynamic: bool,
-}
-
-pub fn execute_from_path(
-    path: &str,
-    stack_pointer: crate::target::arch::PointerType,
-) -> core::result::Result<(), crate::file::format::elf::segment::Error> {
-    let prepared = match crate::file::format::elf::segment::prepare_execution(
-        path,
-        path.as_ptr(),
-        stack_pointer,
-    ) {
-        Ok(prepared) => prepared,
-        Err(error) => return Err(error),
-    };
-
-    let new_stack = crate::memory::Stack::from_pointer(crate::target::arch::Pointer(stack_pointer));
-    new_stack.print();
-
-    unsafe {
-        crate::file::format::elf::transfer::jump_to_entry(prepared.entry, prepared.stack_pointer)
-    }
-}
-
-pub mod result;
-pub use result::{Error, Ok, Result};
-
-// pub fn execute_from_path(path: &str) -> Result<!, Error> {
-//     // let (header, file_descriptor) = header::Identifier::from_path(path)?;
-
-// }
+pub use object_file::{ObjectFile, ParseError};

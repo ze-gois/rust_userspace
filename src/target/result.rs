@@ -1,13 +1,13 @@
 pub mod ok {
     ample::result!(
         Ok;
-        "Human Ok";
+        "Target success";
         usize;
         [
-            [1; TARGET_DEFAULT_OK; Default; usize; "ZE"; "Entry to ze"],
-            [2; TARGET_INFO_OK; Info; usize; "ZE"; "Entry to ze"],
-            [3; TARGET_OS_OK; Os; crate::target::os::Ok; "ZE"; "Entry to ze"],
-            [4; TARGET_ARCH_OK; Arch; crate::target::arch::Ok; "ZE"; "Entry to ze"],
+            [1; TARGET_DEFAULT_OK; Default; usize; "default"; "Default target success"],
+            [2; TARGET_INFO_OK; Info; usize; "information"; "Target information success"],
+            [3; TARGET_OPERATING_SYSTEM_OK; OperatingSystem; crate::target::operating_system::Ok; "operating system"; "Operating-system target success"],
+            [4; TARGET_ARCHITECTURE_OK; Architecture; crate::target::architecture::Ok; "architecture"; "Architecture target success"],
         ]
     );
 
@@ -21,13 +21,13 @@ pub mod ok {
 pub mod error {
     ample::result!(
         Error;
-        "Human error";
+        "Target failure";
         usize;
         [
-            [1; TARGET_DEFAULT_ERROR; Default; usize; "ZE"; "Entry to ze"],
-            [2; TARGET_INFO_ERROR; Info; usize; "ZE"; "Entry to ze"],
-            [3; TARGET_OS_ERROR; Os; crate::target::os::Error; "ZE"; "Entry to ze"],
-            [4; TARGET_ARCH_ERROR; Arch; crate::target::arch::Error; "ZE"; "Entry to ze"],
+            [1; TARGET_DEFAULT_ERROR; Default; usize; "default"; "Default target failure"],
+            [2; TARGET_INFO_ERROR; Info; usize; "information"; "Target information failure"],
+            [3; TARGET_OPERATING_SYSTEM_ERROR; OperatingSystem; crate::target::operating_system::Error; "operating system"; "Operating-system target failure"],
+            [4; TARGET_ARCHITECTURE_ERROR; Architecture; crate::target::architecture::Error; "architecture"; "Architecture target failure"],
         ]
     );
 
@@ -42,11 +42,3 @@ pub use error::Error;
 pub use ok::Ok;
 
 pub type Result = core::result::Result<Ok, Error>;
-
-// pub fn handle_result(result: usize) -> Result {
-//     if (result as isize) < 0 {
-//         Err(Error::from_no(result))
-//     } else {
-//         Ok(Ok::from_no(result))
-//     }
-// }

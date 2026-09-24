@@ -1,0 +1,33 @@
+//! gABI constraints over the ELF section-header table.
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Error {
+    AlignmentNotPowerOfTwo { index: usize },
+    InformationLinkOutOfBounds { index: usize, target: usize },
+    MergeOrStringsEntrySizeZero { index: usize },
+    MergeOrStringsSizeNotEntryMultiple { index: usize },
+    UndefinedSectionNameNotZero,
+    UndefinedSectionTypeNotNull,
+    UndefinedSectionFlagsNotZero,
+    UndefinedSectionAddressNotZero,
+    UndefinedSectionOffsetNotZero,
+    UndefinedSectionInformationNotZero,
+    UndefinedSectionAlignmentNotZero,
+    UndefinedSectionEntrySizeNotZero,
+    DirectSectionCountWithInitialSize { size: u64 },
+    ExtendedSectionCountBelowReservedRange { count: usize },
+    DirectSectionNameStringTableWithInitialLink { link: u32 },
+    ExtendedSectionNameStringTableBelowReservedRange { index: usize },
+    AddressMisaligned { index: usize },
+    SectionOutsideFile { index: usize },
+    SectionsOverlap { first: usize, second: usize },
+    InvalidSectionNameStringTableType { index: usize },
+    InvalidSectionName { index: usize, name_index: u32 },
+    UndefinedFlagsSet { index: usize, flags: u64 },
+    NonAllocatedSectionAddressNotZero { index: usize, address: u64 },
+    ReservedSectionType { index: usize, raw: u32 },
+    MultipleDynamicSections { first: usize, second: usize },
+    MultipleHashSections { first: usize, second: usize },
+    MultipleSymbolTables { first: usize, second: usize },
+    MultipleDynamicSymbolTables { first: usize, second: usize },
+}

@@ -1,46 +1,26 @@
-pub use crate::info;
 pub mod arguments;
 pub mod auxiliary;
-pub mod build;
 pub mod environment;
-pub mod list;
+pub mod region;
 
-pub const SIZE: usize = 0x1000000;
+pub use region::{Growth, Region};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Error {
-    InvalidSource,
-    StackConstructionFailed,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Copy)]
 pub enum Status {
     Raw,
-    Modfied,
+    Modified,
 }
 
-ample::r#struct!(
-    #[derive(Debug)]
-    pub struct ArgumentNode {
-        pub pointer: crate::target::arch::PointerType,
-    }
-);
-
-ample::enum_typed!(
-    u32;
-    #[derive(Debug)]
-    pub enum StackNode {
-        A(ArgumentNode) = 1,
-        B(()) = 2,
-    }
-);
-
-#[repr(C)]
+/// Linux initial process stack reconstructed from the stack pointer supplied
+/// by `_start`.
+///
+/// The pointed-to strings and auxiliary data remain owned by the original
+/// process stack. This structure owns only the vectors of descriptors used to
+/// navigate that layout.
 #[derive(Debug)]
 pub struct Stack {
-    pub former: crate::target::arch::Pointer,
-    pub latter: crate::target::arch::Pointer,
+    pub former: crate::target::architecture::StackPointer,
+    pub latter: *const u8,
     pub arguments: arguments::List,
     pub environment: environment::List,
     pub auxiliary: auxiliary::List,
@@ -48,13 +28,27 @@ pub struct Stack {
 }
 
 impl Stack {
-    pub fn from_pointer(stack_pointer: crate::target::arch::Pointer) -> Self {
-        let (arguments, environment_pointer) = arguments::from_pointer(stack_pointer);
-        let (environment, auxiliary_pointer) = environment::from_pointer(environment_pointer);
-        let (auxiliary, latter_pointer) = auxiliary::from_pointer(auxiliary_pointer);
+    /// Reconstruct the Linux initial process stack from the untouched pointer
+    /// received from `start.s`.
+    ///
+    /// # Safety
+    ///
+    /// `stack_pointer` must point to a valid Linux initial process stack:
+    /// argc, argv pointers terminated by null, envp pointers terminated by
+    /// null, followed by an auxiliary vector terminated by AT_NULL.
+    pub unsafe fn from_pointer(
+        stack_pointer: crate::target::architecture::StackPointer,
+    ) -> Self {
+        let (arguments, environment_pointer) =
+            unsafe { arguments::from_pointer(stack_pointer) };
+        let (environment, auxiliary_pointer) =
+            unsafe { environment::from_pointer(environment_pointer) };
+        let (auxiliary, latter_pointer) =
+            unsafe { auxiliary::from_pointer(auxiliary_pointer) };
+
         Self {
             former: stack_pointer,
-            latter: latter_pointer,
+            latter: latter_pointer.cast::<u8>(),
             arguments,
             environment,
             auxiliary,
@@ -62,46 +56,71 @@ impl Stack {
         }
     }
 
-    pub fn current() -> Self {
-        Self::from_pointer(crate::target::arch::Pointer::current())
-    }
-
-    pub fn build_execution_stack(
-        initial_stack: crate::target::arch::PointerType,
-        path: &str,
-        path_pointer: *const u8,
-        entry: u64,
-        phdr: u64,
-        phent: usize,
-        phnum: usize,
-        interpreter_base: usize,
-    ) -> Result<crate::target::arch::PointerType, Error> {
-        build::build_initial_stack(
-            initial_stack,
-            path,
-            path_pointer,
-            entry,
-            phdr,
-            phent,
-            phnum,
-            interpreter_base,
-        )
+    pub fn argc(&self) -> usize {
+        self.arguments.len()
     }
 
     pub fn print(&self) {
-        info!("--- Stack Contents ---\n");
-        info!(
-            "pub struct Stack {{
-                pub former: crate::target::arch::Pointer = {:?},
-                pub latter: crate::target::arch::Pointer = {:?},
-                pub arguments: arguments::List = {:?},
-                pub status: Status = {:?},
-            }}\n",
-            self.former, self.latter, self.arguments, self.status,
+        crate::info!("--- Linux Initial Stack ---\n");
+        crate::info!(
+            "former={:p} latter={:p} argc={} status={:?}\n",
+            self.former,
+            self.latter,
+            self.argc(),
+            self.status,
         );
-        self.arguments.print();
-        self.environment.print();
-        self.auxiliary.print();
-        info!("---------------------\n");
+
+        crate::info!("argv[{}]\n", self.arguments.len());
+        for (index, argument) in self.arguments.iter().enumerate() {
+            match argument.as_str() {
+                Some(value) => crate::info!("  argv[{}] = {:?}\n", index, value),
+                None => crate::info!(
+                    "  argv[{}] = <non-utf8 @ {:p}>\n",
+                    index,
+                    argument.pointer(),
+                ),
+            }
+        }
+
+        crate::info!("envp[{}]\n", self.environment.len());
+        for (index, variable) in self.environment.iter().enumerate() {
+            match variable.pair() {
+                Some((key, value)) => crate::info!(
+                    "  envp[{}] = {{ key: {:?}, value: {:?} }}\n",
+                    index,
+                    key,
+                    value,
+                ),
+                None => match variable.as_str() {
+                    Some(raw) => crate::info!(
+                        "  envp[{}] = {{ raw: {:?}, separator: false }}\n",
+                        index,
+                        raw,
+                    ),
+                    None => crate::info!(
+                        "  envp[{}] = <non-utf8 @ {:p}>\n",
+                        index,
+                        variable.pointer(),
+                    ),
+                },
+            }
+        }
+
+        crate::info!("auxv[{}]\n", self.auxiliary.len());
+        for (index, auxiliary) in self.auxiliary.iter().enumerate() {
+            let value = auxiliary.value();
+
+            crate::info!(
+                "  auxv[{}] = {{ type: {}, acronym: {:?}, description: {:?}, raw: {:#x}, value: {:?} }}\n",
+                index,
+                auxiliary.raw_key(),
+                ample::traits::enums::Labeled::<crate::Origin>::acronym(&value),
+                ample::traits::enums::Labeled::<crate::Origin>::description(&value),
+                auxiliary.raw_value(),
+                value,
+            );
+        }
+
+        crate::info!("---------------------------\n");
     }
 }

@@ -1,50 +1,10 @@
-pub mod load;
-pub use load::load;
-
-pub mod information;
-pub use information::information;
-
-pub mod print;
-pub use print::print;
-
-pub mod open;
-pub use open::open;
-
-pub mod seek;
-pub use seek::seek;
+//! File domain.
+//!
+//! File capabilities are introduced independently as their semantics are
+//! justified. For now the public surface contains only file printing.
 
 pub mod format;
-
-pub mod result;
-pub use result::{Error, Ok, Result};
-
-// use crate::memory::heap::Allocating;
-
-pub mod traits;
-
-// impl traits::Bytes<Origin, Origin> for &str {
-//     const BYTES_SIZE: usize = core::mem::size_of::<&str>();
-//     fn to_bytes(&self, endianness: bool) -> [u8; Self::BYTES_SIZE] {
-//         let bytes =
-//         memory::alloc::<char>(self.len());
-//     }
-// }
-
-ample::r#struct!(
-    pub struct Information {
-        size: usize,
-    }
-);
-
-ample::r#struct!(
-    pub struct File {
-        pub descriptor: isize,
-        pub information: Information, // pub memory : Option<*const u8>
-    }
-);
-
-impl File {
-    // pub fn open(path: &str) -> Result<isize, Error> {
-    //     core::result::Result::Ok(open(path))
-    // }
-}
+pub mod print;
+pub mod read;
+pub use print::print;
+pub use read::read;

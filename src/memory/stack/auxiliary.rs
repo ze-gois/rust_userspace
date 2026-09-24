@@ -1,37 +1,40 @@
-pub mod atype;
+use ample::r#type::Vec;
+
 pub mod entry;
+pub mod r#type;
 
-pub use atype::Type;
-pub use atype::TypeTrait;
-pub use entry::*;
+pub use entry::Entry;
+pub use r#type::{Type, TypeTrait};
 
-pub type List = crate::memory::stack::list::List<Entry>;
+#[derive(Debug, Default)]
+pub struct List {
+    entries: Vec<Entry>,
+}
 
-pub fn from_pointer(
-    auxiliary_pointer: crate::target::arch::Pointer,
-) -> (List, crate::target::arch::Pointer) {
-    let auxiliary_pointer = auxiliary_pointer.0 as *const usize;
-    let mut counter = 0usize;
+impl List {
+    pub fn new() -> Self { Self { entries: Vec::new() } }
+    pub fn push(&mut self, entry: Entry) { self.entries.push(entry); }
+    pub fn len(&self) -> usize { self.entries.len() }
+    pub fn is_empty(&self) -> bool { self.entries.is_empty() }
+    pub fn get(&self, index: usize) -> Option<&Entry> { self.entries.get(index) }
+    pub fn iter(&self) -> core::slice::Iter<'_, Entry> { self.entries.iter() }
+}
+
+pub unsafe fn from_pointer(auxiliary_pointer: *const usize) -> (List, *const usize) {
+    let mut auxiliary = List::new();
+    let mut index = 0usize;
 
     loop {
-        let key_pointer = unsafe { auxiliary_pointer.add(counter.saturating_mul(2)) };
-        let value_pointer = unsafe { key_pointer.add(1) as *const u8 };
-        let pair = Type::from_pair(key_pointer, value_pointer);
-        if pair.is_null() {
-            break;
+        let pointer = unsafe { auxiliary_pointer.add(index.saturating_mul(2)) };
+        let entry = Entry::from_pointer(pointer);
+        let value = entry.value();
+
+        if value.is_null() {
+            let latter = unsafe { pointer.add(2) };
+            return (auxiliary, latter);
         }
-        counter = counter.saturating_add(1);
+
+        auxiliary.push(entry);
+        index = index.saturating_add(1);
     }
-
-    let latter_pointer =
-        unsafe { auxiliary_pointer.add(counter.saturating_add(1).saturating_mul(2)) }
-            as crate::target::arch::PointerType;
-
-    let list = List::from_values(counter, |index| {
-        let pointer = unsafe { auxiliary_pointer.add(index.saturating_mul(2)) }
-            as crate::target::arch::PointerType;
-        Entry::from_pointer(crate::target::arch::Pointer(pointer))
-    });
-
-    (list, crate::target::arch::Pointer(latter_pointer))
 }

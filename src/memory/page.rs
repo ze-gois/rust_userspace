@@ -1,20 +1,16 @@
-use core::ops::Not;
+pub use crate::target::architecture::page::BASE_SIZE;
 
-pub use crate::target::arch::page::SIZE;
+const MASK: usize = !(BASE_SIZE - 1);
 
-pub const ALIGNMENT: usize = SIZE - 1;
-pub const MASK: usize = !ALIGNMENT;
-
-pub const DYNAMIC_OFFSET: usize = 0x400000;
-
-pub fn round_address_to_lower_page_boundary(address: usize) -> usize {
+#[inline]
+pub const fn align_down(address: usize) -> usize {
     address & MASK
 }
 
-pub fn align_to_lower_page(address: usize) -> usize {
-    (address + ALIGNMENT) & ALIGNMENT.not()
-}
-
-pub fn truncate_to_page(address: usize) -> usize {
-    address & ALIGNMENT.not()
+#[inline]
+pub const fn align_up(address: usize) -> Option<usize> {
+    match address.checked_add(BASE_SIZE - 1) {
+        Some(address) => Some(align_down(address)),
+        None => None,
+    }
 }
