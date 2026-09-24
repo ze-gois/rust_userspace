@@ -19,6 +19,8 @@ fn main() {
 
     info!("cargo:rustc-link-arg=-static\n");
     info!("cargo:rustc-link-arg=--no-dynamic-linker\n");
+    info!("cargo:rustc-link-arg=-z\n");
+    info!("cargo:rustc-link-arg=text\n");
     info!("cargo:rustc-link-arg=-n\n");
     info!("cargo:rustc-link-arg=-pie\n");
     info!("cargo:rustc-link-arg=--hash-style=sysv\n");
