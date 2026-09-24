@@ -43,25 +43,48 @@ if [[ -n "$RELOCATION_TYPES" ]]; then
     done <<< "$RELOCATION_TYPES"
 fi
 
-set +e
-OUTPUT="$("$BINARY" 2>&1)"
-STATUS=$?
-set -e
+run_and_capture() {
+    local argument="${1-}"
+    local output
+    local status
 
-printf '%s\n' "$OUTPUT"
+    set +e
+    if [[ -z "$argument" ]]; then
+        output="$("$BINARY" 2>&1)"
+    else
+        output="$("$BINARY" "$argument" 2>&1)"
+    fi
+    status=$?
+    set -e
 
-if [[ "$STATUS" -ne 0 ]]; then
-    echo "userspace self execution exited abnormally with status $STATUS" >&2
-    exit "$STATUS"
+    printf '%s\n' "$output"
+
+    if [[ "$status" -ne 0 ]]; then
+        echo "userspace exited abnormally with status $status" >&2
+        exit "$status"
+    fi
+
+    CAPTURED_OUTPUT="$output"
+}
+
+run_and_capture
+if [[ "$CAPTURED_OUTPUT" != "userspace" ]]; then
+    echo "no argument must execute once without self-loading" >&2
+    exit 1
 fi
 
-for EXECUTION in 1 2 3; do
-    MARKER="userspace self execution ${EXECUTION}/3"
-    COUNT="$(printf '%s\n' "$OUTPUT" | grep -Fxc "$MARKER" || true)"
-    if [[ "$COUNT" -ne 1 ]]; then
-        echo "expected exactly one: $MARKER; observed $COUNT" >&2
-        exit 1
-    fi
-done
+run_and_capture "not-a-natural-number"
+if [[ "$CAPTURED_OUTPUT" != "userspace" ]]; then
+    echo "non-natural argument must execute once without self-loading" >&2
+    exit 1
+fi
 
-echo "static PIE self execution: 3/3"
+run_and_capture "3"
+
+EXPECTED="$(printf 'userspace 3\nuserspace 2\nuserspace 1\nuserspace 0')"
+if [[ "$CAPTURED_OUTPUT" != "$EXPECTED" ]]; then
+    echo "natural-number argument did not decrement through self execution" >&2
+    exit 1
+fi
+
+echo "static PIE natural-number self execution: 3 -> 2 -> 1 -> 0"

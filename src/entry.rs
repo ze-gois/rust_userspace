@@ -19,27 +19,30 @@ use userspace::target::operating_system::{
 
 const PAGE_SIZE: usize = 0x1000;
 const PROCESS_STACK_SIZE: usize = 1024 * 1024;
-const EXECUTION_COUNT: usize = 3;
-
-const EXECUTION_2: &[u8] = b"--userspace-self-execution=2\0";
-const EXECUTION_3: &[u8] = b"--userspace-self-execution=3\0";
+const DECIMAL_ARGUMENT_SIZE: usize = 21;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn entry(
     stack_pointer: userspace::target::architecture::StackPointer,
 ) -> ! {
     let stack = unsafe { userspace::memory::Stack::from_pointer(stack_pointer) };
-    let execution = execution_number(&stack);
 
-    userspace::info!(
-        "userspace self execution {}/{}\n",
-        execution,
-        EXECUTION_COUNT,
-    );
+    let natural_number = stack
+        .arguments
+        .get(1)
+        .and_then(|argument| argument.as_natural_number());
 
-    if execution >= EXECUTION_COUNT {
-        syscall::exit(0)
+    match natural_number {
+        Some(number) => userspace::info!("userspace {}\n", number),
+        None => userspace::info!("userspace\n"),
     }
+
+    let Some(number) = natural_number else {
+        syscall::exit(0)
+    };
+    let Some(next_number) = number.checked_sub(1) else {
+        syscall::exit(0)
+    };
 
     let Some(argument_0) = stack.arguments.get(0) else {
         userspace::info!("userspace self execution requires argv[0]\n");
@@ -92,18 +95,17 @@ pub extern "C" fn entry(
         syscall::exit(1)
     };
 
-    let next_marker = match execution + 1 {
-        2 => EXECUTION_2,
-        3 => EXECUTION_3,
-        _ => {
-            userspace::info!("invalid userspace self-execution generation\n");
-            syscall::exit(1)
-        }
+    let mut next_argument = [0u8; DECIMAL_ARGUMENT_SIZE];
+    let Some(next_argument_pointer) =
+        decimal_argument(next_number, &mut next_argument)
+    else {
+        userspace::info!("failed to represent next natural-number argument\n");
+        syscall::exit(1)
     };
 
     let arguments = [
         path.as_ptr().cast::<u8>(),
-        next_marker.as_ptr(),
+        next_argument_pointer,
     ];
 
     let mut environment = Vec::with_capacity(stack.environment.len());
@@ -136,13 +138,6 @@ pub extern "C" fn entry(
         }
     };
 
-    userspace::info!(
-        "transferring userspace execution {} -> {} at entry {:p}\n",
-        execution,
-        execution + 1,
-        entry,
-    );
-
     unsafe {
         entry_point::transfer_control(
             entry,
@@ -152,10 +147,23 @@ pub extern "C" fn entry(
     }
 }
 
-fn execution_number(stack: &userspace::memory::Stack) -> usize {
-    match stack.arguments.get(1).and_then(|argument| argument.as_str()) {
-        Some("--userspace-self-execution=2") => 2,
-        Some("--userspace-self-execution=3") => 3,
-        _ => 1,
+fn decimal_argument(
+    mut number: usize,
+    storage: &mut [u8; DECIMAL_ARGUMENT_SIZE],
+) -> Option<*const u8> {
+    let terminator = storage.len().checked_sub(1)?;
+    storage[terminator] = 0;
+
+    let mut start = terminator;
+    loop {
+        start = start.checked_sub(1)?;
+        storage[start] = b'0' + u8::try_from(number % 10).ok()?;
+        number /= 10;
+
+        if number == 0 {
+            break;
+        }
     }
+
+    Some(storage[start..].as_ptr())
 }

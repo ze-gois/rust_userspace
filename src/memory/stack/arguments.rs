@@ -24,6 +24,30 @@ impl Entry {
     pub fn as_str(&self) -> Option<&str> {
         self.as_c_str()?.to_str().ok()
     }
+
+    /// Interpret the complete argument as a decimal natural number.
+    ///
+    /// Only ASCII decimal digits are accepted. Signs, whitespace, empty
+    /// strings, and values outside `usize` are not natural-number arguments.
+    pub fn as_natural_number(&self) -> Option<usize> {
+        let bytes = self.as_str()?.as_bytes();
+        if bytes.is_empty() {
+            return None;
+        }
+
+        let mut value = 0usize;
+        for byte in bytes.iter().copied() {
+            if !byte.is_ascii_digit() {
+                return None;
+            }
+
+            value = value
+                .checked_mul(10)?
+                .checked_add(usize::from(byte - b'0'))?;
+        }
+
+        Some(value)
+    }
 }
 
 #[derive(Debug, Default)]
