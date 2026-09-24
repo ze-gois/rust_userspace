@@ -28,8 +28,32 @@ if readelf -l "$BINARY" | grep -q 'INTERP'; then
     exit 1
 fi
 
+RELOCATION_TYPES="$(
+    readelf -rW "$BINARY" |
+        awk '/R_X86_64_/ { print $3 }' |
+        sort -u
+)"
+if [[ -n "$RELOCATION_TYPES" ]]; then
+    while IFS= read -r RELOCATION_TYPE; do
+        if [[ "$RELOCATION_TYPE" != "R_X86_64_RELATIVE" ]]; then
+            echo "unsupported static PIE relocation before execution: $RELOCATION_TYPE" >&2
+            readelf -rW "$BINARY" >&2
+            exit 1
+        fi
+    done <<< "$RELOCATION_TYPES"
+fi
+
+set +e
 OUTPUT="$("$BINARY" 2>&1)"
+STATUS=$?
+set -e
+
 printf '%s\n' "$OUTPUT"
+
+if [[ "$STATUS" -ne 0 ]]; then
+    echo "userspace self execution exited abnormally with status $STATUS" >&2
+    exit "$STATUS"
+fi
 
 for EXECUTION in 1 2 3; do
     MARKER="userspace self execution ${EXECUTION}/3"
