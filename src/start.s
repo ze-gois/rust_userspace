@@ -5,18 +5,18 @@
    .section .text._start
    .type   _start,@function
    _start:
-       # Preserve the kernel-provided initial stack pointer across calls.
-       # r12 is callee-saved by the System V x86_64 ABI.
+       # Preserve the initial process stack supplied by the kernel or by our
+       # own ELF loader. r12 is callee-saved by the System V x86-64 ABI.
        mov     %rsp, %r12
 
        # The stack must be 16-byte aligned immediately before a call.
        and     $-16, %rsp
        xor     %ebp, %ebp
 
-       # Initialize BSS section to zero
-       # bss_start and bss_end are provided by the linker script
-       mov     $_bss_start, %rax
-       mov     $_bss_end, %rcx
+       # Static PIE: resolve linker-provided BSS boundaries relative to RIP
+       # rather than embedding absolute virtual addresses.
+       lea     _bss_start(%rip), %rax
+       lea     _bss_end(%rip), %rcx
        cmp     %rcx, %rax
        je      bss_init_done
 

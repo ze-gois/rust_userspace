@@ -20,13 +20,13 @@ fn main() {
     info!("cargo:rustc-link-arg=-static\n");
     info!("cargo:rustc-link-arg=--no-dynamic-linker\n");
     info!("cargo:rustc-link-arg=-n\n");
-    info!("cargo:rustc-link-arg=--no-pie\n");
+    info!("cargo:rustc-link-arg=-pie\n");
+    info!("cargo:rustc-link-arg=--hash-style=sysv\n");
     info!("cargo:rustc-link-arg=-T{}\n", linker_script.display());
 
     // Compile assembly startup code
     cc::Build::new()
         .file("src/start.s")
-        .flag("-fno-pic")
-        .flag("-fno-pie")
+        .flag("-fPIC")
         .compile("start");
 }
