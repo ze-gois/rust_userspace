@@ -24,14 +24,20 @@ SECTIONS {
         *(.rodata.*)
         *(.eh_frame)
         *(.eh_frame.*)
-        *(.dynsym)
-        *(.dynstr)
-        *(.hash)
-        *(.gnu.hash)
-        *(.rela.dyn)
-        *(.rela.plt)
         PROVIDE(_rodata_end = .);
     } :rodata
+
+    /*
+     * Keep ELF dynamic-linking metadata in output sections with their own
+     * normative section types. Folding these into .rodata would turn, for
+     * example, SHT_DYNSYM/SHT_STRTAB/SHT_RELA into SHT_PROGBITS.
+     */
+    .dynsym : ALIGN(8) { *(.dynsym) } :rodata
+    .dynstr : ALIGN(1) { *(.dynstr) } :rodata
+    .hash : ALIGN(8) { *(.hash) } :rodata
+    .gnu.hash : ALIGN(8) { *(.gnu.hash) } :rodata
+    .rela.dyn : ALIGN(8) { *(.rela.dyn) } :rodata
+    .rela.plt : ALIGN(8) { *(.rela.plt) } :rodata
 
     .got : ALIGN(8) {
         PROVIDE(_got_start = .);
